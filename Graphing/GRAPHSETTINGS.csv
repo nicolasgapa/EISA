@@ -15,7 +15,7 @@ Insert the year:,,
 Do you want to create a summary plot (YES: 1 NO:0) ? - Insert the shift value (typically 0.2-0.5 for OBS) in the second cell for stack plotting.,,
 1,0
 Would you like to normalize the data? JUST FOR TEC (Minimum value in the dataset is set as the zero value - YES: 1 NO:0),,
-0
+1
 "Do you want to set up an specific range for the x (line 20) or y (line 21) axes? (Column 1=YES: 1 NO:0, Column 2=Start value, Column 3=Final value)",,
 0,0,0
 0,0,0
@@ -28,7 +28,7 @@ Would you like to include legends next to the graph (for summary plots)?,,
 Would you like to print a vertical line across the graph? (YES: 1 NO:0) - Column 2: Insert the X axis point at which you want to print the line.,,
 0,0
 Vertical TEC? (YES: 1 NO:0) - You have to normalize the data along with the VTEC conversion:,,
-0
+1
 "Graph only one signal per PRN? (YES: 1 NO:0) [For summary plots, select one signal]",,
 0
 "Save the plots in the following format (e.g. "".png"" or "".pdf""): (select pdf summary plots and for any plots needing high resolution)",,
