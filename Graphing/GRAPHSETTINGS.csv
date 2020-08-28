@@ -3,7 +3,7 @@ RED,TEC
 Set the elevation threshold (0-90):,,
 30
 "What type of constellation (G, R or E) - Use cells two and three if you want several constellations to be plotted:",,
-R
+G
 "Insert the PRN numbers you want to graph (Type ""T"" if you want to create graphs for the entire constellation - ONLY INSERT T IN THE FIRST CELL):",,
 T
 "Initial date (first cell = month, second cell = day):",,
@@ -28,7 +28,7 @@ Would you like to include legends next to the graph (for summary plots)?,,
 Would you like to print a vertical line across the graph? (YES: 1 NO:0) - Column 2: Insert the X axis point at which you want to print the line.,,
 0,0
 Vertical TEC? (YES: 1 NO:0) - You have to normalize the data along with the VTEC conversion:,,
-1
+0
 "Graph only one signal per PRN? (YES: 1 NO:0) [For summary plots, select one signal]",,
 0
 "Save the plots in the following format (e.g. "".png"" or "".pdf""): (select pdf summary plots and for any plots needing high resolution)",,
