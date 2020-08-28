@@ -474,51 +474,56 @@ for eachdate in validdates:
                             # Determine which rows of the elevation column have a value that exceeds the threshold set
                             # by the user.
                             if float(elevationforthresholdb) >= threshold:
-                                validcolumns.append(counttwo)  #
-                        counttwo = counttwo + 1  #
-                        #
-                    subtractthisvalue = 0  # Sometimes, satellites cross the elevation threshold multiple times within a day. E.G. PRN 2 is above
-                    rangestartrows = []  # the elevation threshold between 1PM and 3PM, and then later between 7PM and 9PM.
-                    for itema in validcolumns:  # Identify the times at which satellites cross the elevation threshold and save those values into variables.
-                        if (
-                                itema - subtractthisvalue) != 1:  # e.g. in the previous example: rangestartrows:[1PM, 7PM] and rangefinalrows=[3PM, 9PM].
-                            rangestartrow = itema  #
-                            rangestartrows.append(rangestartrow)  #
-                        subtractthisvalue = itema  #
-                    if len(rangestartrows) > 1:  #
-                        rangefinalrows = []  #
-                        for j in range(len(rangestartrows) - 1):
-                            rangefinalrow = rangestartrows[1]
-                            rangefinalrows.append(rangefinalrow)
-                        rangefinalrows = (rangefinalrows, validcolumns[-1])
-                    elif len(rangestartrows) == 1:
-                        rangefinalrows = [validcolumns[-1]]
-                    # Determine the times (in seconds) for both start and final rows in the range variables.
-                    countfour = 0
-                    starttimes = []
-                    finaltimes = []
-                    if len(rangestartrows) > 1:
-                        for itemb in len(rangestartrows):
-                            startselection = rangestartrows[countfour]
-                            finalselection = rangefinalrows[countfour]
-                            starttime = timescolumn[startselection]
-                            finaltime = timescolumn[finalselection - 1]
-                            starttimes.append(str(starttime))
-                            finaltimes.append(str(finaltime))
-                            countfour = countfour + 1
-                    elif len(rangestartrows) == 1:
-                        startselection = rangestartrows[0]
-                        finalselection = rangefinalrows[0]
-                        starttimes = [timescolumn[startselection]]
-                        finaltimes = [timescolumn[finalselection - 1]]
-                    starttimesflt = []  # Convert the times to float values.
-                    finaltimesflt = []
-                    for t in starttimes:
-                        starttimesflt.append(float(t))
-                    for u in finaltimes:
-                        finaltimesflt.append(float(u))
-                        # ----------------------- SECTION 4E: EXTRACTING THE COLUMNS FROM THE CSV FILE --- #
+                                validcolumns.append(counttwo)
+                        counttwo = counttwo + 1
 
+                # Sometimes, satellites cross the elevation threshold multiple times within a day. E.G. PRN 2 is
+                # above. Sometimes, satellites cross the elevation threshold multiple times within a day. E.G.
+                # PRN 2 is above the elevation threshold between 1PM and 3PM, and then later between 7PM and 9PM.
+                subtractthisvalue = 0
+                rangestartrows = []
+                # Identify the times at which satellites cross the elevation threshold and save those values into
+                # variables.
+                for itema in validcolumns:
+                    # e.g. in the previous example: rangestartrows:[1PM, 7PM] and rangefinalrows=[3PM, 9PM].
+                    if (itema - subtractthisvalue) != 1:
+                        rangestartrow = itema  #
+                        rangestartrows.append(rangestartrow)  #
+                    subtractthisvalue = itema  #
+                if len(rangestartrows) > 1:  #
+                    rangefinalrows = []  #
+                    for j in range(len(rangestartrows) - 1):
+                        rangefinalrow = rangestartrows[1]
+                        rangefinalrows.append(rangefinalrow)
+                    rangefinalrows = (rangefinalrows, validcolumns[-1])
+                elif len(rangestartrows) == 1:
+                    rangefinalrows = [validcolumns[-1]]
+                # Determine the times (in seconds) for both start and final rows in the range variables.
+                countfour = 0
+                starttimes = []
+                finaltimes = []
+                if len(rangestartrows) > 1:
+                    for itemb in len(rangestartrows):
+                        startselection = rangestartrows[countfour]
+                        finalselection = rangefinalrows[countfour]
+                        starttime = timescolumn[startselection]
+                        finaltime = timescolumn[finalselection - 1]
+                        starttimes.append(str(starttime))
+                        finaltimes.append(str(finaltime))
+                        countfour = countfour + 1
+                elif len(rangestartrows) == 1:
+                    startselection = rangestartrows[0]
+                    finalselection = rangefinalrows[0]
+                    starttimes = [timescolumn[startselection]]
+                    finaltimes = [timescolumn[finalselection - 1]]
+                starttimesflt = []  # Convert the times to float values.
+                finaltimesflt = []
+                for t in starttimes:
+                    starttimesflt.append(float(t))
+                for u in finaltimes:
+                    finaltimesflt.append(float(u))
+
+            # ----------------------- SECTION 4E: EXTRACTING THE COLUMNS FROM THE CSV FILE --- #
             # Import and read the csv (if it exists) If not, jump to SECTION 5.
             if os.path.isfile(csvtographdirectory):
                 print(" ")
@@ -679,24 +684,25 @@ for eachdate in validdates:
                         # --------------------------------- SECTION 4J: MODIFY RAW DATA ------------------------- #
                         elif y == "ismRawObs" or y == "ismRawOBS" or y == "ismDetObs" or y == "ismDetOBS" or y == "ismRawTEC" or y == "ismRawTec":
                             # Start this section if the user selects a raw data file type.
-                            starttimetocompare = starttimesflt[
-                                countseven - 1]  # Extract the start time from the starttimesflt from Section 4D.
-                            finaltimetocompare = finaltimesflt[
-                                countseven - 1]  # Extract the final time from the starttimesflt from Section 4D.
-                            countfive = 0  #
-                            validpositions = []  #
-                            for itemc in newtimes:  # Determine which rows have time values within the specified range.
-                                itemc = float(itemc)  #
-                                if itemc >= starttimetocompare and itemc <= finaltimetocompare:  #
-                                    validpositions.append(countfive)  #
-                                countfive = countfive + 1  #
-                            finaltimescorrected = []  #
-                            finalyaxiscorrected = []  #
-                            for itemj in validpositions:  # Correct the x and y axes to include only values within the specified range.
-                                timetoappend = newtimes[itemj]  #
-                                yaxistoappend = redyaxiscolumn[itemj]  #
-                                finaltimescorrected.append(timetoappend)  #
-                                finalyaxiscorrected.append(yaxistoappend)  #
+                            starttimetocompare = starttimesflt[countseven - 1]
+                            # Extract the final time from the starttimesflt from Section 4D.
+                            finaltimetocompare = finaltimesflt[countseven - 1]
+                            countfive = 0
+                            validpositions = []
+                            # Determine which rows have time values within the specified range.
+                            for itemc in newtimes:
+                                itemc = float(itemc)
+                                if starttimetocompare <= itemc <= finaltimetocompare:
+                                    validpositions.append(countfive)
+                                countfive = countfive + 1
+                            finaltimescorrected = []
+                            finalyaxiscorrected = []
+                            # Correct the x and y axes to include only values within the specified range.
+                            for itemj in validpositions:
+                                timetoappend = newtimes[itemj]
+                                yaxistoappend = redyaxiscolumn[itemj]
+                                finaltimescorrected.append(timetoappend)
+                                finalyaxiscorrected.append(yaxistoappend)
                                 # If TEC detrending is activated, from Section 1, run Section 4K:
 
                             # ------------------------ SECTION 4K: TEC DETRENDING -------------------------- #
