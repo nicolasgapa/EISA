@@ -3,7 +3,7 @@ RED,OBS
 Set the elevation threshold (0-90):,,
 30
 "What type of constellation (G, R or E) - Use cells two and three if you want several constellations to be plotted:",,
-G
+E
 "Insert the PRN numbers you want to graph (Type ""T"" if you want to create graphs for the entire constellation - ONLY INSERT T IN THE FIRST CELL):",,
 T
 "Initial date (first cell = month, second cell = day):",,

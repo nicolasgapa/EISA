@@ -569,28 +569,9 @@ for eachdate in validdates:
                 # START FOR LOOP D that will repeat for each signal type (selection) for the selected PRN.
                 for selection in saves:
 
-                    countthree = variable  # First, determine which rows correspond to the selected signal type.
-                    selectionint = int(selection)  # Save the row numbers to a variable called listofrows.
-                    listofrows = []
-                    for signaltoeval in varsignaltypecolumn:
-                        signaltoevalint = int(signaltoeval)
-                        if signaltoevalint == selectionint:
-                            listofrows.append(countthree)
-                            if selection == 1:
-                                rowlistone = listofrows
-                            elif selection == 2:
-                                rowlisttwo = listofrows
-                            elif selection == 3:
-                                rowlistthree = listofrows
-                            elif selection == 4:
-                                rowlistfour = listofrows
-                            elif selection == 5:
-                                rowlistfive = listofrows
-                            elif selection == 6:
-                                rowlistsix = listofrows
-                            elif selection == 7:
-                                rowlistseven = listofrows
-                        countthree = countthree + 1
+                    # First, determine which rows correspond to the selected signal type.
+                    # Save the row numbers to a variable called listofrows.
+                    listofrows = [c for c, i in enumerate(varsignaltypecolumn, variable) if int(i) == int(selection)]
 
                     # ---------------------------- SECTION 4G: TIME PERIODS ---------------------------- #
                     # Use the listofrows variable from section 4f and cut the rawyaxiscolumn from section 4e with
