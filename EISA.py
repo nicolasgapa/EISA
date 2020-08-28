@@ -5,9 +5,10 @@ from threading import Timer
 import time
 import csv
 import shutil
-import shutil
-now = datetime.today()
-cwd = os.getcwd()
+
+now = datetime.today()  # Today's date and time.
+cwd = os.getcwd()  # Current working directory.
+filesep = os.sep  # File separator (Changes between windows, linux and other OS).
 
 #
 # 2019
@@ -19,60 +20,71 @@ cwd = os.getcwd()
 # Embry-Riddle Ionospheric Algorithm (EISA)
 # Ionospheric and TEC data collector
 #
-
+# Last time updated: August 27th, 2020.
+#
 
 
 # ------------ Inputs ------------ #
-receivers = ["RX1","RX2"]  # Insert the receiver name.
-days_before = 1    # '1' for yesterday. "2" for the day before yesterday, etc.
-run_now = 0        # Set run_now to 1 if you want EISA to run now, rather than at a certain time.
-                    # Set run_now to 0 if you want EISA to run at a certain time every day.
-UTC_delta = 4  # Local time + UTC_delta = UTC time
-elevation_threshold = 30 # Elevation threshold.
+# Insert the receiver name.
+receivers = ["RX1"]
+
+# '1' for yesterday. "2" for the day before yesterday, etc.
+days_before = 24
+
+# Set run_now to 1 if you want EISA to run now, rather than at a certain time.
+# Set run_now to 0 if you want EISA to run at a certain time every day.
+run_now = 1
+
+# Local time + UTC_delta = UTC time
+UTC_delta = 4
+
+# Elevation threshold.
+elevation_threshold = 30
+
+# Receiver location. 
 receiver_location = "Daytona Beach, FL"
+
 # At what time would you like the code to run every day?
-# EG:
-# time_of_the_day = 4
-# minute_of_the_hour = 30
-# second_of_the_minute = 30
-# Will run at 04:30:30 every day.
-time_of_the_day = 4
-minute_of_the_hour = 0
-second_of_the_minute = 0
+# Only valid if run_now is not equal to 1.
+# EG: hour = 4, minute = 30, second = 30 : Will run at 04:30:30 every day.
+if run_now != 1:
+    hour, minute, second = 4, 0, 0
 # --------------------------------- #
 
-
-
+# --------------------------------- #
 # EISA.
-# DO NOT COMMENT BELOW THIS POINT UNLESS YOU KNOW
-# WHAT YOU ARE DOING. 
+# DO NOT CHANGE ANYTHING BELOW THIS UNLESS YOU KNOW WHAT YOU ARE DOING.
+# --------------------------------- #
 
 # Set the time to now if run_now = 1.
-if run_now == 1:
-    time_of_the_day = now.hour  
-    minute_of_the_hour = now.minute
-    second_of_the_minute = now.second+2
-
-# Print a message.
-filesep = os.sep  # File separator (Changes between windows, linux and other OS).
-old_time = datetime.today()
-print("\nCurrent date/time: ", old_time)
-new_time = old_time.replace(day=old_time.day, hour=time_of_the_day, minute=minute_of_the_hour, second=second_of_the_minute, microsecond=0)
-if new_time<old_time:
-    time_to_run = old_time.replace(day=old_time.day+1, hour=time_of_the_day, minute=minute_of_the_hour, second=second_of_the_minute, microsecond=0)
 else:
-    time_to_run = new_time
+    hour, minute, second = now.hour, now.minute, now.second + 2
+
+# Print a message with the current time and date.
+print("\nCurrent date/time: ", now)
+
+# Set the time at which the code will run (the time given bu the user).
+time_to_run = now.replace(day=now.day, hour=hour, minute=minute,
+                          second=second, microsecond=0)
+
+# If that time has already passed today, add a day (the code will run tomorrow
+# at that time).
+if time_to_run < now:
+    time_to_run = now.replace(day=now.day + 1, hour=hour, minute=minute,
+                              second=second, microsecond=0)
+
+# Print a message showing the user at what time the code will run.
 print("The code will parse the data again at:", time_to_run, "local time.")
 print("DO NOT CLOSE THIS WINDOW")
 
+
 # ----- Part 1: Parse ----- #
 def parse():
-
-    # Run iteritavely for every receiver in the folder:
+    # Run iteratively for every receiver in the folder:
     for receiver_name in receivers:
 
         # Print a message.
-        print("\n\nReceiver: ",receiver_name)
+        print("\n\nReceiver: ", receiver_name)
         print("\n--------------------------- Step 1: Parse ---------------------------")
 
         # Identify the directory to the parsing.py file.
@@ -83,15 +95,15 @@ def parse():
         with open("Settings.csv") as csvfile:
             read_csv = csv.reader(csvfile, delimiter=',')
             count = 1
-            newcsv = []
 
+            newcsv = []
             # Edit the rows.
             for row in read_csv:
                 if count == 2:
                     # Split the cwd into words.
                     cwd_split_directory = (cwd.split(filesep))
-                    # Get rid of the last folder (EISA), since the binary files are located ouside this folder.
-                    cwd_split_directory = cwd_split_directory[0:-1]
+                    # Get rid of the last folder (EISA), since the binary files are located outside this folder.
+                    cwd_split_directory = cwd_split_directory[:-1]
                     # Enter the receiver's folder.
                     cwd_split_directory.append(receiver_name)
                     add_line = cwd_split_directory
@@ -100,7 +112,7 @@ def parse():
                     add_line = (parsing_directory.split(filesep))
                 elif count == 6:
                     # Only reduced data when running EISA.
-                    add_line = ['3']
+                    add_line = ['1']
                 elif count == 8:
                     # Split the cwd into words.
                     cwd_split_directory = (cwd.split(filesep))
@@ -111,10 +123,12 @@ def parse():
                     add_line = cwd_split_directory
                 elif count == 10:
                     # Parse data for all constellations when running parsing.py
-                    add_line = ['G','R','E']
+                    # add_line = ['G', 'R', 'E']
+                    add_line = ['G']
                 elif count == 12:
                     # All PRNs.
-                    add_line = ['T']
+                    # add_line = ['T']
+                    add_line = ['1']
                 elif count == 17:
                     # Receiver name from user input.
                     add_line = [receiver_name]
@@ -135,27 +149,29 @@ def parse():
                     add_line = row
                 count = count + 1
                 newcsv.append(add_line)
-                
-        with open("Settings.csv", "w", newline='') as csvfile:
+
+        with open("Settings.csv", "w") as csvfile:
             writer = csv.writer(csvfile)
-            print(newcsv)
             writer.writerows(newcsv)
 
         # Run the parsing.py file.
-        os.system("parsing.py")
+        os.system("python parsing.py")
 
         # Now, proceed to step 3: Graphing.
         graph(receiver_name)
 
     # Print a message at the end.
-    old_time = datetime.today()
-    print("\n\nCurrent date/time: ", old_time)
-    time_to_run = old_time.replace(day=old_time.day+1, hour=time_of_the_day, minute=minute_of_the_hour, second=second_of_the_minute, microsecond=0)
-    print("The code will parse the data again at:", time_to_run, "local time.")
+    parse_end_time = datetime.today()
+    print("\n\nCurrent date/time: ", parse_end_time)
+    parse_end_time = parse_end_time.replace(day=parse_end_time.day + 1, hour=hour, minute=minute,
+                                            second=second, microsecond=0)
+    print("The code will parse the data again at:", parse_end_time, "local time.")
+
 
 # ----- Part 2: Graph ----- #
-def graphsettings(data_type,elev_threshold,constellations,satellites,summary_plot, normalize_tec, x_axisrange,y_axisrange,prn_label,
-                  legends, vertical_lines,vertical_tec,only_one_signal,graph_format,title_size,location):
+def graphsettings(data_type, elev_threshold, constellations, satellites, summary_plot, normalize_tec, x_axisrange,
+                  y_axisrange, prn_label, legends, vertical_lines, vertical_tec, only_one_signal, graph_format,
+                  title_size, location):
     # Open the graphsettings.csv file and edit every row respectively (For REDOBS).
     with open("GRAPHSETTINGS.csv") as csvfile:
         read_csv = csv.reader(csvfile, delimiter=',')
@@ -230,10 +246,11 @@ def graphsettings(data_type,elev_threshold,constellations,satellites,summary_plo
             newcsv.append(add_line)
 
     # Modify the csv file.
-    with open("GRAPHSETTINGS.csv", "w", newline='') as csvfile:
+    with open("GRAPHSETTINGS.csv", "w") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(newcsv)
-    
+
+
 def graph(receiver):
     # Print message.
     print("--------------------------- Step 2: Graph ---------------------------")
@@ -273,7 +290,7 @@ def graph(receiver):
             newcsv.append(add_line)
 
     # Modify the csv file.
-    with open("PATHS.csv", "w", newline='') as csvfile:
+    with open("PATHS.csv", "w") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(newcsv)
 
@@ -283,18 +300,18 @@ def graph(receiver):
     # Run the graphing tool only if the csvfiles exist.
     yesterday = datetime.today() - timedelta(days_before)
     if len(str(yesterday.month)) == 1:
-        month = "0"+str(yesterday.month)
+        month = "0" + str(yesterday.month)
     else:
         month = str(yesterday.month)
     if len(str(yesterday.day)) == 1:
-        day = "0"+str(yesterday.day)
+        day = "0" + str(yesterday.day)
     else:
         day = str(yesterday.day)
     location = ""
     for u in csvfiles_location:
-        location = location+u+filesep
-    print(location+str(yesterday.year)+month+day)
-    if os.path.exists(location+str(yesterday.year)+month+day):   
+        location = location + u + filesep
+    print(location + str(yesterday.year) + month + day)
+    if os.path.exists(location + str(yesterday.year) + month + day):
 
         # REDUCED SCINTILLATION (REDOBS)
         # count = 1: Azimuth, count = 2: Elevation, count = 3: CNo, count = 4: Lock Time, count = 5: CMC avg,
@@ -305,14 +322,15 @@ def graph(receiver):
         while count <= 13:
             for constellation in constellations:
                 # Individual plots.
-                graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'] ,['0', '0', '0'],
-                               ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [".png"], ['12', '12'],
-                               receiver_location)
-        
+                graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
+                              ['0', '0', '0'],
+                              ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [".png"], ['12', '12'],
+                              receiver_location)
+
                 # Run the graphing.py file.
-                os.system("Graphing.py no_menu "+str(count))
+                os.system("python graphing.py no_menu " + str(count))
             count = count + 1
-        
+
         # Summary plots. Save them to a different folder.
         valid_categories = [2, 7, 8, 9, 10, 11, 12, 13]
         for count in valid_categories:
@@ -326,15 +344,17 @@ def graph(receiver):
                 else:
                     summaryplot_settings = [1, 0]
                     onlyonesignal_settings = ['1']
-        
+
                 # Individual plots.
-                graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], summaryplot_settings, ['0'], ['0', '0', '0'],
-                              ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], onlyonesignal_settings, [".png"], ['12', '12'],
+                graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], summaryplot_settings, ['0'],
+                              ['0', '0', '0'],
+                              ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], onlyonesignal_settings, [".png"],
+                              ['12', '12'],
                               receiver_location)
-        
+
                 # Run the graphing.py code.
                 os.system("Graphing.py no_menu " + str(count))
-        
+
         # REDUCED TOTAL ELECTRON CONTENT (REDTEC)
         # count = 1: Azimuth, count = 2: Elevation, count = 3: CNo, count = 4: Lock Time, count = 5: CMC avg,
         # count = 6: CMC std, count = 7: S4, count = 8: S4 Cor, count = 9: 1secsigma, count = 10: 3secsigma
@@ -344,81 +364,84 @@ def graph(receiver):
         for count in valid_categories:
             for constellation in constellations:
                 # Individual plots.
-                graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'], ['0', '0', '0'],
+                graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
+                              ['0', '0', '0'],
                               ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [".png"], ['12', '12'],
                               receiver_location)
-        
+
                 # Run the graphing.py file.
                 os.system("Graphing.py no_menu " + str(count))
-        
+
         # TEC Summary plots. Save them to a different folder.
         valid_categories = [5, 7, 9, 11]
         for count in valid_categories:
             for constellation in constellations:
-        
-                normalize = [0,1]
+
+                normalize = [0, 1]
                 for i in normalize:
                     if i == 0:
                         # Summary plots.
                         graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['0'],
                                       ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], ['0'],
                                       [".png"], ['12', '12'], receiver_location)
-        
+
                         # Run the graphing.py file.
                         os.system("Graphing.py no_menu " + str(count))
                     elif i == 1:
-                        vertical_tec = [0,1]
+                        vertical_tec = [0, 1]
                         for j in vertical_tec:
                             # Summary plots.
                             graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['1'],
                                           ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], [str(j)], ['0'],
                                           [".png"], ['12', '12'], receiver_location)
-        
+
                             # Run the graphing.py file.
-                            os.system("Graphing.py no_menu " + str(count))
+                            os.system("python Graphing.py no_menu " + str(count))
 
         # Make a zip file of the graphs folder for that date. Save it to the graphs folder in EISA_OUTPUT
         # (include the receiver name in the zip file name).
         collected_data_date = datetime.today() - timedelta(days_before)
         year = str(collected_data_date.year)
         month = str(collected_data_date.month)
-        day  = str(collected_data_date.day)
+        day = str(collected_data_date.day)
         if len(month) != 2:
-            month = "0"+str(month)
+            month = "0" + str(month)
         if len(day) != 2:
-            day = "0"+str(day)
-        zipfile_name = year+month+day+"_"+receiver
-        dir_name = cwd+filesep+os.pardir+filesep+"EISA_OUTPUT"+filesep+receiver+filesep+"GRAPHS"+filesep+year+month+day
-        shutil.make_archive(dir_name+filesep+os.pardir+filesep+zipfile_name, 'zip', dir_name)
+            day = "0" + str(day)
+        zipfile_name = year + month + day + "_" + receiver
+        dir_name = cwd + filesep + os.pardir + filesep + "EISA_OUTPUT" + filesep + receiver + filesep + "GRAPHS" + filesep + year + month + day
+        shutil.make_archive(dir_name + filesep + os.pardir + filesep + zipfile_name, 'zip', dir_name)
 
-    # If the csv files for that day dont exist, print a message.
+    # If the csv files for that day don't exist, print a message.
     else:
-        print("CSVfiles for the folowing date do not exist: ",str(yesterday.year),str(month),str(day)," - Receiver:",receiver)
+        print("CSVfiles for the following date do not exist: ", str(yesterday.year), str(month), str(day),
+              " - Receiver:", receiver)
 
 
 # ----- Part 3: Upload ----- #
 # At 4 am, everyday, parse the files created on the previous day, and create the graphs.
 eternalloop = 1
 while eternalloop == 1:
-
     # Determine the current date and time.
     x = datetime.today()
 
     # Modify the date and time. Run the code every day at the same time.
-    y = x.replace(day=x.day+1, hour=time_of_the_day, minute=minute_of_the_hour, second=second_of_the_minute, microsecond=0)
-    # time_of_the_day 
-    #time_of_the_day = 4
-    #minute_of_the_hour = 0
-    #second_of_the_minute = 0    
+    y = x.replace(day=x.day + 1, hour=hour, minute=minute, second=second,
+                  microsecond=0)
 
     # Compute the time left for the next iteration to occur (in seconds).
     delta_t = y - x
     secs = delta_t.seconds + 1
 
-    # Initiate a timer. The script will run the parse function when the timer stops.
-    t = Timer(secs, parse)
-    t.start()
+    # If days_before is larger than 1, process the next day immediately. Otherwise, start a timer to run
+    # the code again tomorrow.
+    if days_before > 1:
+        parse()
+        days_before -= 1
+    else:
+        # Initiate a timer. The script will run the parse function when the timer stops.
+        t = Timer(secs, parse)
+        t.start()
 
-    # Run the loop again after parsing the files of the day before.
-    time.sleep(secs)
-
+        # Run the loop again after parsing the files of the day before.
+        time.sleep(secs)

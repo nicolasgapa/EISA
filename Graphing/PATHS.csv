@@ -1,4 +1,4 @@
-Enter the path to the CSVFILES in Line 2:,,,
-Z:,EISA_OUTPUT,RX1,CSVFILES
-Enter the path to where you want to save the plots in line 4:,,,
-Z:,EISA_OUTPUT,RX1,GRAPHS
+Enter the path to the CSVFILES in Line 2:,,,
+C:,Users,nicol,Desktop,EISA_OUTPUT,RX1,CSVFILES
+Enter the path to where you want to save the plots in line 4:,,,
+C:,Users,nicol,Desktop,EISA_OUTPUT,RX1,GRAPHS
