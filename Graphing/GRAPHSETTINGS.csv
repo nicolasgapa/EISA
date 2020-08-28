@@ -1,5 +1,5 @@
 "File type (First cell: RED ismRaw or ismDet), (Second cell: TEC or OBS):",,
-RED,TEC
+RED,OBS
 Set the elevation threshold (0-90):,,
 30
 "What type of constellation (G, R or E) - Use cells two and three if you want several constellations to be plotted:",,
@@ -7,22 +7,22 @@ G
 "Insert the PRN numbers you want to graph (Type ""T"" if you want to create graphs for the entire constellation - ONLY INSERT T IN THE FIRST CELL):",,
 T
 "Initial date (first cell = month, second cell = day):",,
-8,5
+8,3
 "Final date (first cell = month, second cell = day):",,
-8,5
+8,3
 Insert the year:,,
 2020
 Do you want to create a summary plot (YES: 1 NO:0) ? - Insert the shift value (typically 0.2-0.5 for OBS) in the second cell for stack plotting.,,
-1,0
+0,0
 Would you like to normalize the data? JUST FOR TEC (Minimum value in the dataset is set as the zero value - YES: 1 NO:0),,
-1
+0
 "Do you want to set up an specific range for the x (line 20) or y (line 21) axes? (Column 1=YES: 1 NO:0, Column 2=Start value, Column 3=Final value)",,
 0,0,0
 0,0,0
 "For High-Rate TEC, would you like to detrend the data before graphing? (YES: 1 NO:0)",,
 0,,
 Would you like to label the PRN number on the graph? (YES: 1 NO:0) (Select either label or legend),,
-1
+0
 Would you like to include legends next to the graph (for summary plots)?,,
 0
 Would you like to print a vertical line across the graph? (YES: 1 NO:0) - Column 2: Insert the X axis point at which you want to print the line.,,

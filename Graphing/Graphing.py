@@ -123,22 +123,23 @@ numberofmonths = int(monthf) - int(monthi)  # How many months will be plotted?
 monthcount = 0  #
 rangea = numberofmonths + 1  #
 if numberofmonths != 0:  # If there is more than one month:
+    # Start a for loop for each month.
     for month in range(rangea):  # Start a for loop for each month.
-        if monthcount <= numberofmonths:  #
-            if monthcount == 0:  #
-                month = int(monthi)  #
+        if monthcount <= numberofmonths:
+            if monthcount == 0:
+                month = int(monthi)
             else:  #
                 month = int(monthi) + monthcount  # Determine the number of days for each specific month.
             if month == 1 or month == 3 or month == 5 or month == 7 or month == 8 or month == 10 or month == 12:
-                numofdays = 31;  #
-            elif month == 4 or month == 6 or month == 9 or month == 11:  #
-                numofdays = 30;  #
-            elif month == 2:  #
-                remainder = int(yeari) % 4  #
-                if remainder == 0:  #
-                    numofdays = 29  #
-                elif remainder != 0:  #
-                    numofdays = 28  #
+                numofdays = 31
+            elif month == 4 or month == 6 or month == 9 or month == 11:
+                numofdays = 30
+            elif month == 2:
+                remainder = int(yeari) % 4
+                if remainder == 0:
+                    numofdays = 29
+                elif remainder != 0:
+                    numofdays = 28
             if monthcount == 0:  # Determine all the days inside the range given by the user.
                 numofdays1 = numofdays - int(dayi)  #
             elif monthcount != 0 and month != int(monthf):  #
@@ -364,7 +365,8 @@ elif y == 'ismRawTEC' or y == 'ismRawTec':  # IF THE FILE TYPE IS ISMRAWTEC, PRI
         break  #
     columna = int(ans) + 4  # The column in the csvfile corresponding to the user selection. e.g. user selects "1" for
     # "TEC" - column 5 (1+4) in the csvfile corresponds to the TEC values.
-elif y == 'ismRawObs' or y == 'ismRawOBS' or y == 'ismDetObs' or y == 'ismDetOBS':  # IF THE FILE TYPE IS ISMRAWOBS OR ISMDETOBS, PRINT THE OPTIONS FOR HIGH-RATE SCINTILLATION.
+# IF THE FILE TYPE IS ISMRAWOBS OR ISMDETOBS, PRINT THE OPTIONS FOR HIGH-RATE SCINTILLATION.
+elif y == 'ismRawObs' or y == 'ismRawOBS' or y == 'ismDetObs' or y == 'ismDetOBS':
     ans = True  # EACH OF THESE OPTIONS IS EXPLAINED IN DETAIL IN THE GPSTATION-6 USER MANUAL.
     while ans:  # SEE THE "INSTRUCTIONS" WORD DOCUMENT TO ACCESS AND DOWNLOAD THIS MANUAL.
         if no_menu == 1:
@@ -401,17 +403,13 @@ for eachdate in validdates:
     minimum = 1000  # Set minimum=big number (like 1000) - FOR FURTHER USE IN SECTION 4M.
     # First, identify how many PRNs the user wants to plot from their selection in the graphsettings.csv file.
     if PRNstograph[0] != "T" and PRNstograph[0] != "t":
-        # If the user DID NOT insert "T" ("T" means plot all satellites), determine how many PRNs are to be plotted
+        # If the user DID NOT insert "T" ("T" means plot all satellites), determine how many PRNs are to be plotted.
         limit = len(PRNstograph)
-    # Calcuating the length of the row (i.e. if len(PRNstograph)=6, 6 PRNs will be plotted).
+
     elif PRNstograph[0] == "T" or PRNstograph[0] == "t":
-        # If the user inserts "T", it means they want to plot all satellites within a constellation.
-        if constellation == "G":
-            limit = 32  # Each satellite constellation has a different amount of working satellites.
-        elif constellation == "R":  # GPS has a total of 32 satellites.
-            limit = 24  # GLONASS has a total of 24 satellites.
-        elif constellation == "E":  # GALILEO has a total of 30 satellites.
-            limit = 30
+        # GPS has a total of 32 satellites, GLONASS has 24, and GALILEO has 30.
+        number_of_satellites = {"G": 32, "R": 24, "E": 30}
+        limit = number_of_satellites[constellation]
 
     # -------------------------------- SECTION 4B: FOR LOOP B FOR NIGHT SUBTRACTION --------------------------------- #
     # If the user selectes to do night subtraction for TEC (normalizedata==1), run the code twice using a for loop:
@@ -455,8 +453,7 @@ for eachdate in validdates:
             if y == "ismRawObs" or y == "ismRawOBS" or y == "ismDetObs" or y == "ismDetOBS" or y == "ismRawTEC" or y == "ismRawTec":
                 readreducedfile = readdirectory + filesep + "REDTEC" + "_" + constellation + str(
                     savedPRNnumber) + "_" + str(year) + "_" + str(monthnumber) + "_" + str(
-                    daynumber) + ".csv"  #####################YOU ALSO CHANGED THIS
-                #  readreducedfile=readdirectory+filesep+"REDTEC"+"_"+constellation+str(savedPRNnumber)+"_"+str(year)+str(monthnumber)+str(daynumber)+".csv" #####################YOU ALSO CHANGED THIS
+                    daynumber) + ".csv"
                 if not os.path.isfile(readreducedfile):
                     continue
 
@@ -778,10 +775,6 @@ for eachdate in validdates:
                             # ------------------ END OF TEC DETRENDING -------------------- #
 
                         # --------------------------------- SECTION 4L: FINAL FIXES ------------------------------ #
-                        # Calculate the length of the finaltimescorrected vector.
-                        lengtha = len(finaltimescorrected)
-                        # Calculate the length of the finalyaxiscorrected vector.
-                        lengthb = len(finalyaxiscorrected)
 
                         # Select a letter. This letter will be printed in the title of the plot.
                         # The letter represents the time period. e.g. if there are two time periods for one PRN,
@@ -955,13 +948,13 @@ for eachdate in validdates:
                                 os.makedirs(savinggraphs)  #
                             savinggraphs = savinggraphs + filesep + graphname
                             print(savinggraphs)  # Print the directory in the command window.
-                            if legend == 1:  #
+                            if legend == 1:
                                 plt.legend()  # Print the legend on the plot if legend==1.
                                 plt.savefig(savinggraphs)  # Save the figure.
-                            else:  #
+                            else:
                                 plt.savefig(savinggraphs)  # Save the figure.
                             if independentgraph == 0:  # If the summary plot option is not active, clear the graph.
-                                plt.clf()  #
+                                plt.clf()
                         countseven += 1  # END OF FOR LOOP D.
 
             # ------------------------------ SECTION 5: THE DIRECTORY DOES NOT EXIST ------------------------------- #
@@ -972,5 +965,6 @@ for eachdate in validdates:
             count = count + 1
             # END OF FOR LOOP B - END OF FOR LOOP C.
 
-    TOBEPRINTED = "The following day has been processed: " + monthname + " " + str(daynumber)
-    print(TOBEPRINTED + " - Graph Type: " + str(graphtype) + " - Constellation: " + constellationtype)
+    # Print message to the terminal.
+    print("The following day has been processed: " + monthname + " " + str(daynumber) + " - Graph Type: " +
+          str(graphtype) + " - Constellation: " + constellationtype)
