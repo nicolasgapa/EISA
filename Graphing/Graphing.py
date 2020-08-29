@@ -804,21 +804,26 @@ for eachdate in validdates:
                                 # If TEC detrending is activated, from Section 1, run Section 4K:
 
                             # ------------------------ SECTION 4K: TEC DETRENDING -------------------------- #
-                            if TECdetrending == 1:  # For TEC: If TECdetrending=1 in the GRAPHSETTINGS csv file, detrend the TEC data.
-                                bftimes = []  # Convert the elements of finaltimescorrected and finalyaxiscorrected into float values
-                                bfTEC = []  # before applying the butterworth filter.
-                                for itemk in finaltimescorrected:  #
-                                    bftimes.append(float(itemk))  #
-                                for iteml in finalyaxiscorrected:  #
-                                    bfTEC.append(float(iteml))  #
-                                matrixtoprint = []  # Print the times and TEC vectors into two columns in a new csv file.
-                                counteighteen = 0  # This file can be later called from MATLAB for a better TEC detrending.
-                                for itemm in range(len(
-                                        bftimes)):  # This CSV file is saved in the same folder as the graphingmain.py code.
-                                    row = [bftimes[counteighteen], bfTEC[counteighteen]]  #
-                                    matrixtoprint.append(row)  #
-                                    counteighteen = counteighteen + 1  #
-                                import csv  #
+                            # For TEC: If TECdetrending=1 in the GRAPHSETTINGS csv file, detrend the TEC data.
+                            # Convert the elements of finaltimescorrected and finalyaxiscorrected into float values
+                            # before applying the butterworth filter.
+                            if TECdetrending == 1:
+                                bftimes = []
+                                bfTEC = []
+                                for itemk in finaltimescorrected:
+                                    bftimes.append(float(itemk))
+                                for iteml in finalyaxiscorrected:
+                                    bfTEC.append(float(iteml))
+                                # Print the times and TEC vectors into two columns in a new csv file.
+                                # This file can be later called from MATLAB for a better TEC detrending.
+                                matrixtoprint = []
+                                counteighteen = 0
+                                # This CSV file is saved in the same folder as the graphingmain.py code.
+                                for itemm in range(len(bftimes)):
+                                    row = [bftimes[counteighteen], bfTEC[counteighteen]]
+                                    matrixtoprint.append(row)
+                                    counteighteen = counteighteen + 1
+                                import csv
 
                                 namedetrending = "TECdetrending" + constellation + str(savedPRNnumber) + str(
                                     selection) + "-" + str(year) + str(monthnumber) + str(daynumber) + ".csv"
