@@ -1,3 +1,12 @@
+import csv
+import matplotlib.pyplot as plt
+import os
+import platform
+import sys
+
+filesep = os.sep
+
+
 #
 #  Graphingmain.py code for ionospheric scintillation and Total Electron Content. BETA VERSION.
 #  GPStation-6 multi-constellation receiver.
@@ -10,10 +19,104 @@
 # DO NOT HARD CODE ANYTHING BELOW THIS POINT.
 #
 
-# --------------------- SECTION 1: READING THE GRAPHSETTINGS.CSV FILE --------------------- #
-import os, sys, csv, platform
-import matplotlib.pyplot as plt  # Import matplotlib: MATPLOTLIB is a Python 2d Plotting Library.
+# --------------------- Section 0: FUNCTIONS --------------------- #
 
+
+def plot(x_values, y_values, file_type, graph_type, directory, axes_ranges, include_legend=False,
+         summary_plot=False, vertical_line=False, vertical_line_x_value=0):
+    """"
+    Function used for plotting and saving a graph.
+    Inputs:
+        file_type (string): One of the following: 'REDOBS', 'REDTEC', 'ismRawObs', 'ismRawOBS', 'ismDetObs',
+                                                  'ismDetOBS', 'ismRawTEC' or 'ismRawTec'.
+        graph_type (string): The type of graph that is being generated (e.g. 'Azymuth', or 'Tecdot')
+        include_legend (boolean): Add a legend to the plot.
+    Output:
+        This function will save the plot to the predetermined directory, but the function itself does not return
+        anything.
+    """
+    # If the user wants a legend, put it on the right, next to the graph. Then, plot.
+    if include_legend:
+        plt.plot(x_values, y_values, label=str(savedPRNnumber))
+    else:
+        plt.plot(x_values, y_values)
+
+    # For sigma only: compute the rate of change.
+    set_x_axis_range, x_axis_start_value, x_axis_final_value = axes_ranges[0]
+    set_y_axis_range, y_axis_start_value, y_axis_final_value = axes_ranges[1]
+    if file_type == "REDOBS":
+        if "secsigma" in graph_type:
+
+            # If the maximum secsigma value > 100, set the y axis max to 3.
+            if max(y_values) > 100:
+                set_y_axis_range, y_axis_final_value = 1, 2
+
+    # Add the X and Y-axis labels.
+    plt.ylabel(str(graph_type) + " - " + str(units))
+    plt.xlabel('Time (UTC)')
+
+    # If graphtype is TECDOT, change the name to 'High Rate TEC Rate of change'.
+    if graph_type == 'TECdot':
+        graph_type = 'High Rate TEC Rate of change'
+
+    # Set the title  and subtitle of the plot.
+    title = monthname + " " + str(daynumber) + " - " + "Time (UTC) vs. " + graph_type
+    subtitle = "Elevation threshold: " + str(threshold)
+    if summary_plot:
+        titletoprint = title + " - Summary Plot - " + constellationtype
+        subtitletoprint = subtitle + " - Loc: " + location
+    else:
+        titletoprint = title + " - " + constellationtype + " " + str(savedPRNnumber) + " (" + lettername + ")"
+        subtitletoprint = subtitle + " - Signal type: " + str(sttp) + " - Loc: " + location
+    if verticaltec == 1 and normalizedcount == 2:
+        subtitletoprint = subtitletoprint + " - Vertical TEC"
+
+    # Change the limits of the axes based on line 20 and 21 of the GRAPHSETTINGS.csv file.
+    if set_x_axis_range == 1:
+        plt.xlim([x_axis_start_value, x_axis_final_value])
+    if set_y_axis_range == 1:
+        plt.ylim([y_axis_start_value, y_axis_final_value])
+
+    # If the user wants to print a vertical line, use the axvline function - Line 29 of the GRAPHSETTINGS.csv file.
+    if vertical_line:
+        plt.axvline(x=vertical_line_x_value, color='K', linewidth=0.5)
+
+    # Label the plot lines (in-plot legends) - Line 25 of the GRAPHSETTINGS.csv file.
+    if len(x_values) != 0:
+        if PRNlabeling == 1:
+            xdatapoint, ydatapoint = x_values[int(len(x_values) / 2)], y_values[int(len(y_values) / 2)]
+            plt.text(xdatapoint, ydatapoint, savedPRNnumber)
+
+    # Print the title and subtitle in the plot.
+    plt.suptitle(titletoprint, fontsize=titlefontsize)
+    plt.title(subtitletoprint, fontsize=subtitlefontsize)
+
+    # Set the directory, and create it if it does not exist.
+    if summary_plot:
+        ftype = "TEC" if file_type in ["REDTEC", 'ismRawTEC', 'ismRawTec'] else "OBS"
+        directory = directory + filesep + "Summary_Plots" + filesep + ftype
+    else:
+        directory = directory + filesep + graph_type
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    directory = directory + filesep + graphname
+
+    # Print the directory in the command window.
+    print(directory)
+
+    # Print the legend on the plot if legend == True.
+    if include_legend:
+        plt.legend()
+
+    # Save the figure.
+    plt.savefig(directory)
+
+    # If the summary plot option is not active, clear the graph.
+    if not summary_plot:
+        plt.clf()
+
+
+# --------------------- SECTION 1: READING THE GRAPHSETTINGS.CSV FILE --------------------- #
 no_menu = 0
 if len(sys.argv) > 1:
     if sys.argv[1] == "no_menu":
@@ -45,12 +148,8 @@ with open("graphsettings.csv") as csvfile:
             threshold = float(threshold)
         elif count == 6:  # For row 6, identify the constellation system selected by the user.
             constellation = row[0]
-            if constellation == "G":
-                constellationtype = "GPS"
-            elif constellation == "R":
-                constellationtype = "GLONASS"
-            elif constellation == "E":
-                constellationtype = "GALILEO"
+            constellations = {"G": "GPS", "R": "GLONASS", "E": "GALILEO"}
+            constellationtype = constellations[constellation]
         elif count == 8:  # Row 8. Extract all PRN codes from the row and save them to a variable PRNstograph.
             PRNnumber = row[0]
             savedPRNnumber = PRNnumber
@@ -79,7 +178,7 @@ with open("graphsettings.csv") as csvfile:
             yeari = year
         # Extract the values from column 1 and 2. Column 1 is the summary plot option. Column 2 is the shift value.
         elif count == 16:
-            independentgraph = int(row[0])
+            summaryplot = True if int(row[0]) == 1 else False
             shiftvalue = float(row[1])
         elif count == 18:  # Normalize the data (Night-subtraction).
             normalizedata = int(row[0])
@@ -97,11 +196,10 @@ with open("graphsettings.csv") as csvfile:
             PRNlabeling = int(row[0])  # Labeling the PRN's next to the lines on the graph.
         elif count == 27:
             # Include a legend next to the graph showing the differnt lines being plotted (for summary plots).
-            legend = int(row[0])
+            legend = True if int(row[0]) == 1 else 0
         elif count == 29:
             # Vertical line across the graph.
-            verticalline = int(row[0])
-            verticallinexpoint = float(row[1])
+            verticalline = [True if int(row[0]) == 1 else 0, float(row[1])]
         elif count == 31:
             # Convert Slant to Vertical TEC
             verticaltec = int(row[0])
@@ -631,7 +729,7 @@ for eachdate in validdates:
                         # If the selected file is a raw data file, set listofpositions equal to the starttimesflt
                         # variable from Section 4D.
                         listofpositions = starttimesflt
-                    if onlyonesignal == 1 and independentgraph == 0:
+                    if onlyonesignal == 1 and not summaryplot:
                         # If the plot to be created is NOT a summary plot and onlyonesignal=1 from section 1,
                         # listofpositions=first value in listofpositions (listofpositions[0])
                         listofpositions = [listofpositions[0]]
@@ -784,7 +882,7 @@ for eachdate in validdates:
                                 remainder = numbertoconvert  #
                             howmanyhoursflt = remainder / 3600  # Determine the amount of hours.
                             newtimesUTC.append(howmanyhoursflt)  #
-                        if independentgraph == 1:  # Determine the name of the graph.
+                        if summaryplot:  # Determine the name of the graph.
                             csvtograph = filetype + "_SummaryPlot_" + str(year) + str(monthnumber) + str(
                                 daynumber) + ".csv"
                         else:
@@ -792,7 +890,7 @@ for eachdate in validdates:
                                 year) + str(monthnumber) + str(daynumber) + ".csv"
                         lengthtocutname = len(csvtograph) - 4
                         graphname = csvtograph[:lengthtocutname]
-                        if independentgraph == 1:
+                        if summaryplot:
                             graphname = graphname + "_" + graphtype + "_" + constellationtype
                         else:
                             graphname = graphname + "_" + graphtype + "_" + "Signal" + str(
@@ -838,110 +936,30 @@ for eachdate in validdates:
                                             normalizedaxis.append(
                                                 elementtoappend)  # Append the element to a new vector called normalized axis.
                                         listforyaxisflt = normalizedaxis  # Set listforyaxisflt==normalizedaxis.
-                        if independentgraph == 1:  # If the user is doing a summary plot add the shift value to every element in the listforyaxisflt vector. See Section 1.
+
+                        # If the user is doing a summary plot add the shift value to every element in the
+                        # listforyaxisflt vector. See Section 1.
+                        if summaryplot:
                             summaryplotaxis = []  #
                             for elementa in listforyaxisflt:  #
                                 elementtoappend = elementa + (count * shiftvalue)  #
                                 summaryplotaxis.append(elementtoappend)  #
                             listforyaxisflt = summaryplotaxis  #
-                            # ------------------------------------- SECTION 4N: PLOTTING ------------------------------------- #
-                        signaltypetoprint = str(selection)  # Signal Mapping for Satellite Systems.
-                        if constellation == "G":  # From the selection from FOR LOOP D, determine the signal type (L1, L2, ETC).
-                            if signaltypetoprint == "1":  # This signal type will be printed in the plot's title.
-                                sttp = "L1CA"  #
-                            elif signaltypetoprint == "4":  #
-                                sttp = "L2Y"  #
-                            elif signaltypetoprint == "5":  #
-                                sttp = "L2C"  #
-                            elif signaltypetoprint == "6":  #
-                                sttp = "L2P"  #
-                            elif signaltypetoprint == "7":  #
-                                sttp = "L5Q"  #
-                        elif constellation == "R":  #
-                            if signaltypetoprint == "1":  #
-                                sttp = "L1CA"  #
-                            elif signaltypetoprint == "3":  #
-                                sttp = "L2CA"  #
-                            elif signaltypetoprint == "4":  #
-                                sttp = "L2P"  #
+
+                        # ------------------------------------- SECTION 4N: PLOTTING ---------------------------- #
+                        # From the selection from FOR LOOP D, determine the signal type (L1, L2, ETC).
+                        if constellation in ["G", "R"]:
+                            signal_types = {"G": {"1": "L1CA", "4": "L2Y", "5": "L2C", "6": "L2P", "7": "L5Q"},
+                                            "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"}}
+                            sttp = signal_types[constellation][str(selection)]
+
                         if len(listforyaxisflt) != 0:
-                            # If the user wants a legend, put it on the right next to the graph. Then, PLOT.
-                            if legend == 1:
-                                legendtoprint = str(savedPRNnumber)  #
-                                plt.plot(newtimesUTC, listforyaxisflt, label=legendtoprint)  #
-                            else:  #
-                                plt.plot(newtimesUTC, listforyaxisflt)  #
+                            plot(newtimesUTC, listforyaxisflt, y, graphtype, savinggraphs,
+                                 [[setxaxisrange, xaxisstartvalue, xaxisfinalvalue],
+                                  [setyaxisrange, yaxisstartvalue, yaxisfinalvalue]],
+                                 include_legend=legend, summary_plot=summaryplot, vertical_line=verticalline[0],
+                                 vertical_line_x_value=verticalline[1])
 
-                            # For sigma only: compute the rate of chagne.
-                            if y == "REDOBS":
-                                if "secsigma" in graphtype:
-                                    # Determine the maximum value in the y-axis, and set the max value as the axis
-                                    # limit.
-                                    yaxis_max = max(listforyaxisflt)
-                                    yaxis_min = min(listforyaxisflt)
-                                    # If the maximum secsigma value > 100, set the y axis max to 3.
-                                    if yaxis_max > 100:
-                                        setyaxisrange = 1
-                                        yaxisfinalvalue = 2
-
-                            plt.ylabel(str(graphtype) + " - " + str(units))  # Y-axis label.
-                            plt.xlabel('Time (UTC)')  # X-axis label.
-                            itoprint = prn + 1
-                            # If graphtype is TECDOT, change the name to 'High Rate TEC Rate of change'.
-                            if graphtype == 'TECdot':
-                                graphtype = 'High Rate TEC Rate of change'
-                            if independentgraph == 1:  # Set the title  and subtitle of the plot.
-                                titletoprint = monthname + " " + str(
-                                    daynumber) + " - " + "Time (UTC) vs. " + graphtype + " - Summary Plot - " + constellationtype
-                            else:  #
-                                titletoprint = monthname + " " + str(
-                                    daynumber) + " - " + "Time (UTC) vs. " + graphtype + " - " + constellationtype + " " + str(
-                                    savedPRNnumber) + " (" + lettername + ")"
-                            subtitletoprint = "Elevation threshold: " + str(threshold) + " - Signal type: " + str(
-                                sttp) + " - Loc: " + location
-                            if independentgraph == 1:
-                                subtitletoprint = "Elevation threshold: " + str(threshold) + " - Loc: " + location
-                            if verticaltec == 1 and normalizedcount == 2:
-                                subtitletoprint = subtitletoprint + " - Vertical TEC"
-                                # Change the limits of the axes based on line 20 and 21 of the GRAPHSETTINGS.csv file.
-                            if setxaxisrange == 1:
-                                plt.xlim([xaxisstartvalue, xaxisfinalvalue])
-                            if setyaxisrange == 1:
-                                plt.ylim([yaxisstartvalue, yaxisfinalvalue])
-                            # If the user wants to print a vertical line, use the axvline function - Line 29 of the
-                            # GRAPHSETTINGS.csv file.
-                            if verticalline == 1:
-                                plt.axvline(x=verticallinexpoint, color='K', linewidth=0.5)
-                                # Label the plot lines (in-plot legends) - Line 25 of the GRAPHSETTINGS.csv file.
-                            if len(newtimesUTC) != 0:
-                                if PRNlabeling == 1:
-                                    xdatapoint = newtimesUTC[int((len(newtimesUTC)) / 2)]
-                                    ydatapoint = listforyaxisflt[int((len(listforyaxisflt)) / 2)]
-                                    plt.text(xdatapoint, ydatapoint, savedPRNnumber)
-                            plt.suptitle(titletoprint,
-                                         fontsize=titlefontsize)  # Print the title and subtitle in the plot.
-                            plt.title(subtitletoprint, fontsize=subtitlefontsize)
-
-                            # --------------------- SECTION 4O: SAVING THE PLOT ----------------------------- #
-                            if independentgraph == 1:
-                                savinggraphs = savinggraphs + filesep + "Summary_Plots"
-                                if y == "REDTEC":
-                                    savinggraphs = savinggraphs + filesep + "TEC"
-                                else:
-                                    savinggraphs = savinggraphs + filesep + "OBS"
-                            else:
-                                savinggraphs = savinggraphs + filesep + graphtype
-                            if not os.path.exists(savinggraphs):  #
-                                os.makedirs(savinggraphs)  #
-                            savinggraphs = savinggraphs + filesep + graphname
-                            print(savinggraphs)  # Print the directory in the command window.
-                            if legend == 1:
-                                plt.legend()  # Print the legend on the plot if legend==1.
-                                plt.savefig(savinggraphs)  # Save the figure.
-                            else:
-                                plt.savefig(savinggraphs)  # Save the figure.
-                            if independentgraph == 0:  # If the summary plot option is not active, clear the graph.
-                                plt.clf()
                         countseven += 1  # END OF FOR LOOP D.
 
             # ------------------------------ SECTION 5: THE DIRECTORY DOES NOT EXIST ------------------------------- #
