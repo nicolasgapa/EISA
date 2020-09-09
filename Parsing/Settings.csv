@@ -1,23 +1,23 @@
-Enter the path to the .GPS binary files:,,,,
-C:,Users,nicol,Desktop,RX1
-Enter the path to the Parsing Code:,,,,
-C:,Users,nicol,Desktop,EISA,Parsing,
-Enter 1 to parse ONLY reduced data. 2 for ONLY raw data. 3 for BOTH. ,,,,
-1
-Enter the directory to the folder where the csvfiles are going to be saved. ,,,,
-C:,Users,nicol,Desktop,EISA_OUTPUT,RX1,CSVFILES
-"Set the constellation you would like to use to parse the data (G for GPS, R for GLONASS, or E for Galileo)",,,,
-G
-Select the PRN you would like to use to parse the data (Insert T for all PRNs).,,,,
-1
-"For Parseraw, if you want to parse the data between a specific time range insert 1. Otherwise, insert 0. If column 1 is set to 1, insert the start time in the second cell and the end time in the third cell. TIME IN GPS TOW (Seconds)",,,,
-"When the binary file contains more than 1 week worth of data. In the fourth cell indicate the start week, and in the fifth cell the end week.",,,,
-0,172800,194400,2059,2059
-Receiver Name:,,,,
-RX1
-Year (e.g. 2018):,,,,
-2020
-"Initial date (first cell = month, second cell = day):",,,,
-8,27
-"Final date (first cell = month, second cell = day):",,,,
-8,27
+Enter the path to the .GPS binary files:,,,,
+C:,Users,nicol,Desktop,RX1
+Enter the path to the Parsing Code:,,,,
+C:,Users,nicol,Desktop,EISA,Parsing,
+Enter 1 to parse ONLY reduced data. 2 for ONLY raw data. 3 for BOTH. ,,,,
+1
+Enter the directory to the folder where the csvfiles are going to be saved. ,,,,
+C:,Users,nicol,Desktop,EISA_OUTPUT,RX1,CSVFILES
+"Set the constellation you would like to use to parse the data (G for GPS, R for GLONASS, or E for Galileo)",,,,
+G,R,E
+Select the PRN you would like to use to parse the data (Insert T for all PRNs).,,,,
+T
+"For Parseraw, if you want to parse the data between a specific time range insert 1. Otherwise, insert 0. If column 1 is set to 1, insert the start time in the second cell and the end time in the third cell. TIME IN GPS TOW (Seconds)",,,,
+"When the binary file contains more than 1 week worth of data. In the fourth cell indicate the start week, and in the fifth cell the end week.",,,,
+0,86400,172800,1965,1965
+Receiver Name:,,,,
+RX1
+Year (e.g. 2018):,,,,
+2020
+"Initial date (first cell = month, second cell = day):",,,,
+8,2
+"Final date (first cell = month, second cell = day):",,,,
+8,2

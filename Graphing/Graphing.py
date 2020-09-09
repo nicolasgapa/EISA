@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import platform
 import sys
+import numpy as np
 
 filesep = os.sep
 
@@ -109,7 +110,8 @@ def plot(x_values, y_values, file_type, graph_type, directory, axes_ranges, incl
         plt.legend()
 
     # Save the figure.
-    plt.savefig(directory)
+    if not summary_plot:
+        plt.savefig(directory)
 
     # If the summary plot option is not active, clear the graph.
     if not summary_plot:
@@ -130,7 +132,6 @@ if len(sys.argv) > 1:
 filesep = os.sep  # Save the file separator into a variable.
 
 # Import the graphsettings.csv file.
-# print("hello world")
 with open("graphsettings.csv") as csvfile:
     readCSV = csv.reader(csvfile, delimiter=',')  # Read the csv file.
     count = 1  # Start a count for every row in the excel file.
@@ -498,6 +499,10 @@ for eachdate in validdates:
 
     # ------------------------------------------- SECTION 4: PLOTTING ----------------------------------------------- #
     # ---------------------------------------- SECTION 4A: NUMBER OF PRNs ------------------------------------------- #
+    print("\n\n")
+    print("# --- " + y + ": Plotting Time vs. " + graphtype + " --- #")
+    print("\n\n")
+
     minimum = 1000  # Set minimum=big number (like 1000) - FOR FURTHER USE IN SECTION 4M.
     # First, identify how many PRNs the user wants to plot from their selection in the graphsettings.csv file.
     if PRNstograph[0] != "T" and PRNstograph[0] != "t":
@@ -624,12 +629,9 @@ for eachdate in validdates:
             # ----------------------- SECTION 4E: EXTRACTING THE COLUMNS FROM THE CSV FILE --- #
             # Import and read the csv (if it exists) If not, jump to SECTION 5.
             if os.path.isfile(csvtographdirectory):
-                print(" ")
-                print("# --- Plotting Time vs. " + graphtype + " --- #")
 
                 with open(csvtographdirectory) as csvfiletwo:
                     readCSVtwo = csv.reader(csvfiletwo, delimiter=',')
-                    print(y)  # Print the file type in the command window.
                     if y == "REDTEC" or y == "ismRawTEC" or y == "ismRawTec":  # Set the variable numbers - These nunmbers will be used later for multiple purposes and vary
                         variablesignal = 4
                         variable = 20
@@ -827,11 +829,10 @@ for eachdate in validdates:
 
                                 namedetrending = "TECdetrending" + constellation + str(savedPRNnumber) + str(
                                     selection) + "-" + str(year) + str(monthnumber) + str(daynumber) + ".csv"
-                                with open(namedetrending, "w") as csvfile:  #
-                                    writer = csv.writer(csvfile)  #
-                                    writer.writerows(matrixtoprint)  #
-                                import \
-                                    numpy as np  # TEC: Polyfit subtraction and then a type of Butterworth filtering/ Sliding Avg
+                                with open(namedetrending, "w+", newline='') as csvfile:
+                                    writer = csv.writer(csvfile)
+                                    writer.writerows(matrixtoprint)
+                                # TEC: Polyfit subtraction and then a type of Butterworth filtering/ Sliding Avg
 
                                 poly_degree = 3  # filtering on TEC time series (TEC_ts values).
                                 poly_coef = np.polyfit(bftimes, bfTEC, poly_degree)  # Degree of the polynomial.
@@ -870,7 +871,7 @@ for eachdate in validdates:
                         # The letter represents the time period. e.g. if there are two time periods for one PRN,
                         # the plot showing time period 1 will have "A" in the title. Time period 2 will have "B".
                         # Refer to Section 4G to see the definition of a time period.
-                        letters = {1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E'}
+                        letters = {1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H'}
                         lettername = letters[countfifteen]
                         countfifteen += 1
 
@@ -953,10 +954,10 @@ for eachdate in validdates:
 
                         # ------------------------------------- SECTION 4N: PLOTTING ---------------------------- #
                         # From the selection from FOR LOOP D, determine the signal type (L1, L2, ETC).
-                        if constellation in ["G", "R"]:
-                            signal_types = {"G": {"1": "L1CA", "4": "L2Y", "5": "L2C", "6": "L2P", "7": "L5Q"},
-                                            "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"}}
-                            sttp = signal_types[constellation][str(selection)]
+                        signal_types = {"G": {"1": "L1CA", "4": "L2Y", "5": "L2C", "6": "L2P", "7": "L5Q"},
+                                        "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"},
+                                        "E": {"1": "E1", "2": "E5A", "3": "E5B",  "4": "AltBOC"}}
+                        sttp = signal_types[constellation][str(selection)]
 
                         if len(listforyaxisflt) != 0:
                             plot(newtimesUTC, listforyaxisflt, y, graphtype, savinggraphs,

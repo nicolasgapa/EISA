@@ -29,7 +29,7 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 receivers = ["RX1"]
 
 # '1' for yesterday. "2" for the day before yesterday, etc.
-days_before = 24
+days_before = 38
 
 # Set run_now to 1 if you want EISA to run now, rather than at a certain time.
 # Set run_now to 0 if you want EISA to run at a certain time every day.
@@ -84,7 +84,7 @@ def parse():
     for receiver_name in receivers:
 
         # Print a message.
-        print("\n\nReceiver: ", receiver_name)
+        print("\n\nReceiver: ", receiver_name, "  Date:", datetime.today() - timedelta(days_before))
         print("\n--------------------------- Step 1: Parse ---------------------------")
 
         # Identify the directory to the parsing.py file.
@@ -124,11 +124,11 @@ def parse():
                 elif count == 10:
                     # Parse data for all constellations when running parsing.py
                     # add_line = ['G', 'R', 'E']
-                    add_line = ['G']
+                    add_line = ['G', 'R', 'E']
                 elif count == 12:
                     # All PRNs.
                     # add_line = ['T']
-                    add_line = ['1']
+                    add_line = ['T']
                 elif count == 17:
                     # Receiver name from user input.
                     add_line = [receiver_name]
@@ -147,15 +147,15 @@ def parse():
                     add_line = [yesterday.month, yesterday.day]
                 else:
                     add_line = row
-                count = count + 1
                 newcsv.append(add_line)
+                count += 1
 
-        with open("Settings.csv", "w") as csvfile:
+        with open("Settings.csv", "w+", newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(newcsv)
 
         # Run the parsing.py file.
-        os.system("python parsing.py")
+        os.system("py parsing.py")
 
         # Now, proceed to step 3: Graphing.
         graph(receiver_name)
@@ -246,7 +246,7 @@ def graphsettings(data_type, elev_threshold, constellations, satellites, summary
             newcsv.append(add_line)
 
     # Modify the csv file.
-    with open("GRAPHSETTINGS.csv", "w") as csvfile:
+    with open("GRAPHSETTINGS.csv", "w+", newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(newcsv)
 
@@ -254,6 +254,7 @@ def graphsettings(data_type, elev_threshold, constellations, satellites, summary
 def graph(receiver):
     # Print message.
     print("--------------------------- Step 2: Graph ---------------------------")
+    graphormat = '.png'
 
     # Identify the directory to the graphing.py file.
     graphing_directory = cwd + filesep + "Graphing" + filesep
@@ -290,7 +291,7 @@ def graph(receiver):
             newcsv.append(add_line)
 
     # Modify the csv file.
-    with open("PATHS.csv", "w") as csvfile:
+    with open("PATHS.csv", "w+", newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerows(newcsv)
 
@@ -321,14 +322,22 @@ def graph(receiver):
         count = 1
         while count <= 13:
             for constellation in constellations:
+
+                if count in [7, 8]:
+                    yaxis = ['1', '0', '1']
+                # For 1secsigma through 60secsigma, set the y axis range from 0 to 0.4.
+                elif 9 <= count <= 13:
+                    yaxis = ['1', '0', '0.8']
+                else:
+                    yaxis = ['0', '0', '0']
+
                 # Individual plots.
                 graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
-                              ['0', '0', '0'],
-                              ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [".png"], ['12', '12'],
+                              ['0', '0', '0'], yaxis, ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat], ['12', '12'],
                               receiver_location)
 
                 # Run the graphing.py file.
-                os.system("python graphing.py no_menu " + str(count))
+                os.system("py graphing.py no_menu " + str(count))
             count = count + 1
 
         # Summary plots. Save them to a different folder.
@@ -348,12 +357,12 @@ def graph(receiver):
                 # Individual plots.
                 graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], summaryplot_settings, ['0'],
                               ['0', '0', '0'],
-                              ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], onlyonesignal_settings, [".png"],
+                              ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], onlyonesignal_settings, [graphormat],
                               ['12', '12'],
                               receiver_location)
 
                 # Run the graphing.py code.
-                os.system("Graphing.py no_menu " + str(count))
+                os.system("py Graphing.py no_menu " + str(count))
 
         # REDUCED TOTAL ELECTRON CONTENT (REDTEC)
         # count = 1: Azimuth, count = 2: Elevation, count = 3: CNo, count = 4: Lock Time, count = 5: CMC avg,
@@ -366,11 +375,11 @@ def graph(receiver):
                 # Individual plots.
                 graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
                               ['0', '0', '0'],
-                              ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [".png"], ['12', '12'],
+                              ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat], ['12', '12'],
                               receiver_location)
 
                 # Run the graphing.py file.
-                os.system("Graphing.py no_menu " + str(count))
+                os.system("py Graphing.py no_menu " + str(count))
 
         # TEC Summary plots. Save them to a different folder.
         valid_categories = [5, 7, 9, 11]
@@ -383,20 +392,20 @@ def graph(receiver):
                         # Summary plots.
                         graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['0'],
                                       ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], ['0'],
-                                      [".png"], ['12', '12'], receiver_location)
+                                      [graphormat], ['12', '12'], receiver_location)
 
                         # Run the graphing.py file.
-                        os.system("Graphing.py no_menu " + str(count))
+                        os.system("py Graphing.py no_menu " + str(count))
                     elif i == 1:
                         vertical_tec = [0, 1]
                         for j in vertical_tec:
                             # Summary plots.
                             graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['1'],
                                           ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], [str(j)], ['0'],
-                                          [".png"], ['12', '12'], receiver_location)
+                                          [graphormat], ['12', '12'], receiver_location)
 
                             # Run the graphing.py file.
-                            os.system("python Graphing.py no_menu " + str(count))
+                            os.system("py Graphing.py no_menu " + str(count))
 
         # Make a zip file of the graphs folder for that date. Save it to the graphs folder in EISA_OUTPUT
         # (include the receiver name in the zip file name).

@@ -67,14 +67,14 @@ with open("settings.csv") as csvfile:
                 if len(toappendPRNs) != 0:
                     PRNstoparse.append(toappendPRNs)
         weekrollover = 0  # Selected times for parseraw.
-        if count == 15:  #
-            parserawtimes = row  #
-            specifictimes = int(parserawtimes[0])  #
-            if specifictimes == 1:  #
-                starttime = parserawtimes[1]  #
-                endtime = parserawtimes[2]  #
-                if len(row) > 3:  #
-                    weekrollover = 1  #
+        if count == 15:
+            parserawtimes = row
+            specifictimes = int(parserawtimes[0])
+            if specifictimes == 1:
+                starttime = parserawtimes[1]
+                endtime = parserawtimes[2]
+                if len(row) > 3:
+                    weekrollover = 1
                     startweek = parserawtimes[3]  #
                     endweek = parserawtimes[4]  #
         if count == 17:  # Name of the receiver.
@@ -459,7 +459,7 @@ for filetorun in filestorun:  # Start a for loop that will repeat for every csvf
 
                                 import csv  #
 
-                                with open(csvfilename1, "w") as csvfile:  #
+                                with open(csvfilename1, "w+", newline='') as csvfile:  #
                                     writer = csv.writer(csvfile)  #
                                     writer.writerows(day1toprint)  #
                                 firstdaycode = rownumber  # Do the same for all of the days.
@@ -576,7 +576,7 @@ for filetorun in filestorun:  # Start a for loop that will repeat for every csvf
                                             daynumber) + ".csv"
                                         import csv  #
 
-                                        with open(csvfilename, "w") as csvfile:  # Create the new csvfile.
+                                        with open(csvfilename, "w+", newline='') as csvfile:  # Create the new csvfile.
                                             writer = csv.writer(csvfile)  #
                                             writer.writerows(daytoprint)  #
                                         totallength = end2  #
@@ -606,22 +606,18 @@ for filetorun in filestorun:  # Start a for loop that will repeat for every csvf
                 printmatrix.append(done)  # Print status.
     else:  #
         daytoprint2 = daymatrix[filecount - 1]  # If the binary file does not exist, print status.
-        monthtoprint2 = monthmatrix[filecount - 1]  #
-        yeartoprint2 = yeari  #
-        if len(str(monthtoprint2)) != 2:  #
-            monthtoprint2 = '0' + str(monthtoprint2)  #
-        if len(str(daytoprint2)) != 2:  #
-            monthtoprint2 = '0' + str(daytoprint2)  #
+        monthtoprint2 = monthmatrix[filecount - 1]
+        yeartoprint2 = yeari
+        if len(str(monthtoprint2)) != 2:
+            monthtoprint2 = '0' + str(monthtoprint2)
+        if len(str(daytoprint2)) != 2:
+            monthtoprint2 = '0' + str(daytoprint2)
         printstring = 'The following file does not exist: ' + filetorun
-        printmatrix.append(printstring)  #
-    filecount = filecount + 1  #
+        printmatrix.append(printstring)
+    filecount = filecount + 1
     # Print final matrix summarizing what the code did.
 print('Parsing Summary:')
-for element in printmatrix:  #
+for element in printmatrix:
     print(element)
-
-#
-a = (time.time() - start_time)
-print(a)
 
 # --------------------------------------------------------------------------------------------- #
