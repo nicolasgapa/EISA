@@ -83,8 +83,9 @@ def parse():
     # Run iteratively for every receiver in the folder:
     for receiver_name in receivers:
         # Print a message.
-        print("\n\nReceiver: ", receiver_name, "  Date:", datetime.today() - timedelta(days_before))
-        print("\n--------------------------- Step 1: Parse ---------------------------")
+        print("\n\n---------------------------------------------------------------------")
+        print("Receiver: ", receiver_name, "  Date:", datetime.today() - timedelta(days_before))
+        print("--------------------------- Step 1: Parse ---------------------------")
 
         # Identify the directory to the parsing.py file.
         parsing_directory = cwd + filesep + "Parsing" + filesep
@@ -161,10 +162,11 @@ def parse():
 
     # Print a message at the end.
     parse_end_time = datetime.today()
-    print("\n\nCurrent date/time: ", parse_end_time)
+    print("Current date/time: ", parse_end_time)
     parse_end_time = parse_end_time.replace(day=parse_end_time.day + 1, hour=hour, minute=minute,
                                             second=second, microsecond=0)
     print("The code will parse the data again at:", parse_end_time, "local time.")
+    print("---------------------------------------------------------------------")
 
 
 # ----- Part 2: Graph ----- #
