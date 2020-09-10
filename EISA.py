@@ -29,7 +29,7 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 receivers = ["RX1"]
 
 # '1' for yesterday. "2" for the day before yesterday, etc.
-days_before = 38
+days_before = 1000
 
 # Set run_now to 1 if you want EISA to run now, rather than at a certain time.
 # Set run_now to 0 if you want EISA to run at a certain time every day.
@@ -133,7 +133,7 @@ def parse():
                     add_line = [receiver_name]
                 elif count == 19:
                     # Year
-                    local_date = datetime.today()
+                    local_date = datetime.today() - timedelta(days_before)
                     local_year = local_date.year
                     add_line = [local_year]
                 elif count == 21:

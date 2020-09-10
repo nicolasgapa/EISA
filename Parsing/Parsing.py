@@ -1,7 +1,6 @@
 # Import modules.
 import os
 import csv
-
 import time
 
 start_time = time.time()
@@ -9,13 +8,12 @@ start_time = time.time()
 # print("The purpose of this code is to convert .GPS binary files into readable .csv files.")
 # print("To change the settings of the code, go to settings.csv.")
 filesep = os.sep
-filesep = '/'
 
 # -------------------------------------------------------------------- #
 # --------------------------- Read inputs ---------------------------- #
 # -------------------------------------------------------------------- #
 # Open the settings .csv file and read the rows.
-with open("settings.csv") as csvfile:
+with open("Settings.csv") as csvfile:
     readCSV = csv.reader(csvfile, delimiter=',')
 
     # Count for every row. Identify all the inputs.
@@ -157,92 +155,89 @@ elif numberofmonths == 0:
 howmanydays = len(daymatrix)
 filestorun = []
 weeknumbers = []
-import csv
 
 with open("GPSCALENDAR.csv") as csvfile:  # Determine the names of the binary files to be parsed.
     readCSV = csv.reader(csvfile, delimiter=',')  # and save them into a matrix called filestorun.
-    for row in readCSV:  #
-        counttwoo = 0  #
-        fileyear = int(row[0])  #
-        filemonth = int(row[1])  #
-        fileday = int(row[2])  #
-        for element in daymatrix:  #
-            monthint = monthmatrix[(counttwoo)]  #
-            dayint = element  #
-            if fileyear == int(yeari) and filemonth == monthint and fileday == dayint:  #
-                dayoftheweek = row[4]  #
-                weeknumber = row[5]  #
-                if dayoftheweek == 'Monday':  #
-                    daycode = '_1_00_'  #
-                elif dayoftheweek == 'Tuesday':  #
-                    daycode = '_2_00_'  #
-                elif dayoftheweek == 'Wednesday':  #
-                    daycode = '_3_00_'  #
-                elif dayoftheweek == 'Thursday':  #
-                    daycode = '_4_00_'  #
-                elif dayoftheweek == 'Friday':  #
-                    daycode = '_5_00_'  #
-                elif dayoftheweek == 'Saturday':  #
-                    daycode = '_6_00_'  #
-                elif dayoftheweek == 'Sunday':  #
-                    daycode = '_0_00_'  #
+    for row in readCSV:
+        counttwoo = 0
+        fileyear = int(row[0])
+        filemonth = int(row[1])
+        fileday = int(row[2])
+        for element in daymatrix:
+            monthint = monthmatrix[(counttwoo)]
+            dayint = element
+            if fileyear == int(yeari) and filemonth == monthint and fileday == dayint:
+                dayoftheweek = row[4]
+                weeknumber = row[5]
+                if dayoftheweek == 'Monday':
+                    daycode = '_1_00_'
+                elif dayoftheweek == 'Tuesday':
+                    daycode = '_2_00_'
+                elif dayoftheweek == 'Wednesday':
+                    daycode = '_3_00_'
+                elif dayoftheweek == 'Thursday':
+                    daycode = '_4_00_'
+                elif dayoftheweek == 'Friday':
+                    daycode = '_5_00_'
+                elif dayoftheweek == 'Saturday':
+                    daycode = '_6_00_'
+                elif dayoftheweek == 'Sunday':
+                    daycode = '_0_00_'
                 filetorun = str(weeknumber) + daycode + receivername + '.GPS'
-                filestorun.append(filetorun)  #
-                weeknumbers.append(weeknumber)  #
-            counttwoo = counttwoo + 1  #
+                filestorun.append(filetorun)
+                weeknumbers.append(weeknumber)
+            counttwoo += 1
 printmatrix = []
 filecount = 1
 
 for filetorun in filestorun:  # Start a for loop that will repeat for every csvfile.
-    import os  #
 
-    binaryfilename = filetorun  #
-    weeknumber = weeknumbers[filecount - 1]  #
-    readdirectory = binaryfiledirectory + weeknumber + filesep + binaryfilename  #
+    binaryfilename = filetorun
+    weeknumber = weeknumbers[filecount - 1]
+    readdirectory = binaryfiledirectory + weeknumber + filesep + binaryfilename
     if os.path.exists(readdirectory):  # Only if the file exists, continue parsing.
-        if selectionrawreduced == 1 or selectionrawreduced == 2:  #
-            runthecode = 1  # 1 time                                                              #
-        elif selectionrawreduced == 3:  #
+        if selectionrawreduced == 1 or selectionrawreduced == 2:
+            runthecode = 1  # 1 time
+        elif selectionrawreduced == 3:
             runthecode = 2  # 2 times
         for parsing in range(0, runthecode):  # For loop for reduced and raw parsing.
-            if parsing == 0:  #
-                if selectionrawreduced == 1 or selectionrawreduced == 3:  #
+            if parsing == 0:
+                if selectionrawreduced == 1 or selectionrawreduced == 3:
                     # print('first if')
-                    reducedorraw = "parsereduced"  #
-                    parsereduceddirectory = codedirectory + "parsereduced.exe"  #
-                elif selectionrawreduced == 2 or selectionrawreduced == 3:  #
+                    reducedorraw = "parsereduced"
+                    parsereduceddirectory = codedirectory + "parsereduced.exe"
+                elif selectionrawreduced == 2 or selectionrawreduced == 3:
                     # print('second if')
-                    reducedorraw = "parseraw"  #
-                    parsereduceddirectory = codedirectory + "parseraw.exe"  #
-            elif parsing == 1:  #
-                reducedorraw = "parseraw"  #
-                parsereduceddirectory = codedirectory + "parseraw.exe"  #
-            constellationandprns = '-'  #
-            for constellation in constellationstoparse:  #
-                import os  #
+                    reducedorraw = "parseraw"
+                    parsereduceddirectory = codedirectory + "parseraw.exe"
+            elif parsing == 1:
+                reducedorraw = "parseraw"
+                parsereduceddirectory = codedirectory + "parseraw.exe"
+            constellationandprns = '-'
+            for constellation in constellationstoparse:
 
                 print(parsereduceddirectory)
                 print("____________________")
-                os.system(parsereduceddirectory)  #
-                if PRNstoparse[0] == "T":  #
-                    if constellation == "G":  #
-                        PRNs = range(1, 34)  #
-                    elif constellation == "R":  #
-                        PRNs = range(1, 26)  #
-                    elif constellation == "E":  #
-                        PRNs = range(1, 32)  #
-                elif PRNstoparse[0] != "T":  #
-                    newlistofPRNs = []  #
-                    for a in PRNstoparse:  #
-                        PRNstring = int(a)  #
-                        newlistofPRNs.append(PRNstring)  #
-                    PRNs = newlistofPRNs  #
-                countt = 0  #
-                for satellite in PRNs:  #
-                    if selectionrawreduced == 1 or selectionrawreduced == 3:  #
-                        if PRNstoparse[0] != "T":  #
-                            satellite = PRNstoparse[countt]  #
-                    CSVfullname = binaryfilename + "_" + constellation + str(satellite) + ".csv"  #
+                os.system(parsereduceddirectory)
+                if PRNstoparse[0] == "T":
+                    if constellation == "G":
+                        PRNs = range(1, 34)
+                    elif constellation == "R":
+                        PRNs = range(1, 26)
+                    elif constellation == "E":
+                        PRNs = range(1, 32)
+                elif PRNstoparse[0] != "T":
+                    newlistofPRNs = []
+                    for a in PRNstoparse:
+                        PRNstring = int(a)
+                        newlistofPRNs.append(PRNstring)
+                    PRNs = newlistofPRNs
+                countt = 0
+                for satellite in PRNs:
+                    if selectionrawreduced == 1 or selectionrawreduced == 3:
+                        if PRNstoparse[0] != "T":
+                            satellite = PRNstoparse[countt]
+                    CSVfullname = binaryfilename + "_" + constellation + str(satellite) + ".csv"
                     fullname2 = reducedorraw + " " + constellation + str(
                         satellite) + " " + readdirectory + " " + CSVfullname
                     if selectionrawreduced == 2 or selectionrawreduced == 3:  # If the user selects an specific time to be parsed in the settings file, add that to the fullname2.
@@ -604,7 +599,7 @@ for filetorun in filestorun:  # Start a for loop that will repeat for every csvf
                 done = 'The following data was parsed: ' + filetorun + '. Date: ' + str(monthnumber) + ' ' + str(
                     daynumber) + ', ' + str(yearnumber) + '. ' + constellationandprns
                 printmatrix.append(done)  # Print status.
-    else:  #
+    else:
         daytoprint2 = daymatrix[filecount - 1]  # If the binary file does not exist, print status.
         monthtoprint2 = monthmatrix[filecount - 1]
         yeartoprint2 = yeari
