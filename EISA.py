@@ -83,77 +83,77 @@ def parse():
     # Run iteratively for every receiver in the folder:
     for receiver_name in receivers:
 
-        # Print a message.
-        print("\n\nReceiver: ", receiver_name, "  Date:", datetime.today() - timedelta(days_before))
-        print("\n--------------------------- Step 1: Parse ---------------------------")
-
-        # Identify the directory to the parsing.py file.
-        parsing_directory = cwd + filesep + "Parsing" + filesep
-        os.chdir(parsing_directory)
-
-        # Open the settings.csv file and edit every row.
-        with open("Settings.csv") as csvfile:
-            read_csv = csv.reader(csvfile, delimiter=',')
-            count = 1
-
-            newcsv = []
-            # Edit the rows.
-            for row in read_csv:
-                if count == 2:
-                    # Split the cwd into words.
-                    cwd_split_directory = (cwd.split(filesep))
-                    # Get rid of the last folder (EISA), since the binary files are located outside this folder.
-                    cwd_split_directory = cwd_split_directory[:-1]
-                    # Enter the receiver's folder.
-                    cwd_split_directory.append(receiver_name)
-                    add_line = cwd_split_directory
-                elif count == 4:
-                    # Set the parsing code directory.
-                    add_line = (parsing_directory.split(filesep))
-                elif count == 6:
-                    # Only reduced data when running EISA.
-                    add_line = ['1']
-                elif count == 8:
-                    # Split the cwd into words.
-                    cwd_split_directory = (cwd.split(filesep))
-                    # CSV files output directory.EISA_OUTPUT
-                    cwd_split_directory[-1] = "EISA_OUTPUT"
-                    cwd_split_directory.append(receiver_name)
-                    cwd_split_directory.append("CSVFILES")
-                    add_line = cwd_split_directory
-                elif count == 10:
-                    # Parse data for all constellations when running parsing.py
-                    # add_line = ['G', 'R', 'E']
-                    add_line = ['G', 'R', 'E']
-                elif count == 12:
-                    # All PRNs.
-                    # add_line = ['T']
-                    add_line = ['T']
-                elif count == 17:
-                    # Receiver name from user input.
-                    add_line = [receiver_name]
-                elif count == 19:
-                    # Year
-                    local_date = datetime.today()
-                    local_year = local_date.year
-                    add_line = [local_year]
-                elif count == 21:
-                    # Initial date (YESTERDAY!)
-                    yesterday = datetime.today() - timedelta(days_before)
-                    add_line = [yesterday.month, yesterday.day]
-                elif count == 23:
-                    # Final date (ALSO YESTERDAY!)
-                    yesterday = datetime.today() - timedelta(days_before)
-                    add_line = [yesterday.month, yesterday.day]
-                else:
-                    add_line = row
-                newcsv.append(add_line)
-                count += 1
-
-        with open("Settings.csv", "w+", newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerows(newcsv)
-
+        # # Print a message.
+        # print("\n\nReceiver: ", receiver_name, "  Date:", datetime.today() - timedelta(days_before))
+        # print("\n--------------------------- Step 1: Parse ---------------------------")
+        #
+        # # Identify the directory to the parsing.py file.
+        # parsing_directory = cwd + filesep + "Parsing" + filesep
+        # os.chdir(parsing_directory)
+        #
+        # # Open the settings.csv file and edit every row.
+        # with open("Settings.csv") as csvfile:
+        #     read_csv = csv.reader(csvfile, delimiter=',')
+        #     count = 1
+        #
+        #     newcsv = []
+        #     # Edit the rows.
+        #     for row in read_csv:
+        #         if count == 2:
+        #             # Split the cwd into words.
+        #             cwd_split_directory = (cwd.split(filesep))
+        #             # Get rid of the last folder (EISA), since the binary files are located outside this folder.
+        #             cwd_split_directory = cwd_split_directory[:-1]
+        #             # Enter the receiver's folder.
+        #             cwd_split_directory.append(receiver_name)
+        #             add_line = cwd_split_directory
+        #         elif count == 4:
+        #             # Set the parsing code directory.
+        #             add_line = (parsing_directory.split(filesep))
+        #         elif count == 6:
+        #             # Only reduced data when running EISA.
+        #             add_line = ['1']
+        #         elif count == 8:
+        #             # Split the cwd into words.
+        #             cwd_split_directory = (cwd.split(filesep))
+        #             # CSV files output directory.EISA_OUTPUT
+        #             cwd_split_directory[-1] = "EISA_OUTPUT"
+        #             cwd_split_directory.append(receiver_name)
+        #             cwd_split_directory.append("CSVFILES")
+        #             add_line = cwd_split_directory
+        #         elif count == 10:
+        #             # Parse data for all constellations when running parsing.py
+        #             # add_line = ['G', 'R', 'E']
+        #             add_line = ['G', 'R', 'E']
+        #         elif count == 12:
+        #             # All PRNs.
+        #             # add_line = ['T']
+        #             add_line = ['T']
+        #         elif count == 17:
+        #             # Receiver name from user input.
+        #             add_line = [receiver_name]
+        #         elif count == 19:
+        #             # Year
+        #             local_date = datetime.today()
+        #             local_year = local_date.year
+        #             add_line = [local_year]
+        #         elif count == 21:
+        #             # Initial date (YESTERDAY!)
+        #             yesterday = datetime.today() - timedelta(days_before)
+        #             add_line = [yesterday.month, yesterday.day]
+        #         elif count == 23:
+        #             # Final date (ALSO YESTERDAY!)
+        #             yesterday = datetime.today() - timedelta(days_before)
+        #             add_line = [yesterday.month, yesterday.day]
+        #         else:
+        #             add_line = row
+        #         newcsv.append(add_line)
+        #         count += 1
+        #
+        # with open("Settings.csv", "w+", newline='') as csvfile:
+        #     writer = csv.writer(csvfile)
+        #     writer.writerows(newcsv)
+        #
         # Run the parsing.py file.
         os.system("py parsing.py")
 
@@ -319,67 +319,68 @@ def graph(receiver):
         # count = 6: CMC std, count = 7: S4, count = 8: S4 Cor, count = 9: 1secsigma, count = 10: 3secsigma
         # count = 11: 10secsigma, count = 12: 30secsigma, count = 13: 60secsigma.
         # Individual plots.
-        count = 1
-        while count <= 13:
-            for constellation in constellations:
-
-                if count in [7, 8]:
-                    yaxis = ['1', '0', '1']
-                # For 1secsigma through 60secsigma, set the y axis range from 0 to 0.4.
-                elif 9 <= count <= 13:
-                    yaxis = ['1', '0', '0.8']
-                else:
-                    yaxis = ['0', '0', '0']
-
-                # Individual plots.
-                graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
-                              ['0', '0', '0'], yaxis, ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat], ['12', '12'],
-                              receiver_location)
-
-                # Run the graphing.py file.
-                os.system("py graphing.py no_menu " + str(count))
-            count = count + 1
-
-        # Summary plots. Save them to a different folder.
-        valid_categories = [2, 7, 8, 9, 10, 11, 12, 13]
-        for count in valid_categories:
-            for constellation in constellations:
-                if count == 7 or count == 8:
-                    summaryplot_settings = [1, 0.05]
-                    onlyonesignal_settings = ['1']
-                elif count == 2:
-                    summaryplot_settings = [1, 0]
-                    onlyonesignal_settings = ['0']
-                else:
-                    summaryplot_settings = [1, 0]
-                    onlyonesignal_settings = ['1']
-
-                # Individual plots.
-                graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], summaryplot_settings, ['0'],
-                              ['0', '0', '0'],
-                              ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], onlyonesignal_settings, [graphormat],
-                              ['12', '12'],
-                              receiver_location)
-
-                # Run the graphing.py code.
-                os.system("py Graphing.py no_menu " + str(count))
+        #count = 1
+        #while count <= 13:
+        #    for constellation in constellations:
+        #
+        #        if count in [7, 8]:
+        #            yaxis = ['1', '0', '0.8']
+        #        # For 1secsigma through 60secsigma, set the y axis range from 0 to 0.4.
+        #        elif 9 <= count <= 13:
+        #            yaxis = ['1', '0', '0.8']
+        #        else:
+        #            yaxis = ['0', '0', '0']
+        #
+        #        # Individual plots.
+        #        graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
+        #                      ['0', '0', '0'], yaxis, ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat],
+        #                      ['12', '12'], receiver_location)
+        #
+        #        # Run the graphing.py file.
+        #        os.system("py graphing.py no_menu " + str(count))
+        #    count = count + 1
+        #
+        ## Summary plots. Save them to a different folder.
+        #valid_categories = [2, 7, 8, 9, 10, 11, 12, 13]
+        #for count in valid_categories:
+        #    for constellation in constellations:
+        #        print('Const:', constellation)
+        #        onlyonesignal_settings = ['1']
+        #        yaxis = ['0', '0', '0']
+        #        plabel = ['0']
+        #
+        #        if count == 2:
+        #            plabel = ['1']
+        #
+        #        if count >= 7:
+        #            yaxis = ['1', '0', '0.8']
+        #
+        #        # Summary plots.
+        #        graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ["1", "0"], ['0'],
+        #                      ['0', '0', '0'],
+        #                      yaxis, plabel, ['0'], ['0', '0'], ['0'], onlyonesignal_settings, [graphormat],
+        #                      ['12', '12'],
+        #                      receiver_location)
+        #
+        #        # Run the graphing.py code.
+        #        os.system("py Graphing.py no_menu " + str(count))
 
         # REDUCED TOTAL ELECTRON CONTENT (REDTEC)
         # count = 1: Azimuth, count = 2: Elevation, count = 3: CNo, count = 4: Lock Time, count = 5: CMC avg,
         # count = 6: CMC std, count = 7: S4, count = 8: S4 Cor, count = 9: 1secsigma, count = 10: 3secsigma
         # count = 11: 10secsigma, count = 12: 30secsigma.
         # Individual TEC plots.
-        valid_categories = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        for count in valid_categories:
-            for constellation in constellations:
-                # Individual plots.
-                graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
-                              ['0', '0', '0'],
-                              ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat], ['12', '12'],
-                              receiver_location)
-
-                # Run the graphing.py file.
-                os.system("py Graphing.py no_menu " + str(count))
+        #valid_categories = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        #for count in valid_categories:
+        #    for constellation in constellations:
+        #        # Individual plots.
+        #        graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
+        #                      ['0', '0', '0'],
+        #                      ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat], ['12', '12'],
+        #                      receiver_location)
+        #
+        #        # Run the graphing.py file.
+        #        os.system("py Graphing.py no_menu " + str(count))
 
         # TEC Summary plots. Save them to a different folder.
         valid_categories = [5, 7, 9, 11]

@@ -4,11 +4,11 @@ import os
 import platform
 import sys
 import numpy as np
+import math
 
 filesep = os.sep
 
 
-#
 #  Graphingmain.py code for ionospheric scintillation and Total Electron Content. BETA VERSION.
 #  GPStation-6 multi-constellation receiver.
 #  JOSE NICOLAS GACHANCIPA - Embry-Riddle Aeronautical University
@@ -18,12 +18,12 @@ filesep = os.sep
 # Professor of Engineering Physics at Embry-Riddle Aeronautical University.
 #
 # DO NOT HARD CODE ANYTHING BELOW THIS POINT.
-#
+
 
 # --------------------- Section 0: FUNCTIONS --------------------- #
 
 
-def plot(x_values, y_values, file_type, graph_type, directory, axes_ranges, include_legend=False,
+def plot(x_values, y_values, y_units, file_type, graph_type, directory, axes_ranges, include_legend=False,
          summary_plot=False, vertical_line=False, vertical_line_x_value=0):
     """"
     Function used for plotting and saving a graph.
@@ -38,9 +38,15 @@ def plot(x_values, y_values, file_type, graph_type, directory, axes_ranges, incl
     """
     # If the user wants a legend, put it on the right, next to the graph. Then, plot.
     if include_legend:
-        plt.plot(x_values, y_values, label=str(savedPRNnumber))
+        if summary_plot:
+            plt.plot(x_values, y_values, label=str(savedPRNnumber), linewidth=0.4)
+        else:
+            plt.plot(x_values, y_values, label=str(savedPRNnumber))
     else:
-        plt.plot(x_values, y_values)
+        if summary_plot:
+            plt.plot(x_values, y_values, linewidth=0.4)
+        else:
+            plt.plot(x_values, y_values)
 
     # For sigma only: compute the rate of change.
     set_x_axis_range, x_axis_start_value, x_axis_final_value = axes_ranges[0]
@@ -53,7 +59,7 @@ def plot(x_values, y_values, file_type, graph_type, directory, axes_ranges, incl
                 set_y_axis_range, y_axis_final_value = 1, 2
 
     # Add the X and Y-axis labels.
-    plt.ylabel(str(graph_type) + " - " + str(units))
+    plt.ylabel(str(graph_type) + " - " + str(y_units))
     plt.xlabel('Time (UTC)')
 
     # If graphtype is TECDOT, change the name to 'High Rate TEC Rate of change'.
@@ -110,8 +116,7 @@ def plot(x_values, y_values, file_type, graph_type, directory, axes_ranges, incl
         plt.legend()
 
     # Save the figure.
-    if not summary_plot:
-        plt.savefig(directory)
+    plt.savefig(directory)
 
     # If the summary plot option is not active, clear the graph.
     if not summary_plot:
@@ -337,40 +342,40 @@ if y == 'REDTEC':  # IF THE FILE TYPE IS REDTEC, PRINT THE OPTIONS FOR LOW-RATE 
             graphtype = "Azymuth"  # Determine the graph type selected by the user.
             units = "(Degrees)"  # Set the units for each graph type.
         elif ans == "2":  # DO THE SAME WITH ALL THE POSSIBLE SELECTIONS...
-            graphtype = "Elevation"  #
-            units = "(Degrees)"  #
-        elif ans == "3":  #
-            graphtype = "SecSigLock"  #
-            units = "(seconds)"  #
-        elif ans == "4":  #
-            graphtype = "SecSig_CNo"  #
-            units = "(dB-Hz)"  #
-        elif ans == "5":  #
-            graphtype = "TEC15"  #
-            units = "(TECU)"  #
-        elif ans == "6":  #
-            graphtype = "TECRate15"  #
-            units = "(TECU)"  #
-        elif ans == "7":  #
-            graphtype = "TEC30"  #
-            units = "(TECU)"  #
-        elif ans == "8":  #
-            graphtype = "TECRate30"  #
-            units = "(TECU)"  #
-        elif ans == "9":  #
-            graphtype = "TEC45"  #
-            units = "(TECU)"  #
-        elif ans == "10":  #
-            graphtype = "TECRate45"  #
-            units = "(TECU)"  #
-        elif ans == "11":  #
-            graphtype = "TECTOW"  #
-            units = "(TECU)"  #
-        elif ans == "12":  #
-            graphtype = "TECRateTow"  #
-            units = "(TECU)"  #
+            graphtype = "Elevation"
+            units = "(Degrees)"
+        elif ans == "3":
+            graphtype = "SecSigLock"
+            units = "(seconds)"
+        elif ans == "4":
+            graphtype = "SecSig_CNo"
+            units = "(dB-Hz)"
+        elif ans == "5":
+            graphtype = "TEC15"
+            units = "(TECU)"
+        elif ans == "6":
+            graphtype = "TECRate15"
+            units = "(TECU)"
+        elif ans == "7":
+            graphtype = "TEC30"
+            units = "(TECU)"
+        elif ans == "8":
+            graphtype = "TECRate30"
+            units = "(TECU)"
+        elif ans == "9":
+            graphtype = "TEC45"
+            units = "(TECU)"
+        elif ans == "10":
+            graphtype = "TECRate45"
+            units = "(TECU)"
+        elif ans == "11":
+            graphtype = "TECTOW"
+            units = "(TECU)"
+        elif ans == "12":
+            graphtype = "TECRateTow"
+            units = "(TECU)"
         else:  #
-            print("\nThis is an incorrect number")  #
+            print("\nThis is an incorrect number")
         break  #
     columna = int(ans) + 4  # The column in the csvfile corresponding to the user selection. e.g. user selects "7" for
     # "TEC30" - column 7 in the csvfile corresponds to the TEC30 values.
@@ -400,44 +405,44 @@ if y == 'REDOBS':  # IF THE FILE TYPE IS REDOBS, PRINT THE OPTIONS FOR LOW-RATE 
             graphtype = "Azymuth"  # Set the units for each graph type.
             units = "(Degrees)"  # Print the type of plot that will be generated by the code in the command window.
             # DO THE SAME WITH ALL THE POSSIBLE SELECTIONS...
-        elif ans == "2":  #
-            graphtype = "Elevation"  #
-            units = "(Degrees)"  #
-        elif ans == "3":  #
-            graphtype = "CNo"  #
-            units = "(dB-Hz)"  #
-        elif ans == "4":  #
-            graphtype = "Lock_Time"  #
-            units = '(seconds)'  #
-        elif ans == "5":  #
-            graphtype = "CMC_avg"  #
-            units = "(m)"  #
-        elif ans == "6":  #
-            graphtype = "CMC_std"  #
-            units = "(m)"  #
-        elif ans == "7":  #
-            graphtype = "S4"  #
-            units = " "  #
-        elif ans == "8":  #
-            graphtype = "S4_Cor"  #
-            units = " "  #
-        elif ans == "9":  #
-            graphtype = "1secsigma"  #
-            units = "(radians)"  #
-        elif ans == "10":  #
-            graphtype = "3secsigma"  #
-            units = "(radians)"  #
-        elif ans == "11":  #
-            graphtype = "10secsigma"  #
-            units = "(radians)"  #
-        elif ans == "12":  #
-            graphtype = "30secsigma"  #
-            units = "(radians)"  #
-        elif ans == "13":  #
-            graphtype = "60secsigma"  #
-            units = "(radians)"  #
+        elif ans == "2":
+            graphtype = "Elevation"
+            units = "(Degrees)"
+        elif ans == "3":
+            graphtype = "CNo"
+            units = "(dB-Hz)"
+        elif ans == "4":
+            graphtype = "Lock_Time"
+            units = '(seconds)'
+        elif ans == "5":
+            graphtype = "CMC_avg"
+            units = "(m)"
+        elif ans == "6":
+            graphtype = "CMC_std"
+            units = "(m)"
+        elif ans == "7":
+            graphtype = "S4"
+            units = "Index"
+        elif ans == "8":
+            graphtype = "S4_Cor"
+            units = "Index"
+        elif ans == "9":
+            graphtype = "1secsigma"
+            units = "(radians)"
+        elif ans == "10":
+            graphtype = "3secsigma"
+            units = "(radians)"
+        elif ans == "11":
+            graphtype = "10secsigma"
+            units = "(radians)"
+        elif ans == "12":
+            graphtype = "30secsigma"
+            units = "(radians)"
+        elif ans == "13":
+            graphtype = "60secsigma"
+            units = "(radians)"
         else:  #
-            print("\nThis is an incorrect number")  #
+            print("\nThis is an incorrect number")
         break  #
     columna = int(ans) + 3  # The column in the csvfile corresponding to the user selection. e.g. user selects "8" for
     # "S4_Cor" - column 11 (8+3) in the csvfile corresponds to the S4_Cor values.
@@ -632,7 +637,8 @@ for eachdate in validdates:
 
                 with open(csvtographdirectory) as csvfiletwo:
                     readCSVtwo = csv.reader(csvfiletwo, delimiter=',')
-                    if y == "REDTEC" or y == "ismRawTEC" or y == "ismRawTec":  # Set the variable numbers - These nunmbers will be used later for multiple purposes and vary
+                    # Set the variable numbers - These nunmbers will be used later for multiple purposes and vary.
+                    if y == "REDTEC" or y == "ismRawTEC" or y == "ismRawTec":
                         variablesignal = 4
                         variable = 20
                         elevationvar = 6
@@ -781,8 +787,21 @@ for eachdate in validdates:
                             finaltimescorrected = [it for c, it in enumerate(finaltimes, 1) if c in validelevs]
                             finalyaxiscorrected = [it for c, it in enumerate(finalyaxis, 1) if c in validelevs]
 
+                            # For scintillation data, get rid of non-sense values (e.g. values above a value of 5).
+                            # These values may come from errors in the reciever/computer or signal interferencies and
+                            # are not representative of S4/sigma scintillation values.
+                            if graphtype in ["S4", "S4_Cor", "1secsigma", "3secsigma", "10secsigma", "30secsigma",
+                                             "60secsigma"]:
+                                new_x, new_y = [], []
+                                for a, b in zip(finaltimescorrected, finalyaxiscorrected):
+                                    if float(b) < 5:
+                                        new_x.append(a)
+                                        new_y.append(b)
+                                finaltimescorrected, finalyaxiscorrected = new_x, new_y
+
                         # --------------------------------- SECTION 4J: MODIFY RAW DATA ------------------------- #
-                        elif y == "ismRawObs" or y == "ismRawOBS" or y == "ismDetObs" or y == "ismDetOBS" or y == "ismRawTEC" or y == "ismRawTec":
+                        elif y == "ismRawObs" or y == "ismRawOBS" or y == "ismDetObs" or y == "ismDetOBS" or \
+                                y == "ismRawTEC" or y == "ismRawTec":
                             # Start this section if the user selects a raw data file type.
                             starttimetocompare = starttimesflt[countseven - 1]
                             # Extract the final time from the starttimesflt from Section 4D.
@@ -838,18 +857,18 @@ for eachdate in validdates:
                                 poly_coef = np.polyfit(bftimes, bfTEC, poly_degree)  # Degree of the polynomial.
                                 poly = np.polyval(poly_coef,
                                                   bftimes)  # In this case, finalyaxiscorrected is the TEC vector.
-                                poly_sub_tec = bfTEC - poly  #
-                                from scipy import signal  #
+                                poly_sub_tec = bfTEC - poly
+                                from scipy import signal
 
-                                polyfit_tec = signal.detrend(poly_sub_tec)  #
-                                Tdata = bftimes[-2] - bftimes[0]  #
-                                dfreq = 1 / Tdata  #
-                                LP = len(polyfit_tec)  #
+                                polyfit_tec = signal.detrend(poly_sub_tec)
+                                Tdata = bftimes[-2] - bftimes[0]
+                                dfreq = 1 / Tdata
+                                LP = len(polyfit_tec)
                                 tec_fft = np.fft.fftshift(np.fft.fft(np.fft.ifftshift(polyfit_tec)))
                                 if Tdata <= 60:  # Desired cut off frequency [Hz]
                                     cutoff = 0.1  # Higher cut off for shorter lengths
-                                else:  #
-                                    cutoff = 0.1  #
+                                else:
+                                    cutoff = 0.1
                                 order = 6  # Order of the butterworth filter
                                 # ------------------- Butterworth filter -------------------------- #
                                 # This extract creates a kernel for low pass butterworth filter.
@@ -861,8 +880,9 @@ for eachdate in validdates:
                                 # ----------------------------------------------------------------- #
                                 tec_filt = np.fft.fftshift(
                                     np.fft.ifft(np.fft.ifftshift(np.multiply(tec_fft, butterhi))))
-                                Detrended_TEC = (np.real(tec_filt))  #
-                                finalyaxiscorrected = Detrended_TEC  # Set the Detrended TEC as the new finalyaxiscorrected.
+                                Detrended_TEC = (np.real(tec_filt))
+                                # Set the Detrended TEC as the new finalyaxiscorrected.
+                                finalyaxiscorrected = Detrended_TEC
                             # ------------------ END OF TEC DETRENDING -------------------- #
 
                         # --------------------------------- SECTION 4L: FINAL FIXES ------------------------------ #
@@ -914,53 +934,64 @@ for eachdate in validdates:
                         if len(listforyaxisflt) != 0:
                             # Run this part of the code ONLY for low-rate TEC data.
                             if y == "REDTEC" or y == "REDOBS":
-                                if normalizedata == 1:  # Run this part of the code ONLY if nigh-subtraction is selected (normalizedata==1).
-                                    if normalizedcount == 1:  # When normalizedcount==1 (regular data), select the minimum value. Refer to section 4B.
-                                        minimumvalueyaxis = min(float(s) for s in listforyaxisflt)
-                                        if minimumvalueyaxis < minimum:  #
-                                            minimum = minimumvalueyaxis  # After FOR LOOP B (SECTION 4B) runs completely for the first time, it will calculate the minimum TEC value from ALL PRNs.
-                                    elif normalizedcount == 2:  # When normalizedcount==2 (i.e. when FOR LOOP B runs for the second time):
-                                        normalizedaxis = []  #
-                                        countthirty = 0  #
-                                        for elementa in listforyaxisflt:  # For every element in listforyaxisflt, convert to vertical TEC (if vertical TEC==1) and do the night-subtraction.
-                                            # ----------------------------------------------- SLANT  TO VERTICAL TEC --------------------------------------------- #
-                                            if verticaltec == 1:  # This section uses geometry to get rid of the effects due to the variable thickness of the atmosphere.
-                                                import math  #
+                                # Run this part of the code ONLY if nigh-subtraction is selected (normalizedata==1).
+                                if normalizedata == 1:
 
+                                    # When normalizedcount==1 (regular data), select the minimum value. Refer to
+                                    # section 4B.
+                                    if normalizedcount == 1:
+                                        minimumvalueyaxis = min(float(s) for s in listforyaxisflt)
+                                        # After FOR LOOP B (SECTION 4B) runs completely for the first time, it will
+                                        # calculate the minimum TEC value from ALL PRNs.
+                                        if minimumvalueyaxis < minimum:
+                                            minimum = minimumvalueyaxis
+                                    # When normalizedcount==2 (i.e. when FOR LOOP B runs for the second time):
+                                    elif normalizedcount == 2:
+                                        normalizedaxis = []
+                                        countthirty = 0
+                                        # For every element in listforyaxisflt, convert to vertical TEC (if vertical
+                                        # TEC==1) and do the night-subtraction.
+                                        for elementa in listforyaxisflt:
+                                            # ------------------- SLANT  TO VERTICAL TEC ---------------- #
+                                            # This section uses geometry to get rid of the effects due to the variable
+                                            # thickness of the atmosphere.
+                                            if verticaltec == 1:
                                                 minimumvaluetouse = min(float(s) for s in listforyaxisflt)
-                                                elementa = elementa - minimumvaluetouse  #
+                                                elementa = elementa - minimumvaluetouse
                                                 elevationtouse = correctedelevation[countthirty] * 0.0174533
-                                                coselev = math.cos(elevationtouse)  #
-                                                obliquity = 1 / (math.sqrt(1 - (0.947979 * (coselev))))  #
-                                                newelement = elementa / obliquity  #
-                                                newelement = newelement + minimumvaluetouse  #
-                                                countthirty = countthirty + 1  #
-                                                # --------------------------------------------------------------------------------------------------------------------- #
-                                            else:  #
-                                                newelement = elementa  #
-                                            elementtoappend = newelement - minimum  # Subtract the minimum value (computed at the beginning of section 4M) from each element.
-                                            normalizedaxis.append(
-                                                elementtoappend)  # Append the element to a new vector called normalized axis.
+                                                coselev = math.cos(elevationtouse)
+                                                obliquity = 1 / (math.sqrt(1 - (0.947979 * coselev)))
+                                                newelement = elementa / obliquity
+                                                newelement = newelement + minimumvaluetouse
+                                                countthirty = countthirty + 1
+                                                # ------------------------------------------------------------------- #
+                                            else:
+                                                newelement = elementa
+                                            # Subtract the minimum value (computed at the beginning of section 4M)
+                                            # from each element.
+                                            elementtoappend = newelement - minimum
+                                            # Append the element to a new vector called normalized axis.
+                                            normalizedaxis.append(elementtoappend)
                                         listforyaxisflt = normalizedaxis  # Set listforyaxisflt==normalizedaxis.
 
                         # If the user is doing a summary plot add the shift value to every element in the
                         # listforyaxisflt vector. See Section 1.
                         if summaryplot:
-                            summaryplotaxis = []  #
-                            for elementa in listforyaxisflt:  #
-                                elementtoappend = elementa + (count * shiftvalue)  #
-                                summaryplotaxis.append(elementtoappend)  #
-                            listforyaxisflt = summaryplotaxis  #
+                            summaryplotaxis = []
+                            for elementa in listforyaxisflt:
+                                elementtoappend = elementa + (count * shiftvalue)
+                                summaryplotaxis.append(elementtoappend)
+                            listforyaxisflt = summaryplotaxis
 
                         # ------------------------------------- SECTION 4N: PLOTTING ---------------------------- #
                         # From the selection from FOR LOOP D, determine the signal type (L1, L2, ETC).
                         signal_types = {"G": {"1": "L1CA", "4": "L2Y", "5": "L2C", "6": "L2P", "7": "L5Q"},
                                         "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"},
-                                        "E": {"1": "E1", "2": "E5A", "3": "E5B",  "4": "AltBOC"}}
+                                        "E": {"1": "E1", "2": "E5A", "3": "E5B", "4": "AltBOC"}}
                         sttp = signal_types[constellation][str(selection)]
 
                         if len(listforyaxisflt) != 0:
-                            plot(newtimesUTC, listforyaxisflt, y, graphtype, savinggraphs,
+                            plot(newtimesUTC, listforyaxisflt, units, y, graphtype, savinggraphs,
                                  [[setxaxisrange, xaxisstartvalue, xaxisfinalvalue],
                                   [setyaxisrange, yaxisstartvalue, yaxisfinalvalue]],
                                  include_legend=legend, summary_plot=summaryplot, vertical_line=verticalline[0],
