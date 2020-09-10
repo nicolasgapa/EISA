@@ -82,77 +82,77 @@ print("DO NOT CLOSE THIS WINDOW")
 def parse():
     # Run iteratively for every receiver in the folder:
     for receiver_name in receivers:
-        # # Print a message.
-        # print("\n\nReceiver: ", receiver_name, "  Date:", datetime.today() - timedelta(days_before))
-        # print("\n--------------------------- Step 1: Parse ---------------------------")
-        #
-        # # Identify the directory to the parsing.py file.
-        # parsing_directory = cwd + filesep + "Parsing" + filesep
-        # os.chdir(parsing_directory)
-        #
-        # # Open the settings.csv file and edit every row.
-        # with open("Settings.csv") as csvfile:
-        #     read_csv = csv.reader(csvfile, delimiter=',')
-        #     count = 1
-        #
-        #     newcsv = []
-        #     # Edit the rows.
-        #     for row in read_csv:
-        #         if count == 2:
-        #             # Split the cwd into words.
-        #             cwd_split_directory = (cwd.split(filesep))
-        #             # Get rid of the last folder (EISA), since the binary files are located outside this folder.
-        #             cwd_split_directory = cwd_split_directory[:-1]
-        #             # Enter the receiver's folder.
-        #             cwd_split_directory.append(receiver_name)
-        #             add_line = cwd_split_directory
-        #         elif count == 4:
-        #             # Set the parsing code directory.
-        #             add_line = (parsing_directory.split(filesep))
-        #         elif count == 6:
-        #             # Only reduced data when running EISA.
-        #             add_line = ['1']
-        #         elif count == 8:
-        #             # Split the cwd into words.
-        #             cwd_split_directory = (cwd.split(filesep))
-        #             # CSV files output directory.EISA_OUTPUT
-        #             cwd_split_directory[-1] = "EISA_OUTPUT"
-        #             cwd_split_directory.append(receiver_name)
-        #             cwd_split_directory.append("CSVFILES")
-        #             add_line = cwd_split_directory
-        #         elif count == 10:
-        #             # Parse data for all constellations when running parsing.py
-        #             # add_line = ['G', 'R', 'E']
-        #             add_line = ['G', 'R', 'E']
-        #         elif count == 12:
-        #             # All PRNs.
-        #             # add_line = ['T']
-        #             add_line = ['T']
-        #         elif count == 17:
-        #             # Receiver name from user input.
-        #             add_line = [receiver_name]
-        #         elif count == 19:
-        #             # Year
-        #             local_date = datetime.today()
-        #             local_year = local_date.year
-        #             add_line = [local_year]
-        #         elif count == 21:
-        #             # Initial date (YESTERDAY!)
-        #             yesterday = datetime.today() - timedelta(days_before)
-        #             add_line = [yesterday.month, yesterday.day]
-        #         elif count == 23:
-        #             # Final date (ALSO YESTERDAY!)
-        #             yesterday = datetime.today() - timedelta(days_before)
-        #             add_line = [yesterday.month, yesterday.day]
-        #         else:
-        #             add_line = row
-        #         newcsv.append(add_line)
-        #         count += 1
-        #
-        # with open("Settings.csv", "w+", newline='') as csvfile:
-        #     writer = csv.writer(csvfile)
-        #     writer.writerows(newcsv)
-        #
+        # Print a message.
+        print("\n\nReceiver: ", receiver_name, "  Date:", datetime.today() - timedelta(days_before))
+        print("\n--------------------------- Step 1: Parse ---------------------------")
+
+        # Identify the directory to the parsing.py file.
+        parsing_directory = cwd + filesep + "Parsing" + filesep
+        os.chdir(parsing_directory)
+
+        # Open the settings.csv file and edit every row.
+        with open("Settings.csv") as csvfile:
+            read_csv = csv.reader(csvfile, delimiter=',')
+            count = 1
+
+            newcsv = []
+            # Edit the rows.
+            for row in read_csv:
+                if count == 2:
+                    # Split the cwd into words.
+                    cwd_split_directory = (cwd.split(filesep))
+                    # Get rid of the last folder (EISA), since the binary files are located outside this folder.
+                    cwd_split_directory = cwd_split_directory[:-1]
+                    # Enter the receiver's folder.
+                    cwd_split_directory.append(receiver_name)
+                    add_line = cwd_split_directory
+                elif count == 4:
+                    # Set the parsing code directory.
+                    add_line = (parsing_directory.split(filesep))
+                elif count == 6:
+                    # Only reduced data when running EISA.
+                    add_line = ['1']
+                elif count == 8:
+                    # Split the cwd into words.
+                    cwd_split_directory = (cwd.split(filesep))
+                    # CSV files output directory.EISA_OUTPUT
+                    cwd_split_directory[-1] = "EISA_OUTPUT"
+                    cwd_split_directory.append(receiver_name)
+                    cwd_split_directory.append("CSVFILES")
+                    add_line = cwd_split_directory
+                elif count == 10:
+                    # Parse data for all constellations when running parsing.py
+                    # add_line = ['G', 'R', 'E']
+                    add_line = ['G', 'R', 'E']
+                elif count == 12:
+                    # All PRNs.
+                    # add_line = ['T']
+                    add_line = ['T']
+                elif count == 17:
+                    # Receiver name from user input.
+                    add_line = [receiver_name]
+                elif count == 19:
+                    # Year
+                    local_date = datetime.today()
+                    local_year = local_date.year
+                    add_line = [local_year]
+                elif count == 21:
+                    # Initial date (YESTERDAY!)
+                    yesterday = datetime.today() - timedelta(days_before)
+                    add_line = [yesterday.month, yesterday.day]
+                elif count == 23:
+                    # Final date (ALSO YESTERDAY!)
+                    yesterday = datetime.today() - timedelta(days_before)
+                    add_line = [yesterday.month, yesterday.day]
+                else:
+                    add_line = row
+                newcsv.append(add_line)
+                count += 1
+
+        with open("Settings.csv", "w+", newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerows(newcsv)
+
         # Run the parsing.py file.
         os.system("py parsing.py")
 
