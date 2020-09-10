@@ -26,7 +26,7 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 
 # ------------ Inputs ------------ #
 # Insert the receiver name.
-receivers = ["RX1"]
+receivers = ["RX1", "RX2"]
 
 # '1' for yesterday. "2" for the day before yesterday, etc.
 days_before = 1000
@@ -80,10 +80,10 @@ print("DO NOT CLOSE THIS WINDOW")
 
 # ----- Part 1: Parse ----- #
 def parse():
+    print("\n\n---------------------------------------------------------------------")
     # Run iteratively for every receiver in the folder:
     for receiver_name in receivers:
         # Print a message.
-        print("\n\n---------------------------------------------------------------------")
         print("Receiver: ", receiver_name, "  Date:", datetime.today() - timedelta(days_before))
         print("--------------------------- Step 1: Parse ---------------------------")
 
@@ -203,7 +203,7 @@ def graphsettings(data_type, elev_threshold, constellations, satellites, summary
                 add_line = [yesterday.month, yesterday.day]
             elif count == 14:
                 # Year
-                local_date = datetime.today()
+                local_date = datetime.today() - timedelta(days_before)
                 local_year = local_date.year
                 add_line = [local_year]
             elif count == 16:
@@ -345,7 +345,6 @@ def graph(receiver):
         valid_categories = [2, 7, 8, 9, 10, 11, 12, 13]
         for count in valid_categories:
             for constellation in constellations:
-                print('Const:', constellation)
                 onlyonesignal_settings = ['1']
                 yaxis = ['0', '0', '0']
                 plabel = ['0']
