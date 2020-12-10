@@ -10,26 +10,23 @@ now = datetime.today()  # Today's date and time.
 cwd = os.getcwd()  # Current working directory.
 filesep = os.sep  # File separator (Changes between windows, linux and other OS).
 
-#
 # 2019
 # Embry-Riddle Aeronautical University
 # Department of Physics and Life Sciences
 #
-# Code developer: Jose Nicolas Gachancipa
+# Code developer: Nicolas Gachancipa
 #
 # Embry-Riddle Ionospheric Algorithm (EISA)
 # Ionospheric and TEC data collector
 #
-# Last time updated: August 27th, 2020.
-#
-
+# Last time updated: September 15th, 2020.
 
 # ------------ Inputs ------------ #
 # Insert the receiver name.
 receivers = ["RX1", "RX2"]
 
 # '1' for yesterday. "2" for the day before yesterday, etc.
-days_before = 1000
+days_before = 50
 
 # Set run_now to 1 if you want EISA to run now, rather than at a certain time.
 # Set run_now to 0 if you want EISA to run at a certain time every day.
