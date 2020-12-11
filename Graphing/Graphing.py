@@ -1,54 +1,38 @@
-import matplotlib.pyplot as plt
-import os
-import sys
-from .support_classes import Plot_Options
-from .support_functions import (options_menu, values_above_threshold, times_cross_elevation, extract_data,
-                                filter_data, naming, tec_detrending, slant_to_vertical_tec, seconds_to_utc, plot,
-                                obtain_column_numbers, validate_dates)
-from .read_csv import read_graph_settings, read_paths_csv
+"""
 
+Embry-Riddle Ionospheric Scintillation Algorithm (EISA)
+Version 2
+Graphing
+
+Embry-Riddle Aeronautical University
+Department of Physical Sciences
+Space Physics Research Lab (SPRL)
+Author: Nicolas Gachancipa
+
+CREDITS:
+The Butterworth filter used for TEC detrending was based on a Matlab function written by Dr. Kshitija Deshpande,
+Professor of Engineering Physics at Embry-Riddle Aeronautical University.
+
+"""
+# External imports.
+import os
+
+# Internal imports.
+from Graphing.support_functions import (values_above_threshold, times_cross_elevation, extract_data,
+                                        filter_data, naming, tec_detrending, slant_to_vertical_tec, seconds_to_utc,
+                                        plot, obtain_column_numbers)
+
+# Set the file separator to work in both Linux and Windows.
 filesep = os.sep
 
-#  2018
-#  Graphingmain.py code for ionospheric scintillation and Total Electron Content. BETA VERSION.
-#  GPStation-6 multi-constellation receiver.
-#  JOSE NICOLAS GACHANCIPA - Embry-Riddle Aeronautical University
-#
-# CREDITS
-# The Butterworth filter used for TEC detrending was based on a Matlab function written by Dr. Kshitija Deshpande,
-# Professor of Engineering Physics at Embry-Riddle Aeronautical University.
-#
-# DO NOT HARD CODE ANYTHING BELOW THIS POINT.
 
-# ----------- SECTION 1: READING THE COMMAND WINDOW ARGUMENTS ------------- #
-no_menu = user_selec = 0
-if len(sys.argv) > 1:
-    if sys.argv[1] == "no_menu":
-        no_menu = 1
-        user_selec = sys.argv[2]
-else:
-    print("The purpose of this code is to plot and save ionospheric scintillation and TEC graphs.")
-    print("The directories can be changed by modifying the paths.csv file.")
-    print("The settings can be changed by modifying the graphsettings.csv file.")
-    # Set the file separator to work in both Linux and Windows.
-
-# -------------------- SECTION 2: READING THE CSV FILES ------------------- #
-outputfolderdirectory, graphsfolderdirectory = read_paths_csv()
-m = Plot_Options(outputfolderdirectory, graphsfolderdirectory)
-m, daymatrix, monthmatrix, yeari = read_graph_settings(m)
-valid_dates = validate_dates(daymatrix, monthmatrix, yeari, outputfolderdirectory)
-
-# --------------------- SECTION 3: PRINTING THE MENU ---------------------- #
-graph_type, units, column = options_menu(m.file_type, no_menu, user_selec)
-
-
-# ------------------------- SECTION 4: FUNCTIONS -------------------------- #
+# ---------- SECTION 1: FUNCTIONS ---------- #
 def plot_per_prn(model, prn, normalize=0):
     # Set the directory to the csv file.
     csvtograph = model.filetype + "_" + model.constellation + str(prn) + "_" + model.date + ".csv"
     csv_directory = model.directory + filesep + csvtograph
 
-    # -------------------------- SECTION 4A: TIME RANGES ---------------------- #
+    # -------------------------- SECTION: TIME RANGES ---------------------- #
     # For raw data files, extract the elevation column for the corresponding REDTEC file and determine a range of
     # times that are above the elevation threshold.
     if model.filetype in model.raw_data_types:
@@ -58,11 +42,11 @@ def plot_per_prn(model, prn, normalize=0):
             return "Could not find the REDTEC file corresponding to the raw data."
     else:
         reducedfile = csv_directory
-    times_col, valid_col, _ = values_above_threshold(reducedfile, threshold=m.threshold, header=20, times_column=0,
+    times_col, valid_col, _ = values_above_threshold(reducedfile, threshold=model.threshold, header=20, times_column=0,
                                                      elevations_column=6)
     starttimesflt, finaltimesflt = times_cross_elevation(times_col, valid_col)
 
-    # ----------------------- SECTION 4B: EXTRACTING THE COLUMNS FROM THE CSV FILE ---------------------------- #
+    # ----------------- SECTION: EXTRACTING THE COLUMNS FROM THE CSV FILE ------------------- #
     # Import and read the csv (if it exists).
     if not os.path.isfile(csv_directory):
         return "The following directory does not exist: " + csv_directory
@@ -78,7 +62,7 @@ def plot_per_prn(model, prn, normalize=0):
     # Save the present signal types into a variable calles saves.
     saves = [it for it in range(1, 8) if it in list(map(int, varsignaltypecolumn))]
 
-    # ----------------------- SECTION 4C: FOR LOOP D FOR SIGNAL TYPE ----------------------- #
+    # ---------------- SECTION: FOR LOOP FOR SIGNAL TYPE ------------------ #
     # FOR LOOP THAT REPEATS FOR EACH SIGNAL TYPE.
     for signal_type in saves:
         signal_data = filter_data(filtered_data, 2, "=", signal_type, [0, 2, 3])
@@ -153,21 +137,24 @@ def plot_per_prn(model, prn, normalize=0):
                 plot(times, yaxiscolumn, directory, graph_name, title, subtitle, model)
 
 
+# ----------- GRPAHING RUN ------------ #
+def run_graphing(model):
+
+    # Print start message to terminal.
+    print("\n\n# --- " + model.file_type + ": Plotting Time vs. " + model.graph_type + " --- #")
+    print('Date (year, month, day): {}, {}, {}'.format(model.date[0], model.date[1], model.date[2]))
+
 # ------------------------- SECTION 5: PLOTTING --------------------------- #
-for date in valid_dates:
-
-    # Print start messate to terminal.
-    print("\n\n# --- " + m.file_type + ": Plotting Time vs. " + graph_type + " --- #\n\n")
-    m.set_date(date)
-
-    # Generate plots for the given date.
-    for prn in m.PRNstograph:
-        plot_per_prn(m, prn, normalize=0)
-    if m.normalize_data == 1:
-        plt.clf()
-        for prn in m.PRNstograph:
-            plot_per_prn(m, prn, normalize=1)
-
-    # Print message to the terminal.
-    print("The following day has been processed: " + m.monthname + " " + str(m.daynumber) +
-          " - Graph Type: " + str(graph_type) + " - Constellation: " + m.constellationtype)
+#    settings.set_date(date)
+#
+#    # Generate plots for the given date.
+#    for prn in settings.PRNstograph:
+#        plot_per_prn(settings, prn, normalize=0)
+#    if settings.normalize_data == 1:
+#        plt.clf()
+#        for prn in settings.PRNstograph:
+#            plot_per_prn(m, prn, normalize=1)
+#
+#    # Print message to the terminal.
+#    print("The following day has been processed: " + settings.monthname + " " + str(settings.daynumber) +
+#          " - Graph Type: " + str(graph_type) + " - Constellation: " + settings.constellationtype)

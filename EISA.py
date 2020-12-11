@@ -26,7 +26,7 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 receivers = ["RX1", "RX2"]
 
 # '1' for yesterday. "2" for the day before yesterday, etc.
-days_before = 50
+days_before = 130
 
 # Set run_now to 1 if you want EISA to run now, rather than at a certain time.
 # Set run_now to 0 if you want EISA to run at a certain time every day.
@@ -152,7 +152,7 @@ def parse():
             writer.writerows(newcsv)
 
         # Run the parsing.py file.
-        os.system("py parsing.py")
+        # os.system("py parsing.py")
 
         # Now, proceed to step 3: Graphing.
         graph(receiver_name)
@@ -294,7 +294,7 @@ def graph(receiver):
         writer.writerows(newcsv)
 
     # Define the three constellations (GPS, GLONASS, and GALILEO)
-    constellations = ['G', 'R', 'E']
+    constellations = ['G']  # , 'R', 'E']
 
     # Run the graphing tool only if the csvfiles exist.
     yesterday = datetime.today() - timedelta(days_before)
@@ -318,7 +318,7 @@ def graph(receiver):
         # count = 11: 10secsigma, count = 12: 30secsigma, count = 13: 60secsigma.
         # Individual plots.
         count = 1
-        while count <= 13:
+        while count <= 1:
             for constellation in constellations:
 
                 if count in [7, 8]:
@@ -338,72 +338,72 @@ def graph(receiver):
                 os.system("py graphing.py no_menu " + str(count))
             count = count + 1
 
-        ## Summary plots. Save them to a different folder.
-        valid_categories = [2, 7, 8, 9, 10, 11, 12, 13]
-        for count in valid_categories:
-            for constellation in constellations:
-                onlyonesignal_settings = ['1']
-                yaxis = ['0', '0', '0']
-                plabel = ['0']
-
-                if count == 2:
-                    plabel = ['1']
-
-                if count >= 7:
-                    yaxis = ['1', '0', '0.8']
-
-                # Summary plots.
-                graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ["1", "0"], ['0'],
-                              ['0', '0', '0'],
-                              yaxis, plabel, ['0'], ['0', '0'], ['0'], onlyonesignal_settings, [graphormat],
-                              ['12', '12'],
-                              receiver_location)
-
-                # Run the graphing.py code.
-                os.system("py Graphing.py no_menu " + str(count))
-
-        # REDUCED TOTAL ELECTRON CONTENT (REDTEC)
-        # count = 1: Azimuth, count = 2: Elevation, count = 3: CNo, count = 4: Lock Time, count = 5: CMC avg,
-        # count = 6: CMC std, count = 7: S4, count = 8: S4 Cor, count = 9: 1secsigma, count = 10: 3secsigma
-        # count = 11: 10secsigma, count = 12: 30secsigma.
-        # Individual TEC plots.
-        valid_categories = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        for count in valid_categories:
-            for constellation in constellations:
-                # Individual plots.
-                graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
-                              ['0', '0', '0'],
-                              ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat], ['12', '12'],
-                              receiver_location)
-
-                # Run the graphing.py file.
-                os.system("py Graphing.py no_menu " + str(count))
-
-        # TEC Summary plots. Save them to a different folder.
-        valid_categories = [5, 7, 9, 11]
-        for count in valid_categories:
-            for constellation in constellations:
-
-                normalize = [0, 1]
-                for i in normalize:
-                    if i == 0:
-                        # Summary plots.
-                        graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['0'],
-                                      ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], ['0'],
-                                      [graphormat], ['12', '12'], receiver_location)
-
-                        # Run the graphing.py file.
-                        os.system("py Graphing.py no_menu " + str(count))
-                    elif i == 1:
-                        vertical_tec = [0, 1]
-                        for j in vertical_tec:
-                            # Summary plots.
-                            graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['1'],
-                                          ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], [str(j)], ['0'],
-                                          [graphormat], ['12', '12'], receiver_location)
-
-                            # Run the graphing.py file.
-                            os.system("py Graphing.py no_menu " + str(count))
+        # ## Summary plots. Save them to a different folder.
+        # valid_categories = [2, 7, 8, 9, 10, 11, 12, 13]
+        # for count in valid_categories:
+        #     for constellation in constellations:
+        #         onlyonesignal_settings = ['1']
+        #         yaxis = ['0', '0', '0']
+        #         plabel = ['0']
+        #
+        #         if count == 2:
+        #             plabel = ['1']
+        #
+        #         if count >= 7:
+        #             yaxis = ['1', '0', '0.8']
+        #
+        #         # Summary plots.
+        #         graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ["1", "0"], ['0'],
+        #                       ['0', '0', '0'],
+        #                       yaxis, plabel, ['0'], ['0', '0'], ['0'], onlyonesignal_settings, [graphormat],
+        #                       ['12', '12'],
+        #                       receiver_location)
+        #
+        #         # Run the graphing.py code.
+        #         os.system("py Graphing.py no_menu " + str(count))
+        #
+        # # REDUCED TOTAL ELECTRON CONTENT (REDTEC)
+        # # count = 1: Azimuth, count = 2: Elevation, count = 3: CNo, count = 4: Lock Time, count = 5: CMC avg,
+        # # count = 6: CMC std, count = 7: S4, count = 8: S4 Cor, count = 9: 1secsigma, count = 10: 3secsigma
+        # # count = 11: 10secsigma, count = 12: 30secsigma.
+        # # Individual TEC plots.
+        # valid_categories = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        # for count in valid_categories:
+        #     for constellation in constellations:
+        #         # Individual plots.
+        #         graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
+        #                       ['0', '0', '0'],
+        #                       ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat], ['12', '12'],
+        #                       receiver_location)
+        #
+        #         # Run the graphing.py file.
+        #         os.system("py Graphing.py no_menu " + str(count))
+        #
+        # # TEC Summary plots. Save them to a different folder.
+        # valid_categories = [5, 7, 9, 11]
+        # for count in valid_categories:
+        #     for constellation in constellations:
+        #
+        #         normalize = [0, 1]
+        #         for i in normalize:
+        #             if i == 0:
+        #                 # Summary plots.
+        #                 graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['0'],
+        #                               ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], ['0'],
+        #                               [graphormat], ['12', '12'], receiver_location)
+        #
+        #                 # Run the graphing.py file.
+        #                 os.system("py Graphing.py no_menu " + str(count))
+        #             elif i == 1:
+        #                 vertical_tec = [0, 1]
+        #                 for j in vertical_tec:
+        #                     # Summary plots.
+        #                     graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['1'],
+        #                                   ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], [str(j)], ['0'],
+        #                                   [graphormat], ['12', '12'], receiver_location)
+        #
+        #                     # Run the graphing.py file.
+        #                     os.system("py Graphing.py no_menu " + str(count))
 
         # Make a zip file of the graphs folder for that date. Save it to the graphs folder in EISA_OUTPUT
         # (include the receiver name in the zip file name).
@@ -433,8 +433,7 @@ while eternalloop == 1:
     x = datetime.today()
 
     # Modify the date and time. Run the code every day at the same time.
-    y = x.replace(day=x.day + 1, hour=hour, minute=minute, second=second,
-                  microsecond=0)
+    y = x.replace(day=x.day + 1, hour=hour, minute=minute, second=second, microsecond=0)
 
     # Compute the time left for the next iteration to occur (in seconds).
     delta_t = y - x
@@ -450,5 +449,9 @@ while eternalloop == 1:
         t = Timer(secs, parse)
         t.start()
 
+        break
+
         # Run the loop again after parsing the files of the day before.
         time.sleep(secs)
+
+    break
