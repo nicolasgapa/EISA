@@ -13,7 +13,7 @@ Author: Nicolas Gachancipa
 
 # Imports
 from EISA_objects import GraphSettings
-from Graphing.graphing import run_graphing
+from Graphing import run_graphing
 import datetime
 import wx
 
