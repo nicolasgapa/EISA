@@ -18,9 +18,9 @@ Professor of Engineering Physics at Embry-Riddle Aeronautical University.
 import os
 
 # Internal imports.
-from Graphing.support_functions import (values_above_threshold, times_cross_elevation, extract_data,
-                                        filter_data, naming, tec_detrending, slant_to_vertical_tec, seconds_to_utc,
-                                        plot, obtain_column_numbers)
+from support_functions import (values_above_threshold, times_cross_elevation, extract_data,
+                               filter_data, naming, tec_detrending, slant_to_vertical_tec, seconds_to_utc,
+                               plot, obtain_column_numbers)
 
 # Set the file separator to work in both Linux and Windows.
 filesep = os.sep
@@ -139,7 +139,6 @@ def plot_per_prn(model, prn, normalize=0):
 
 # ----------- GRPAHING RUN ------------ #
 def run_graphing(model):
-
     # Print start message to terminal.
     print("\n\n# --- " + model.file_type + ": Plotting Time vs. " + model.graph_type + " --- #")
     print('Date (year, month, day): {}, {}, {}'.format(model.date[0], model.date[1], model.date[2]))
