@@ -31,6 +31,14 @@ class GraphSettings:
         today = datetime.datetime.now()
         self.date = [today.year, today.month, today.day]
 
+        # Select the PRNs to plot.
+        self.PRNs_to_plot = []
+
+        # Data pre-processing options.
+        self.threshold = 30
+
+        # Plot options.
+
         # Predefined attributes.
         self.graph_types_REDTEC = ['Azimuth', 'Elevation', 'SecSig Lock', 'SecSig CNo', 'TEC15', 'TECRate15', 'TEC30',
                                    'TECRate30', 'TEC45', 'TECRate45', 'TECTOW', 'TECRateTOW']
@@ -38,3 +46,12 @@ class GraphSettings:
                                    '1secsigma', '3secsigma', '10secsigma', '30secsigma', '60secsigma']
         self.graph_types_RAWTEC = ['TEC', 'TECdot']
         self.graph_types_RAWOBS = ['ADR', 'Power']
+        self.raw_data_types = ['RAWTEC', 'RAWOBS']
+
+    def get_date_str(self):
+        year, month, day = [str(i) for i in self.date]
+        if len(month) == 1:
+            month = '0' + str(month)
+        if len(day) == 1:
+            day = '0' + str(day)
+        return year + month + day

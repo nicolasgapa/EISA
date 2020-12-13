@@ -20,10 +20,13 @@ import wx
 
 # Graphing panel.
 class Graphing(wx.Panel):
+
+    # Initializer.
     def __init__(self, parent, graph_settings):
         # Create panel & object.
         self.settings = graph_settings
         wx.Panel.__init__(self, parent)
+        self.container = wx.BoxSizer(wx.VERTICAL)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Obtain path to the input CSV files.
@@ -79,18 +82,69 @@ class Graphing(wx.Panel):
         self.month.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_month)
         self.day.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_date)
 
+        # PRNs - Select all.
+        text = wx.StaticText(self, label='Select the satellites that you want to plot: \n'
+                                         'G: GPS, R: GLONASS, E: GALILEO')
+        text_2 = wx.StaticText(self, label='Select all:')
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.local_sizer.Add(text_2, 0, wx.ALL | wx.CENTER, 5)
+        self.GPS_check = wx.CheckBox(self, label="G")
+        self.GLONASS_check = wx.CheckBox(self, label="R")
+        self.GALILEO_check = wx.CheckBox(self, label="E")
+        self.local_sizer.Add(self.GPS_check, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GLONASS_check, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GALILEO_check, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.GPS_check.Bind(wx.EVT_CHECKBOX, self.set_GPS_PRNs)
+        self.GLONASS_check.Bind(wx.EVT_CHECKBOX, self.set_GLONASS_PRNs)
+        self.GALILEO_check.Bind(wx.EVT_CHECKBOX, self.set_GALILEO_PRNs)
+
+        # PRNs - Select individual satellites.
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.GPS_satellites_menu = wx.ListBox(self, style=wx.LB_MULTIPLE, choices=['G' + str(i) for i in range(1, 33)])
+        self.GLONASS_satellites_menu = wx.ListBox(self, style=wx.LB_MULTIPLE,
+                                                  choices=['R' + str(i) for i in range(1, 25)])
+        self.GALILEO_satellites_menu = wx.ListBox(self, style=wx.LB_MULTIPLE,
+                                                  choices=['E' + str(i) for i in range(1, 31)])
+        self.local_sizer.Add(self.GPS_satellites_menu, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GLONASS_satellites_menu, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GALILEO_satellites_menu, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.GPS_satellites_menu.Bind(wx.EVT_LISTBOX, self.set_PRNs_to_plot)
+        self.GLONASS_satellites_menu.Bind(wx.EVT_LISTBOX, self.set_PRNs_to_plot)
+        self.GALILEO_satellites_menu.Bind(wx.EVT_LISTBOX, self.set_PRNs_to_plot)
+
+        """
+        Other Options
+        """
+
+        # Threshold.
+        self.sizer_2 = wx.BoxSizer(wx.VERTICAL)
+        text = wx.StaticText(self, label='Select the elevation threshold:')
+        self.threshold_slider = wx.Slider(self, value=30, minValue=0, maxValue=90, style=wx.SL_VALUE_LABEL,
+                                          size=(250, 5))
+        self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.threshold_slider, 0, wx.ALL | wx.CENTER, 5)
+
         # Run EISA using the selected parameters.
         run_btn = wx.Button(self, label='Run EISA')
-        self.sizer.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
         run_btn.Bind(wx.EVT_BUTTON, self.run)
 
         # Return to main menu.
         return_btn = wx.Button(self, label='Return')
-        self.sizer.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
         return_btn.Bind(wx.EVT_BUTTON, parent.return_to_menu)
 
+        # Place everything into the container.
+        self.options = wx.BoxSizer(wx.HORIZONTAL)
+        self.options.Add(self.sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.options.Add(self.sizer_2, 0, wx.ALL | wx.CENTER, 5)
+        self.container.Add(self.options, 0, wx.ALL | wx.CENTER, 5)
+        self.container.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.container.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
+
         # Show panel.
-        self.SetSizer(self.sizer)
+        self.SetSizer(self.container)
         self.Show(True)
 
     # Getters.
@@ -148,12 +202,63 @@ class Graphing(wx.Panel):
         self.settings.date = [self.year.GetStringSelection(), self.month.GetStringSelection(),
                               self.day.GetStringSelection()]
 
+    def set_GPS_PRNs(self, _):
+
+        # GPS.
+        for i in range(32):
+            if self.GPS_check.IsChecked():
+                self.GPS_satellites_menu.SetSelection(i)
+            else:
+                if i in self.GPS_satellites_menu.GetSelections():
+                    self.GPS_satellites_menu.Deselect(i)
+
+        # Set PRNs.
+        self.set_PRNs_to_plot(None)
+
+    def set_GLONASS_PRNs(self, _):
+
+        # GLONASS.
+        for i in range(24):
+            if self.GLONASS_check.IsChecked():
+                self.GLONASS_satellites_menu.SetSelection(i)
+            else:
+                if i in self.GLONASS_satellites_menu.GetSelections():
+                    self.GLONASS_satellites_menu.Deselect(i)
+
+        # Set PRNs.
+        self.set_PRNs_to_plot(None)
+
+    def set_GALILEO_PRNs(self, _):
+
+        # GALILEO.
+        for i in range(30):
+            if self.GALILEO_check.IsChecked():
+                self.GALILEO_satellites_menu.SetSelection(i)
+            else:
+                if i in self.GALILEO_satellites_menu.GetSelections():
+                    self.GALILEO_satellites_menu.Deselect(i)
+
+        # Set PRNs.
+        self.set_PRNs_to_plot(None)
+
+    def set_PRNs_to_plot(self, _):
+        GPS_selections = ['G' + str(i + 1) for i in self.GPS_satellites_menu.GetSelections()]
+        GLONASS_selections = ['R' + str(i + 1) for i in self.GLONASS_satellites_menu.GetSelections()]
+        GALILEO_selections = ['E' + str(i + 1) for i in self.GALILEO_satellites_menu.GetSelections()]
+        self.settings.PRNs_to_plot = GPS_selections + GLONASS_selections + GALILEO_selections
+
     def run(self, _):
-        run_graphing(self.settings)
+        # Catch selection errors. Run only if all stteings have been properly selected.
+        if len(self.settings.PRNs_to_plot) == 0:
+            wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
+        else:
+            run_graphing(self.settings)
 
 
 # Main window frame.
 class TopFrame(wx.Frame):
+
+    # Initializer.
     def __init__(self, graph_settings):
         super().__init__(parent=None, title='Embry-Riddle Ionospheric Scintillation Algorithm (EISA) v2.0',
                          size=(600, 175))
@@ -185,17 +290,18 @@ class TopFrame(wx.Frame):
         self.Center()
         self.Show(True)
 
+    # Graphing.
     def graph(self, _):
         # Hide the main panel and display the graphing panel.
         self.panel.Hide()
-        self.panel = Graphing(self, self.settings)
         self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.my_sizer.Add(self.panel, 1, wx.EXPAND | wx.ALL | wx.CENTER, 2)
+        self.my_sizer.Add(Graphing(self, self.settings), 1, wx.EXPAND | wx.ALL | wx.CENTER, 2)
 
         # Fit to window's size.
         self.SetSizerAndFit(self.my_sizer)
         self.SetSize((600, 150))
 
+    # Retunr to main menu.
     def return_to_menu(self, _):
         self.Hide()
         self.__init__(self.settings)

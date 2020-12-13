@@ -26,32 +26,32 @@ from support_functions import (values_above_threshold, times_cross_elevation, ex
 filesep = os.sep
 
 
-# ---------- SECTION 1: FUNCTIONS ---------- #
-def plot_per_prn(model, prn, normalize=0):
-    # Set the directory to the csv file.
-    csvtograph = model.filetype + "_" + model.constellation + str(prn) + "_" + model.date + ".csv"
-    csv_directory = model.directory + filesep + csvtograph
+# Functions.
+def plot_prn(model, prn, normalize=0):
+    # Set the directory to the output csv file.
+    csv_to_graph = model.file_type + "_" + prn + "_" + model.get_date_str() + ".csv"
+    csv_file = model.CSV_dir + filesep + csv_to_graph
 
     # -------------------------- SECTION: TIME RANGES ---------------------- #
     # For raw data files, extract the elevation column for the corresponding REDTEC file and determine a range of
     # times that are above the elevation threshold.
-    if model.filetype in model.raw_data_types:
-        reducedfile = model.directory + filesep + "REDTEC" + "_" + model.constellation + str(
-            prn) + "_" + model.date + ".csv"
-        if not os.path.isfile(reducedfile):
+    if model.file_type in model.raw_data_types:
+        reduced_file = model.CSV_dir + filesep + "REDTEC" + "_" + prn + "_" + model.get_date_str() + ".csv"
+        if not os.path.isfile(reduced_file):
             return "Could not find the REDTEC file corresponding to the raw data."
     else:
-        reducedfile = csv_directory
-    times_col, valid_col, _ = values_above_threshold(reducedfile, threshold=model.threshold, header=20, times_column=0,
+        reduced_file = csv_file
+
+    times_col, valid_col, _ = values_above_threshold(reduced_file, threshold=model.threshold, header=20, times_column=0,
                                                      elevations_column=6)
     starttimesflt, finaltimesflt = times_cross_elevation(times_col, valid_col)
 
     # ----------------- SECTION: EXTRACTING THE COLUMNS FROM THE CSV FILE ------------------- #
     # Import and read the csv (if it exists).
-    if not os.path.isfile(csv_directory):
-        return "The following directory does not exist: " + csv_directory
+    if not os.path.isfile(csv_file):
+        return "The following directory does not exist: " + csv_file
     header, signal_column, elev_column = obtain_column_numbers(model.filetype)
-    data = extract_data(csv_directory, header=header)
+    data = extract_data(csv_file, header=header)
     filtered_data = filter_data(data, elev_column, ">=", model.threshold, [0, signal_column,
                                                                            elev_column,
                                                                            model.column])
@@ -127,7 +127,7 @@ def plot_per_prn(model, prn, normalize=0):
             signal_types = {"G": {"1": "L1CA", "4": "L2Y", "5": "L2C", "6": "L2P", "7": "L5Q"},
                             "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"},
                             "E": {"1": "E1", "2": "E5A", "3": "E5B", "4": "AltBOC"}}
-            sttp = signal_types[model.constellation][str(signal_type)]
+            sttp = signal_types[prn[0]][str(signal_type)]
 
             # Name the plot.
             graph_name, directory, title, subtitle = naming(prn, sttp, normalize, i, model)
@@ -137,15 +137,21 @@ def plot_per_prn(model, prn, normalize=0):
                 plot(times, yaxiscolumn, directory, graph_name, title, subtitle, model)
 
 
-# ----------- GRPAHING RUN ------------ #
+# ----------- GRAPHING ------------ #
 def run_graphing(model):
     # Print start message to terminal.
     print("\n\n# --- " + model.file_type + ": Plotting Time vs. " + model.graph_type + " --- #")
     print('Date (year, month, day): {}, {}, {}'.format(model.date[0], model.date[1], model.date[2]))
 
+    # Add a folder the output directory.
+    model.output_dir = model.output_dir + filesep + model.get_date_str()
+    print(model.output_dir)
+
+    # Generate plots for the given date and PRNs.
+    for prn in model.PRNs_to_plot:
+        plot_prn(model, prn, normalize=0)
+
 # ------------------------- SECTION 5: PLOTTING --------------------------- #
-#    settings.set_date(date)
-#
 #    # Generate plots for the given date.
 #    for prn in settings.PRNstograph:
 #        plot_per_prn(settings, prn, normalize=0)
