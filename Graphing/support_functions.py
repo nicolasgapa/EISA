@@ -3,11 +3,9 @@ Other useful functions.
 """
 # Imports.
 import os
-import csv
 import numpy as np
 import math
 from scipy import signal
-import operator
 import matplotlib.pyplot as plt
 import pandas as pd
 

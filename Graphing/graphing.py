@@ -9,10 +9,6 @@ Department of Physical Sciences
 Space Physics Research Lab (SPRL)
 Author: Nicolas Gachancipa
 
-CREDITS:
-The Butterworth filter used for TEC detrending was based on a Matlab function written by Dr. Kshitija Deshpande,
-Professor of Engineering Physics at Embry-Riddle Aeronautical University.
-
 """
 # External imports.
 import pandas as pd
@@ -104,17 +100,27 @@ def plot_prn(model, prn):
             times_data = signal_data[signal_data[model.times_column_name] <= end_time]
             times_data = times_data[start_time <= times_data[model.times_column_name]]
 
+            """
+            
+            Subsection: Other features
+            Purpose: Post-data processing, including TEC detrending, night-subtraction (normalization) and TEC 
+            slant-to-vertical conversion. 
+            
+            CREDITS: The Butterworth filter used for TEC detrending was based on a Matlab function written by 
+            Dr. Kshitija Deshpande, Professor of Engineering Physics at Embry-Riddle Aeronautical University.
+            
+            """
+
             # For scintillation data, get rid of non-sense values (e.g. values above a value of 5).
             # These values may come from errors in the receiver/computer or signal interferencies and
             # are not representative of S4/sigma scintillation values.
-            if model.graph_type in [" S4", " S4_Cor", " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma",
-                                    " 60secsigma"]:
+            if model.graph_type in model.scintillation_data_types:
                 times_data = times_data[times_data[model.graph_type] <= 5]
 
-            # For TEC data: If TECdetrending = 1 in the model, detrend the TEC data.
-            if model.TEC_detrending == 1 and (model.file_type in model.raw_data_types):
+            # TEC detrending (High-rate TEC data).
+            if model.TEC_detrending and (model.file_type in model.raw_data_types):
                 x_values, y_values = list(times_data[model.times_column_name]), list(times_data[model.graph_type])
-                yaxiscolumn = tec_detrending(x_values, y_values)
+                times_data[model.graph_type] = tec_detrending(x_values, y_values)
 
             # Night-subtraction and vertical TEC (for low-rate TEC data only).
             #### UPDATES HERE AS OF DEC 13 #### TO-DO NEXT: SPLIT VERTICAL TEC FROM NORMALIZATION.
@@ -131,7 +137,8 @@ def plot_prn(model, prn):
 
                 # When normalize==1 (i.e. when FOR LOOP B runs for the second time):
                 elif model.night_subtraction:
-                    yaxiscolumn = slant_to_vertical_tec(yaxiscolumn, elevations, model.minimum, vertical_tec=model.verticaltec)
+                    yaxiscolumn = slant_to_vertical_tec(yaxiscolumn, elevations, model.minimum,
+                                                        vertical_tec=model.verticaltec)
 
             # Convert times to UTC.
             yaxiscolumn = [float(e) for e in yaxiscolumn]

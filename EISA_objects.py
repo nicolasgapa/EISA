@@ -46,6 +46,8 @@ class GraphSettings:
                                    ' TEC30', ' TECRate30', ' TEC45', ' TECRate45', ' TECTOW', ' TECRateTOW']
         self.graph_types_REDOBS = ['Azimuth', 'Elevation', 'CNo', 'Lock Time', 'CMC avg', 'CMC std', " S4", " S4_Cor",
                                    " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma", " 60secsigma"]
+        self.scintillation_data_types = [" S4", " S4_Cor", " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma",
+                                         " 60secsigma"]
         self.graph_types_RAWTEC = ['TEC', 'TECdot']
         self.graph_types_RAWOBS = ['ADR', 'Power']
         self.raw_data_types = ['RAWTEC', 'RAWOBS']
