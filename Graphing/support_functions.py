@@ -1,3 +1,7 @@
+"""
+Other useful functions.
+"""
+# Imports.
 import os
 import csv
 import numpy as np
@@ -5,10 +9,8 @@ import math
 from scipy import signal
 import operator
 import matplotlib.pyplot as plt
+import pandas as pd
 
-""""
-Other useful functions.
-"""
 filesep = os.sep
 
 
@@ -70,107 +72,44 @@ def dates(start_date, end_date):
     return daymatrix, monthmatrix
 
 
-def values_above_threshold(file, threshold=0, header=0, times_column=0, elevations_column=0):
-    with open(file) as csvfilethree:
-        readCSVthree = csv.reader(csvfilethree, delimiter=',')
+def time_ranges(file, threshold=0, header=0, elev_col_name=' Elev', times_col_name='GPS TOW'):
+    """
+    This function is used to identify the different periods of time in which a satellite is over the given threshold.
+    For example, if a satellite is above a given 30 degree threshold between 6-9 AM and 3-5PM, the function returns
+    the following arrays: start_times = [6AM, 3PM] and end_times = [9AM, 5PM]. EISA creates one plot per period of time
+    using the arrays returned by this function.
 
-        # Cut the header off the csvfile cutting the first [header] rows and select the elevation's column.
-        validelevcolumns = timescolumn = valuescolumn = []
-        for counttwo, row in enumerate(readCSVthree, 1):
-            if counttwo >= header:
-                elevationforthresholdb = row[elevations_column]
-                # Determine which rows of the elevation column have a value that exceeds the threshold set
-                # by the user.
-                if float(elevationforthresholdb) >= threshold:
-                    validelevcolumns.append(counttwo)
-                    valuescolumn.append(row)
-                    if len(row) == 0:
-                        timescolumnitem = "0"
-                    else:
-                        timescolumnitem = row[times_column]
-                    timescolumn.append(timescolumnitem)
-    return times_column, validelevcolumns, valuescolumn
+    :param file (string): Directory to the CSV file (including file name).
+    :param threshold (float): Elevation threshold.
+    :param header (int): Number of header rows in the CSV file (using Python indexing).
+    :param elev_col_name (string): Name of the column that contains the elevation data.
+    :param times_col_name (string): Name of the column that contains the timesteps.
+    :return: start_times (list) and end_times (list): List of times when the satellite crosses the given threshold.
+    """
 
+    # Open the CSV file, and filter the data using the given elevation threshold.
+    DF = pd.read_csv(file, header=header)
+    filtered_DF = DF[DF[elev_col_name] >= threshold]
+    filtered_DF = filtered_DF[[times_col_name, elev_col_name]]
 
-def times_cross_elevation(times_col, elevations_col):
-    # Sometimes, satellites cross the elevation threshold multiple times within a day. E.G. PRN 2 is
-    # above. Sometimes, satellites cross the elevation threshold multiple times within a day. E.G.
-    # PRN 2 is above the elevation threshold between 1PM and 3PM, and then later between 7PM and 9PM.
-    subtractthisvalue = 0
-    rangestartrows = []
+    # Find the difference between one row and another.
+    filtered_DF['Index difference'] = [2] + [x - y for x, y in zip(filtered_DF.index[1:], filtered_DF.index)]
 
-    # Identify the times at which satellites cross the elevation threshold and save those values into
-    # variables.
+    # Start rows (All those rows that have an index difference greater than 1 with respect to the previous row).
+    # The difference > 1 indicates that the data was collected at a different time of the day, and the satellite
+    # crossed the elevation theshold multiple times throughout the day.
+    start_rows = filtered_DF[filtered_DF['Index difference'] > 1]
+    start_times = list(start_rows[times_col_name])
 
-    for itema in elevations_col:
-        # e.g. in the previous example: rangestartrows:[1PM, 7PM] and rangefinalrows=[3PM, 9PM].
-        if (itema - subtractthisvalue) != 1:
-            rangestartrow = itema
-            rangestartrows.append(rangestartrow)
-        subtractthisvalue = itema
+    # End rows.
+    end_times = []
+    for index, row in start_rows.iloc[1:].iterrows():
+        end_row = filtered_DF.loc[int(index - row['Index difference']), :]
+        end_times.append(int(end_row[times_col_name]))
+    end_times.append(int(filtered_DF.iloc[-1, :][times_col_name]))
 
-    if len(rangestartrows) > 1:
-        rangefinalrows = []
-        for j in range(len(rangestartrows) - 1):
-            rangefinalrow = rangestartrows[1]
-            rangefinalrows.append(rangefinalrow)
-        rangefinalrows = (rangefinalrows, elevations_col[-1])
-    elif len(rangestartrows) == 1:
-        rangefinalrows = [elevations_col[-1]]
-
-    # Determine the times (in seconds) for both start and final rows in the range variables.
-    countfour = 0
-    starttimes = []
-    finaltimes = []
-    if len(rangestartrows) > 1:
-        for _ in len(rangestartrows):
-            startselection = rangestartrows[countfour]
-            finalselection = rangefinalrows[countfour]
-            starttime = times_col[startselection]
-            finaltime = times_col[finalselection - 1]
-            starttimes.append(str(starttime))
-            finaltimes.append(str(finaltime))
-            countfour = countfour + 1
-    elif len(rangestartrows) == 1:
-        startselection = rangestartrows[0]
-        finalselection = rangefinalrows[0]
-        starttimes = [times_col[startselection]]
-        finaltimes = [times_col[finalselection - 1]]
-    starttimesflt = []  # Convert the times to float values.
-    finaltimesflt = []
-    for t in starttimes:
-        starttimesflt.append(float(t))
-    for u in finaltimes:
-        finaltimesflt.append(float(u))
-
-    return starttimesflt, finaltimesflt
-
-
-def extract_data(file, header=0):
-    data = []
-    with open(file) as csvfilethree:
-        readCSVthree = csv.reader(csvfilethree, delimiter=',')
-        for i, row in enumerate(readCSVthree):
-            if i >= header:
-                data.append(row)
-    return np.array(data)
-
-
-def filter_data(data, column, comparison_type, comparison_value, columns_to_return):
-    operators = {"=": operator.eq, ">=": operator.gt}
-    op = operators[comparison_type]
-
-    filtered_data = []
-    for row in data:
-        if op(float(row[column]), comparison_value):
-            filtered_data.append(row)
-
-    # Cut columns.
-    final_filter = []
-    for row in filtered_data:
-        final_filter.append([row[i] for i, _ in enumerate(row) if i in columns_to_return])
-
-    return np.array(filtered_data)
+    # Return.
+    return start_times, end_times
 
 
 def naming(prn, signal_type, normalize, time_period, model):
@@ -374,23 +313,20 @@ def plot(x_values, y_values, directory, graphname, title, subtitle, model):
     # Save the figure.
     plt.savefig(directory)
 
-
     # If the summary plot option is not active, clear the graph.
     if not model.summary_plot:
         plt.clf()
 
 
-def obtain_column_numbers(y):
-    if y == "REDTEC" or y == "ismRawTEC" or y == "ismRawTec":
-        variablesignal = 4
-        variable = 20
-        elevationvar = 6
-    elif y == "REDOBS":
-        variablesignal = 3
-        variable = 20
-        elevationvar = 5
-    elif y == "ismRawObs" or y == "ismRawOBS" or y == "ismDetObs" or y == "ismDetOBS":
-        variablesignal = 2
-        variable = 9
-        elevationvar = None
-    return variable, variablesignal, elevationvar
+def header_size(file_type):
+    """
+    Function to obtain the number of rows in the header of a CSV file (Output of a NovAtel GPStation 6).
+    The function can be further modified for EISA to be capable of handling data from other receivers.
+
+    :param file_type (string): File type (reduced/raw, or TEC/scintillation). E.g. "REDTEC"
+    :return: header size (int): Number of rows in the header of such file.
+    """
+    if file_type == "REDTEC" or file_type == "ismRawTEC" or file_type == "ismRawTec" or file_type == "REDOBS":
+        return 18
+    elif file_type == "ismRawObs" or file_type == "ismRawOBS" or file_type == "ismDetObs" or file_type == "ismDetOBS":
+        return 7

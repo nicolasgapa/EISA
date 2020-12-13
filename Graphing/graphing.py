@@ -15,104 +15,123 @@ Professor of Engineering Physics at Embry-Riddle Aeronautical University.
 
 """
 # External imports.
+import pandas as pd
 import os
 
 # Internal imports.
-from support_functions import (values_above_threshold, times_cross_elevation, extract_data,
-                               filter_data, naming, tec_detrending, slant_to_vertical_tec, seconds_to_utc,
-                               plot, obtain_column_numbers)
+from support_functions import (time_ranges, header_size,
+
+                               naming, tec_detrending, slant_to_vertical_tec, seconds_to_utc,
+                               plot)
+from EISA_objects import GraphSettings
 
 # Set the file separator to work in both Linux and Windows.
 filesep = os.sep
 
 
 # Functions.
-def plot_prn(model, prn, normalize=0):
+def plot_prn(model, prn):
+
     # Set the directory to the output csv file.
     csv_to_graph = model.file_type + "_" + prn + "_" + model.get_date_str() + ".csv"
-    csv_file = model.CSV_dir + filesep + csv_to_graph
+    csv_file = model.CSV_dir + filesep + model.get_date_str() + filesep + csv_to_graph
 
-    # -------------------------- SECTION: TIME RANGES ---------------------- #
-    # For raw data files, extract the elevation column for the corresponding REDTEC file and determine a range of
-    # times that are above the elevation threshold.
+    """
+    
+    Section: Time ranges.
+    Purpose: Determine the range of times in which the satellite is above the elevation threshold.
+    
+    """
+    # For raw files, the elevation data must be extracted from the equivalent reduced file. Set the directory to
+    # such file.
+    reduced_file = csv_file
     if model.file_type in model.raw_data_types:
         reduced_file = model.CSV_dir + filesep + "REDTEC" + "_" + prn + "_" + model.get_date_str() + ".csv"
         if not os.path.isfile(reduced_file):
             return "Could not find the REDTEC file corresponding to the raw data."
-    else:
-        reduced_file = csv_file
 
-    times_col, valid_col, _ = values_above_threshold(reduced_file, threshold=model.threshold, header=20, times_column=0,
-                                                     elevations_column=6)
-    starttimesflt, finaltimesflt = times_cross_elevation(times_col, valid_col)
+    # Identify the time ranges in which the satellite is above the given threshold. The start_times array indicates
+    # the times at which the satellite crosses the threshold and is gaining elevation, while the end_times array
+    # contains the times at which the satellite cross the threshold moving downwards (towards the horizon line).
+    # Each pair of start-end times is the range of time in which the satellite was above the threshold.
+    start_times, end_times = time_ranges(reduced_file, threshold=model.threshold, header=header_size('REDTEC'),
+                                         elev_col_name=model.elevation_column_name,
+                                         times_col_name=model.times_column_name)
+    """
 
-    # ----------------- SECTION: EXTRACTING THE COLUMNS FROM THE CSV FILE ------------------- #
+    Section: Data pre-processing.
+    Purpose: Filter the dataset to only include the corresponding columns: Time, elevation, signal type, and the 
+             graph type selected by the user (the paramater that will be plotted, e.g. Azimuth or TEC15). 
+
+    """
     # Import and read the csv (if it exists).
     if not os.path.isfile(csv_file):
         return "The following directory does not exist: " + csv_file
-    header, signal_column, elev_column = obtain_column_numbers(model.filetype)
-    data = extract_data(csv_file, header=header)
-    filtered_data = filter_data(data, elev_column, ">=", model.threshold, [0, signal_column,
-                                                                           elev_column,
-                                                                           model.column])
-    varsignaltypecolumn = [r[1] for r in filtered_data]
 
-    # There are 7 types of signals (1 through 7).
-    # Determine how many types of signals (and which ones) are present in the selected file.
-    # Save the present signal types into a variable calles saves.
-    saves = [it for it in range(1, 8) if it in list(map(int, varsignaltypecolumn))]
+    # Filter the dataset.
+    header = header_size(model.file_type)
+    DF = pd.read_csv(csv_file, header=header)
+    filtered_DF = DF[DF[model.elevation_column_name] >= model.threshold]
+    filtered_DF = filtered_DF[[model.times_column_name, model.elevation_column_name, model.signal_column_name,
+                               model.graph_type]]
 
-    # ---------------- SECTION: FOR LOOP FOR SIGNAL TYPE ------------------ #
-    # FOR LOOP THAT REPEATS FOR EACH SIGNAL TYPE.
-    for signal_type in saves:
-        signal_data = filter_data(filtered_data, 2, "=", signal_type, [0, 2, 3])
-        times, elevations, yaxiscolumn = [r[0] for r in signal_data], [r[1] for r in signal_data], [r[2] for r in
-                                                                                                    signal_data]
+    # Identify the signal types present in the data (Signal types are an integer between 1 and 7).
+    signal_types = filtered_DF[model.signal_column_name].unique()
 
-        # START FOR LOOP THAT REPEATS FOR EVERY TIME PERIOD.
-        for i, (timestartposition, timefinalposition) in enumerate(zip(starttimesflt, finaltimesflt)):
+    """
+    
+    Section: Plot.
+    Purpose: Loop over the signal types previously identified. Make one plot per signal type.
+    
+    """
+    for signal_type in signal_types:
+
+        # Filter the dataset to only include rows corresponding to the signal type being processed.
+        signal_data = filtered_DF[filtered_DF[model.signal_column_name] == signal_type]
+        signal_data = signal_data.drop(model.signal_column_name, axis=1)
+
+        """
+        
+        Subsection: Plot per time range.
+        Purpose: For each time range previously identified, make one plot. For example, for a satellite which is 
+        above the elevation threshold twice in a day (e.g. between 6-9AM and 3-5PM), make one plot for each time 
+        period using the start_times and end_times arrays previously created. 
+        
+        """
+        for i, (start_time, end_time) in enumerate(zip(start_times, end_times)):
 
             # Cut the times and y-axis columns for the current time period.
-            times = [it for c, it in enumerate(times, 1) if timestartposition <= c <= timefinalposition]
-            yaxiscolumn = [it for c, it in enumerate(yaxiscolumn, 1) if timestartposition <= c <= timefinalposition]
+            times_data = signal_data[signal_data[model.times_column_name] <= end_time]
+            times_data = times_data[start_time <= times_data[model.times_column_name]]
 
             # For scintillation data, get rid of non-sense values (e.g. values above a value of 5).
-            # These values may come from errors in the reciever/computer or signal interferencies and
+            # These values may come from errors in the receiver/computer or signal interferencies and
             # are not representative of S4/sigma scintillation values.
-            if model.graph_type in ["S4", "S4_Cor", "1secsigma", "3secsigma", "10secsigma", "30secsigma",
-                                    "60secsigma"]:
-                new_x = new_y = []
-                for t, y_value in zip(times, yaxiscolumn):
-                    if float(y_value) < 5:
-                        new_x.append(t)
-                        new_y.append(y_value)
-                times, yaxiscolumn = new_x, new_y
+            if model.graph_type in [" S4", " S4_Cor", " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma",
+                                    " 60secsigma"]:
+                times_data = times_data[times_data[model.graph_type] <= 5]
 
-            # ------------------------ SECTION 4D: TEC DETRENDING -------------------------- #
-            # For TEC: If TECdetrending=1 in the GRAPHSETTINGS csv file, detrend the TEC data.
-            if model.TECdetrending == 1 and model.filetype in model.raw_data_types:
-                yaxiscolumn = tec_detrending(times, yaxiscolumn)
+            # For TEC data: If TECdetrending = 1 in the model, detrend the TEC data.
+            if model.TEC_detrending == 1 and (model.file_type in model.raw_data_types):
+                x_values, y_values = list(times_data[model.times_column_name]), list(times_data[model.graph_type])
+                yaxiscolumn = tec_detrending(x_values, y_values)
 
-            # ------------------ SECTION 4E: NIGHT SUBTRACTION AND VERTICAL TEC ------------ #
-            # Run this part of the code ONLY for low-rate TEC data.
-            if model.filetype == "REDTEC":
+            # Night-subtraction and vertical TEC (for low-rate TEC data only).
+            #### UPDATES HERE AS OF DEC 13 #### TO-DO NEXT: SPLIT VERTICAL TEC FROM NORMALIZATION.
+            if model.file_type == "REDTEC":
 
-                # Run this part of the code ONLY if listforyaxisflt is not an empty vector.
-                if len(yaxiscolumn) > 0:
+                # When normalize==0 (regular data), select the minimum value.
+                if not model.night_subtraction:
 
-                    # When normalize==0 (regular data), select the minimum value.
-                    if normalize == 0:
+                    # After FOR LOOP  runs completely for the first time, it will calculate the
+                    # minimum TEC value from ALL PRNs.
+                    minimumvalueyaxis = min(float(s) for s in yaxiscolumn)
+                    if minimumvalueyaxis < model.minimum:
+                        model.minimum = minimumvalueyaxis
 
-                        # After FOR LOOP  runs completely for the first time, it will calculate the
-                        # minimum TEC value from ALL PRNs.
-                        minimumvalueyaxis = min(float(s) for s in yaxiscolumn)
-                        if minimumvalueyaxis < model.minimum:
-                            model.minimum = minimumvalueyaxis
-
-                    # When normalize==1 (i.e. when FOR LOOP B runs for the second time):
-                    elif normalize == 1:
-                        yaxiscolumn = slant_to_vertical_tec(yaxiscolumn, elevations, model.minimum,
-                                                            vertical_tec=model.verticaltec)
+                # When normalize==1 (i.e. when FOR LOOP B runs for the second time):
+                elif model.night_subtraction:
+                    yaxiscolumn = slant_to_vertical_tec(yaxiscolumn, elevations, model.minimum, vertical_tec=model.verticaltec)
 
             # Convert times to UTC.
             yaxiscolumn = [float(e) for e in yaxiscolumn]
@@ -149,7 +168,15 @@ def run_graphing(model):
 
     # Generate plots for the given date and PRNs.
     for prn in model.PRNs_to_plot:
-        plot_prn(model, prn, normalize=0)
+        plot_prn(model, prn)
+
+# Temporary.
+# m = GraphSettings()
+# m.date = [2020, 8, 2]
+# m.PRNs_to_plot = ['G1']
+# m.output_dir = r'C:\Users\nicol\Desktop\Research Local Files\EISA_OUTPUT\RX1\GRAPHS'
+# m.CSV_dir = r'C:\Users\nicol\Desktop\Research Local Files\EISA_OUTPUT\RX1\CSVFILES'
+# run_graphing(m)
 
 # ------------------------- SECTION 5: PLOTTING --------------------------- #
 #    # Generate plots for the given date.

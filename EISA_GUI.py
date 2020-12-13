@@ -115,17 +115,29 @@ class Graphing(wx.Panel):
         self.GLONASS_satellites_menu.Bind(wx.EVT_LISTBOX, self.set_PRNs_to_plot)
         self.GALILEO_satellites_menu.Bind(wx.EVT_LISTBOX, self.set_PRNs_to_plot)
 
+        # Threshold.
+        text = wx.StaticText(self, label='Select the elevation threshold:')
+        self.threshold_slider = wx.Slider(self, value=30, minValue=0, maxValue=90, style=wx.SL_LABELS)
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.threshold_slider, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+        self.threshold_slider.Bind(wx.EVT_SCROLL, self.set_threshold)
+
         """
         Other Options
         """
-
-        # Threshold.
         self.sizer_2 = wx.BoxSizer(wx.VERTICAL)
-        text = wx.StaticText(self, label='Select the elevation threshold:')
-        self.threshold_slider = wx.Slider(self, value=30, minValue=0, maxValue=90, style=wx.SL_VALUE_LABEL,
-                                          size=(250, 5))
+        text = wx.StaticText(self, label='Other options:')
         self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
-        self.sizer_2.Add(self.threshold_slider, 0, wx.ALL | wx.CENTER, 5)
+
+        # TEC Detrending (Only for Raw Data).
+        self.TEC_detrending_check = wx.CheckBox(self, label="TEC Detrending (Only for high-rate TEC data)")
+        self.sizer_2.Add(self.TEC_detrending_check, 0, wx.ALL | wx.CENTER, 5)
+        self.TEC_detrending_check.Bind(wx.EVT_CHECKBOX, self.set_TEC_detrending)
+
+        # Night subtraction (Low-rate TEC only).
+        self.night_subtraction_check = wx.CheckBox(self, label="Night Subtraction (Only for low-rate TEC data)")
+        self.sizer_2.Add(self.night_subtraction_check, 0, wx.ALL | wx.CENTER, 5)
+        self.night_subtraction_check.Bind(wx.EVT_CHECKBOX, self.set_night_subtraction)
 
         # Run EISA using the selected parameters.
         run_btn = wx.Button(self, label='Run EISA')
@@ -138,6 +150,7 @@ class Graphing(wx.Panel):
         # Place everything into the container.
         self.options = wx.BoxSizer(wx.HORIZONTAL)
         self.options.Add(self.sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.options.Add(wx.StaticLine(self, -1, size=(3, 600), style=wx.LI_VERTICAL), 0, wx.ALL | wx.CENTER, 5)
         self.options.Add(self.sizer_2, 0, wx.ALL | wx.CENTER, 5)
         self.container.Add(self.options, 0, wx.ALL | wx.CENTER, 5)
         self.container.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
@@ -247,6 +260,15 @@ class Graphing(wx.Panel):
         GALILEO_selections = ['E' + str(i + 1) for i in self.GALILEO_satellites_menu.GetSelections()]
         self.settings.PRNs_to_plot = GPS_selections + GLONASS_selections + GALILEO_selections
 
+    def set_threshold(self, _):
+        self.settings.threshold = self.threshold_slider.GetValue()
+
+    def set_TEC_detrending(self, _):
+        self.settings.TEC_detrending = self.TEC_detrending_check.IsChecked()
+
+    def set_night_subtraction(self, _):
+        self.settings.night_subtraction = self.night_subtraction_check.IsChecked()
+
     def run(self, _):
         # Catch selection errors. Run only if all stteings have been properly selected.
         if len(self.settings.PRNs_to_plot) == 0:
@@ -295,11 +317,11 @@ class TopFrame(wx.Frame):
         # Hide the main panel and display the graphing panel.
         self.panel.Hide()
         self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.my_sizer.Add(Graphing(self, self.settings), 1, wx.EXPAND | wx.ALL | wx.CENTER, 2)
+        self.my_sizer.Add(Graphing(self, self.settings), 1, wx.EXPAND | wx.ALL, 2)
 
         # Fit to window's size.
         self.SetSizerAndFit(self.my_sizer)
-        self.SetSize((600, 150))
+        self.Center()
 
     # Retunr to main menu.
     def return_to_menu(self, _):

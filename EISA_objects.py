@@ -20,12 +20,12 @@ import datetime
 class GraphSettings:
     def __init__(self):
         # Directories.
-        self.CSV_dir = os.getcwd() + r'\EISA_OUTPUT\RX1\CSVFILES'
-        self.output_dir = os.getcwd() + r'\EISA_OUTPUT\RX1\GRAPHS'
+        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\CSVFILES'
+        self.output_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\GRAPHS'
 
         # File and graph type (REDTEC and Azimuth as default)
         self.file_type = 'REDTEC'
-        self.graph_type = 'Azimuth'
+        self.graph_type = ' Azimuth'
 
         # Date (Today as default)
         today = datetime.datetime.now()
@@ -37,16 +37,21 @@ class GraphSettings:
         # Data pre-processing options.
         self.threshold = 30
 
-        # Plot options.
+        # Other plot options.
+        self.TEC_detrending = False
+        self.night_subtraction = False
 
-        # Predefined attributes.
-        self.graph_types_REDTEC = ['Azimuth', 'Elevation', 'SecSig Lock', 'SecSig CNo', 'TEC15', 'TECRate15', 'TEC30',
-                                   'TECRate30', 'TEC45', 'TECRate45', 'TECTOW', 'TECRateTOW']
-        self.graph_types_REDOBS = ['Azimuth', 'Elevation', 'CNo', 'Lock Time', 'CMC avg', 'CMC std', 'S4', 'S4 Cor',
-                                   '1secsigma', '3secsigma', '10secsigma', '30secsigma', '60secsigma']
+        # Predefined attributes (NovAtel GPStation-6 receiver).
+        self.graph_types_REDTEC = [' Azimuth', ' Elev', ' SecSig Lock Time', ' SecSig CNo', 'TEC15', ' TECRate15',
+                                   ' TEC30', ' TECRate30', ' TEC45', ' TECRate45', ' TECTOW', ' TECRateTOW']
+        self.graph_types_REDOBS = ['Azimuth', 'Elevation', 'CNo', 'Lock Time', 'CMC avg', 'CMC std', " S4", " S4_Cor",
+                                   " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma", " 60secsigma"]
         self.graph_types_RAWTEC = ['TEC', 'TECdot']
         self.graph_types_RAWOBS = ['ADR', 'Power']
         self.raw_data_types = ['RAWTEC', 'RAWOBS']
+        self.elevation_column_name = ' Elev'
+        self.times_column_name = 'GPS TOW'
+        self.signal_column_name = ' SecSig'
 
     def get_date_str(self):
         year, month, day = [str(i) for i in self.date]
