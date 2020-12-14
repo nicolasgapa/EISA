@@ -359,3 +359,61 @@ def validate_dates(daymatrix, monthmatrix, yeari, outputfolderdirectory):
             valid_dates.append(validfolder)
         dcount = dcount + 1
     return valid_dates
+
+
+def dates(start_date, end_date):
+    yeari, monthi, dayi = start_date
+    _, monthf, dayf = end_date
+
+    daymatrix = []  # Create two matrices: One for the months and the other one for the days.
+    monthmatrix = []
+    numberofmonths = int(monthf) - int(monthi)  # How many months will be plotted?
+    monthcount = 0
+    rangea = numberofmonths + 1
+    if numberofmonths != 0:  # If there is more than one month:
+        # Start a for loop for each month.
+        for month in range(rangea):  # Start a for loop for each month.
+            if monthcount <= numberofmonths:
+                if monthcount == 0:
+                    month = int(monthi)
+                else:
+                    month = int(monthi) + monthcount  # Determine the number of days for each specific month.
+                if month == 1 or month == 3 or month == 5 or month == 7 or month == 8 or month == 10 or month == 12:
+                    numofdays = 31
+                elif month == 4 or month == 6 or month == 9 or month == 11:
+                    numofdays = 30
+                elif month == 2:
+                    remainder = int(yeari) % 4
+                    if remainder == 0:
+                        numofdays = 29
+                    elif remainder != 0:
+                        numofdays = 28
+                if monthcount == 0:  # Determine all the days inside the range given by the user.
+                    numofdays1 = numofdays - int(dayi)
+                elif monthcount != 0 and month != int(monthf):
+                    numofdays1 = numofdays
+                elif month == int(monthf):
+                    numofdays1 = int(dayf)
+                for day in range(numofdays1 + 1):
+                    if monthcount == 0:
+                        daytoadd = int(dayi) + day
+                        daymatrix.append(daytoadd)
+                    elif monthcount != 0 and month != int(monthf):
+                        if day != 0:
+                            daytoadd = day
+                            daymatrix.append(daytoadd)
+                    elif month == int(monthf) and monthcount == numberofmonths:
+                        if day <= int(dayf) and day != 0:
+                            daytoadd = day
+                            daymatrix.append(daytoadd)
+                    monthmatrix.append(month)
+                monthcount = monthcount + 1
+    elif numberofmonths == 0:  # Elseif the range includes only one month:
+        month = monthi
+        numberofdays = int(dayf) - int(dayi)  # Add each day of the month to the matrix.
+        for day in range(numberofdays + 1):
+            daytoadd = day + int(dayi)
+            monthmatrix.append(int(month))
+            daymatrix.append(daytoadd)
+
+    return daymatrix, monthmatrix

@@ -1,73 +1,23 @@
 """
-Other useful functions.
+
+Embry-Riddle Ionospheric Scintillation Algorithm (EISA)
+Version 2
+Support functions
+
+Embry-Riddle Aeronautical University
+Department of Physical Sciences
+Space Physics Research Lab (SPRL)
+Author: Nicolas Gachancipa
+
 """
 # Imports.
 import os
 import numpy as np
-import math
 from scipy import signal
 import matplotlib.pyplot as plt
 import pandas as pd
 
 filesep = os.sep
-
-
-def dates(start_date, end_date):
-    yeari, monthi, dayi = start_date
-    _, monthf, dayf = end_date
-
-    daymatrix = []  # Create two matrices: One for the months and the other one for the days.
-    monthmatrix = []
-    numberofmonths = int(monthf) - int(monthi)  # How many months will be plotted?
-    monthcount = 0
-    rangea = numberofmonths + 1
-    if numberofmonths != 0:  # If there is more than one month:
-        # Start a for loop for each month.
-        for month in range(rangea):  # Start a for loop for each month.
-            if monthcount <= numberofmonths:
-                if monthcount == 0:
-                    month = int(monthi)
-                else:
-                    month = int(monthi) + monthcount  # Determine the number of days for each specific month.
-                if month == 1 or month == 3 or month == 5 or month == 7 or month == 8 or month == 10 or month == 12:
-                    numofdays = 31
-                elif month == 4 or month == 6 or month == 9 or month == 11:
-                    numofdays = 30
-                elif month == 2:
-                    remainder = int(yeari) % 4
-                    if remainder == 0:
-                        numofdays = 29
-                    elif remainder != 0:
-                        numofdays = 28
-                if monthcount == 0:  # Determine all the days inside the range given by the user.
-                    numofdays1 = numofdays - int(dayi)
-                elif monthcount != 0 and month != int(monthf):
-                    numofdays1 = numofdays
-                elif month == int(monthf):
-                    numofdays1 = int(dayf)
-                for day in range(numofdays1 + 1):
-                    if monthcount == 0:
-                        daytoadd = int(dayi) + day
-                        daymatrix.append(daytoadd)
-                    elif monthcount != 0 and month != int(monthf):
-                        if day != 0:
-                            daytoadd = day
-                            daymatrix.append(daytoadd)
-                    elif month == int(monthf) and monthcount == numberofmonths:
-                        if day <= int(dayf) and day != 0:
-                            daytoadd = day
-                            daymatrix.append(daytoadd)
-                    monthmatrix.append(month)
-                monthcount = monthcount + 1
-    elif numberofmonths == 0:  # Elseif the range includes only one month:
-        month = monthi
-        numberofdays = int(dayf) - int(dayi)  # Add each day of the month to the matrix.
-        for day in range(numberofdays + 1):
-            daytoadd = day + int(dayi)
-            monthmatrix.append(int(month))
-            daymatrix.append(daytoadd)
-
-    return daymatrix, monthmatrix
 
 
 def time_ranges(file, threshold=0, header=0, elev_col_name=' Elev', times_col_name='GPS TOW'):
@@ -110,46 +60,74 @@ def time_ranges(file, threshold=0, header=0, elev_col_name=' Elev', times_col_na
     return start_times, end_times
 
 
-def naming(prn, signal_type, normalize, time_period, model):
-    # --------------------------------- SECTION 4L: NAMING ------------------------------ #
+def naming(model, prn, signal_type, time_period=1):
+    """
+    Fuction to obtain the file name, title, and subtitle of a plot.
+
+    :param model: GraphSettings model.
+    :param prn (str): e.g. G1 for GPS 1, or R4 for GLONASS 4
+    :param signal_type (str): Name of the signal type, e.g. 'L1CA'
+    :param time_period (int): An integer indicating the time period of the plot. E.g. if the satellite is over the
+                              elevation threshold during two time periods in a single day (e.g. 6-9AM and 3-5PM),
+                              the plot showing time period "1" (6-9AM) must have time_period == 1, while the plot for
+                              time period 2 (3-5PM), must have time_period == 2. Default: 1.
+    :return: plot_name (str), title (str), subttitle (str)
+    """
+
+    # Define the month names.
+    month_names = {'01': 'January', '02': 'February', '03': 'March', '04': 'April', '05': 'May', '06': 'June',
+                   '07': 'July', '08': 'August', '09': 'September', '10': 'October', '11': 'November', '12': 'December'}
+
+    # Define constellation types.
     constellations = {"G": "GPS", "R": "GLONASS", "E": "GALILEO"}
-    constellation_type = constellations[model.constellation]
 
-    # Select a letter. This letter will be printed in the title of the plot.
-    # The letter represents the time period. e.g. if there are two time periods for one PRN,
-    # the plot showing time period 1 will have "A" in the title. Time period 2 will have "B".
-    # Refer to Section 4G to see the definition of a time period.
-    letters = {1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H', 9: 'I', 10: 'J'}
-    lettername = letters[time_period]
+    # The time_period_vars letter will be printed in the title of the plot.
+    # The letter represents the time period. e.g. if there are two time periods for one PRN in a single day
+    # (e.g. 6-9AM and 3-5PM), the plot showing time period 1 (6-9AM) will have an "A" in the title.
+    # Time period 2 (3-5PM) will have a "B".
+    time_period_vars = {1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H', 9: 'I', 10: 'J'}
+    period = time_period_vars[time_period]
 
-    if model.summary_plot:  # Determine the name of the graph.
-        graphname = model.file_type + "_SummaryPlot_" + model.date
-        graphname = graphname + "_" + model.graphtype + "_" + constellation_type
+    # Define the plot name.
+    plot_name = model.get_date_str() + '_' + model.file_type
+
+    # Summary Plot.
+    if model.summary_plot:
+        plot_name += '_SummaryPlot_' + constellations[prn[0]] + '_' + model.graph_type
+
+    # Individual Plot.
     else:
-        graphname = model.file_type + "_" + model.constellation + str(prn) + "_" + model.date
-        graphname = graphname + "_" + model.graphtype + "_" + "Signal" + str(signal_type) + "_" + lettername
+        plot_name += '_' + model.graph_type + '_' + prn + "_Signal" + '-' + str(signal_type) + '_' + period
 
-    if normalize == 1:
-        graphname = graphname + "_Normalized"
-    if model.verticaltec == 1 and normalize == 1:
-        graphname = graphname + "_verticalTEC"
-
-    graphname = graphname + str(model.formattype)
-    savinggraphs = model.graphsfolderdirectory + model.date
+    # Normalization (night subtraction) and Vertical TEC.
+    if model.night_subtraction:
+        plot_name += "_Normalized"
+    if model.vertical_TEC:
+        plot_name += "_verticalTEC"
 
     # Set the title  and subtitle of the plot.
-    title = model.monthname + " " + str(model.daynumber) + " - " + "Time (UTC) vs. " + model.graphtype
-    subtitle = "Elevation threshold: " + str(model.threshold)
-    if model.summary_plot:
-        titletoprint = title + " - Summary Plot - " + constellation_type
-        subtitletoprint = subtitle + " - Loc: " + model.location
-    else:
-        titletoprint = title + " - " + constellation_type + " " + str(model.savedPRNnumber) + " (" + lettername + ")"
-        subtitletoprint = subtitle + " - Signal type: " + str(signal_type) + " - Loc: " + model.location
-    if model.verticaltec == 1 and normalize == 1:
-        subtitletoprint = subtitletoprint + " - Vertical TEC"
+    month, day = model.get_date_str()[4:6], model.get_date_str()[6:8]
+    title = month_names[month] + " " + day + " - " + "Time (UTC) vs. " + model.graph_type
+    subtitle = "Elevation threshold: " + str(model.threshold) + '°'
 
-    return graphname, savinggraphs, titletoprint, subtitletoprint
+    # Summary plot title
+    if model.summary_plot:
+        title += " - Summary Plot - " + constellations[prn[0]]
+        subtitle += " - Loc: " + model.location
+
+    # Individual plot title and subtitle.
+    else:
+        title += " - " + constellations[prn[0]] + " " + prn[1:] + " (" + period + ")"
+        subtitle += " - Signal type: " + str(signal_type) + " - Loc: " + model.location
+
+    # Subtitle edits: Normalization (night subtraction) and Vertical TEC.
+    if model.night_subtraction:
+        subtitle += " - Normalized"
+    if model.vertical_TEC:
+        subtitle += " - Vertical TEC"
+
+    # Return the plot's file name, title, and subtitle.
+    return plot_name, title, subtitle
 
 
 def tec_detrending(x_values, y_values):
@@ -194,115 +172,82 @@ def tec_detrending(x_values, y_values):
     return Detrended_TEC
 
 
-def slant_to_vertical_tec(y_values, elevations, min_value, vertical_tec=0):
-    # For every element in listforyaxisflt, convert to vertical TEC (if vertical
-    # TEC==1) and do the night-subtraction.
-    normalizedaxis = []
-    if vertical_tec == 1:
-        for i, e in enumerate(y_values):
-            # This section uses geometry to get rid of the effects due to the variable
-            # thickness of the atmosphere.
-            minimumvaluetouse = min(float(s) for s in y_values)
-            e -= minimumvaluetouse
-            elevationtouse = elevations[i] * 0.0174533
-            coselev = math.cos(elevationtouse)
-            obliquity = 1 / (math.sqrt(1 - (0.947979 * coselev)))
-            newelement = (e / obliquity) + minimumvaluetouse
-            elementtoappend = newelement - min_value
-            normalizedaxis.append(elementtoappend)
-    else:
-        normalizedaxis = [e - min_value for e in y_values]
-    return normalizedaxis
+def slant_to_vertical_tec(y_values, elevations):
+    """
+    This function converts slant TEC values to vertical TEC (considering Earth's geometry).
+
+    :param y_values: The TEC values (y-axis values of a TEC plot).
+    :param elevations: The elevation values corresponding to the TEC values.
+    :return: new_y_values (list):
+    """
+    min_value = min(y_values)
+    normalized = np.array([i - min_value for i in y_values])
+    cos_elevations = np.cos(np.array(elevations) * 0.0174533)
+    obliquities = 1 / (np.sqrt(1 - (0.947979 * cos_elevations)))
+    new_y_values = (normalized / obliquities) + min_value
+    return new_y_values
 
 
-def seconds_to_utc(y_values):
-    newtimesUTC = []
-    for numbertoconvert in y_values:  # Convert the times to UTC.
-        numbertoconvert = float(numbertoconvert)  # 86400 sec = 1 day.
+def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
+    """
+    Function used to plot and save a graph.
 
-        if numbertoconvert >= 86400:
-            remainder = numbertoconvert % 86400
-            if remainder == 0:
-                remainder = 86400
-        elif numbertoconvert < 86400:
-            remainder = numbertoconvert
-        howmanyhoursflt = remainder / 3600  # Determine the amount of hours.
-        newtimesUTC.append(howmanyhoursflt)
-    return newtimesUTC
-
-
-def plot(x_values, y_values, directory, graphname, title, subtitle, model):
-    """"
-    Function used for plotting and saving a graph.
     Inputs:
-        file_type (string): One of the following: 'REDOBS', 'REDTEC', 'ismRawObs', 'ismRawOBS', 'ismDetObs',
-                                                  'ismDetOBS', 'ismRawTEC' or 'ismRawTec'.
-        graph_type (string): The type of graph that is being generated (e.g. 'Azymuth', or 'Tecdot')
-        include_legend (boolean): Add a legend to the plot.
+        x_values (list): values in the x-axis (usually time).
+        y_values (list): values in the y-axis.
+        prn (str): Satellite constellation and number. E.g. G1 for GPS 1.
+        graph_name (str): Graph name (under which the plot will be saved), not inluding the extension.
+        title (str): Plot title (to print).
+        subttile (str): Plot subtitle (to print).
+        model (GraphSettings): A GraphSettings model including all the plot settings.
     Output:
         This function saves the plot to the predetermined directory, but the function itself does not return
         anything.
     """
     # If the user wants a legend, put it on the right, next to the graph. Then, plot.
     if model.legend:
-        if model.summary_plot:
-            plt.plot(x_values, y_values, label=str(model.savedPRNnumber), linewidth=0.4)
-        else:
-            plt.plot(x_values, y_values, label=str(model.savedPRNnumber))
+        plt.plot(x_values, y_values, label=prn)
     else:
-        if model.summary_plot:
-            plt.plot(x_values, y_values, linewidth=0.4)
-        else:
-            plt.plot(x_values, y_values)
-
-    # For sigma only: compute the rate of change.
-    if model.filetype == "REDOBS":
-        if "secsigma" in model.graphtype:
-
-            # If the maximum secsigma value > 100, set the y axis max to 3.
-            if max(y_values) > 100:
-                set_y_axis_range, y_axis_final_value = 1, 2
+        plt.plot(x_values, y_values)
+    if model.summary_plot:
+        plt.linewidth = 0.4
 
     # Add the X and Y-axis labels.
-    plt.ylabel(str(model.graphtype) + " - " + str(model.units))
+    plt.ylabel(model.graph_type)
     plt.xlabel('Time (UTC)')
 
-    # If graphtype is TECDOT, change the name to 'High Rate TEC Rate of change'.
-    if model.graphtype == 'TECdot':
-        graph_type = 'High Rate TEC Rate of change'
-
-    # Change the limits of the axes based on line 20 and 21 of the GRAPHSETTINGS.csv file.
-    if model.set_x_axis_range == 1:
+    # Change the limits of the axes (if applicable).
+    if model.set_x_axis_range:
         plt.xlim([model.x_axis_start_value, model.x_axis_final_value])
-    if set_y_axis_range == 1:
+    if model.set_y_axis_range:
         plt.ylim([model.y_axis_start_value, model.y_axis_final_value])
 
     # If the user wants to print a vertical line, use the axvline function - Line 29 of the GRAPHSETTINGS.csv file.
-    if model.verticalline:
-        plt.axvline(x=model.vertical_line_x_value, color='K', linewidth=0.5)
+    if model.vertical_line:
+        plt.axvline(x=model.x_value_vertical_line, color='K', linewidth=0.5)
 
     # Label the plot lines (in-plot legends) - Line 25 of the GRAPHSETTINGS.csv file.
-    if len(x_values) != 0:
-        if model.PRNlabeling == 1:
-            xdatapoint, ydatapoint = x_values[int(len(x_values) / 2)], y_values[int(len(y_values) / 2)]
-            plt.text(xdatapoint, ydatapoint, model.savedPRNnumber)
+    if model.label_prns:
+        xdatapoint, ydatapoint = x_values[int(len(x_values) / 2)], y_values[int(len(y_values) / 2)]
+        plt.text(xdatapoint, ydatapoint, prn)
 
     # Print the title and subtitle in the plot.
-    plt.suptitle(title, fontsize=model.titlefontsize)
-    plt.title(subtitle, fontsize=model.subtitlefontsize)
+    plt.suptitle(title, fontsize=model.title_font_size)
+    plt.title(subtitle, fontsize=model.subtitle_font_size)
 
     # Set the directory, and create it if it does not exist.
+    directory = model.output_dir
     if model.summary_plot:
-        ftype = "TEC" if model.filetype in ["REDTEC", 'ismRawTEC', 'ismRawTec'] else "OBS"
-        directory = directory + filesep + "Summary_Plots" + filesep + ftype
+        ftype = "TEC" if model.filetype in ["REDTEC", 'RAWTEC'] else "OBS"
+        directory += filesep + "Summary_Plots" + filesep + ftype
     else:
-        directory = directory + filesep + graph_type
+        directory = directory + filesep + model.graph_type
     if not os.path.exists(directory):
         os.makedirs(directory)
-    directory = directory + filesep + graphname
+    directory += filesep + graph_name + '.' + model.format_type
 
     # Print the directory in the command window.
-    print(directory)
+    print('Saving plot: ', directory)
 
     # Print the legend on the plot if legend == True.
     if model.legend:
@@ -310,6 +255,10 @@ def plot(x_values, y_values, directory, graphname, title, subtitle, model):
 
     # Save the figure.
     plt.savefig(directory)
+
+    # Show the plot (if applicable).
+    if model.show_plots:
+        plt.show()
 
     # If the summary plot option is not active, clear the graph.
     if not model.summary_plot:

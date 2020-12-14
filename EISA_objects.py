@@ -12,48 +12,77 @@ Author: Nicolas Gachancipa
 """
 
 # Imports
-import os
 import datetime
+import pandas as pd
 
 
 # Graph settings (This object contains all the settings used to create plots).
 class GraphSettings:
-    def __init__(self):
+    def __init__(self, predefined_settings='graph_settings_default.csv'):
+
+        # Open the settings CSV file.
+        DF = pd.read_csv(predefined_settings)
+
         # Directories.
-        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\CSVFILES'
-        self.output_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\GRAPHS'
+        self.CSV_dir = DF.iloc[0][0]
+        self.output_dir = DF.iloc[2][0]
 
         # File and graph type (REDTEC and Azimuth as default)
-        self.file_type = 'REDTEC'
-        self.graph_type = ' Azimuth'
+        self.file_type = DF.iloc[4][0]
+        self.graph_type = DF.iloc[6][0]
 
         # Date (Today as default)
         today = datetime.datetime.now()
         self.date = [today.year, today.month, today.day]
 
         # Select the PRNs to plot.
-        self.PRNs_to_plot = []
+        constellations = DF.iloc[10].dropna()
+        satellites = DF.iloc[12].dropna()
+        prns_to_plot = []
+        for c in constellations:
+            for s in satellites:
+                prns_to_plot.append(str(c) + str(s))
+        self.PRNs_to_plot = prns_to_plot
 
         # Data pre-processing options.
-        self.threshold = 30
+        self.threshold = DF.iloc[8][0]
 
         # Other plot options.
-        self.TEC_detrending = False
-        self.night_subtraction = False
+        self.location = DF.iloc[35][0]
+        self.summary_plot = False if DF.iloc[14][0] == 0 else True
+        self.TEC_detrending = False if DF.iloc[21][0] == 0 else True
+        self.night_subtraction = False if DF.iloc[16][0] == 0 else True
+        self.vertical_TEC = False if DF.iloc[29][0] == 0 else True
+
+        # Plot visual settings.
+        self.set_x_axis_range = False if DF.iloc[18][0] == 0 else True
+        self.set_y_axis_range = False if DF.iloc[19][0] == 0 else True
+        self.x_axis_start_value = DF.iloc[18][1]
+        self.x_axis_final_value = DF.iloc[18][2]
+        self.y_axis_start_value = DF.iloc[19][1]
+        self.y_axis_final_value = DF.iloc[19][2]
+        self.vertical_line = False if DF.iloc[27][0] == 0 else True
+        self.x_value_vertical_line = DF.iloc[27][1]
+        self.label_prns = False if DF.iloc[23][0] == 0 else True
+        self.title_font_size = DF.iloc[33][0]
+        self.subtitle_font_size = DF.iloc[33][1]
+        self.legend = False if DF.iloc[25][0] == 0 else True
+        self.format_type = DF.iloc[31][0]
+        self.show_plots = False if DF.iloc[37][0] == 0 else True
 
         # Predefined attributes (NovAtel GPStation-6 receiver).
         self.graph_types_REDTEC = [' Azimuth', ' Elev', ' SecSig Lock Time', ' SecSig CNo', 'TEC15', ' TECRate15',
                                    ' TEC30', ' TECRate30', ' TEC45', ' TECRate45', ' TECTOW', ' TECRateTOW']
         self.graph_types_REDOBS = ['Azimuth', 'Elevation', 'CNo', 'Lock Time', 'CMC avg', 'CMC std', " S4", " S4_Cor",
                                    " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma", " 60secsigma"]
-        self.scintillation_data_types = [" S4", " S4_Cor", " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma",
-                                         " 60secsigma"]
         self.graph_types_RAWTEC = ['TEC', 'TECdot']
         self.graph_types_RAWOBS = ['ADR', 'Power']
-        self.raw_data_types = ['RAWTEC', 'RAWOBS']
         self.elevation_column_name = ' Elev'
         self.times_column_name = 'GPS TOW'
         self.signal_column_name = ' SecSig'
+        self.signal_types = {"G": {"1": "L1CA", "4": "L2Y", "5": "L2C", "6": "L2P", "7": "L5Q"},
+                             "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"},
+                             "E": {"1": "E1", "2": "E5A", "3": "E5B", "4": "AltBOC"}}
 
     def get_date_str(self):
         year, month, day = [str(i) for i in self.date]

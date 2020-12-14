@@ -125,9 +125,25 @@ class Graphing(wx.Panel):
         """
         Other Options
         """
+        # Sizer 2.
         self.sizer_2 = wx.BoxSizer(wx.VERTICAL)
         text = wx.StaticText(self, label='Other options:')
         self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+
+        # Location.
+        self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='Location:')
+        self.location_text = wx.TextCtrl(self, value=self.settings.location, size=(150, 20))
+        self.location_text.SetFocus()
+        self.hbox1.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox1.Add(self.location_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+        self.sizer_2.Add(self.hbox1, 0, wx.ALL | wx.CENTER, 5)
+        self.location_text.Bind(wx.EVT_TEXT, self.set_location)
+
+        # Summary plot.
+        self.summary_plot_check = wx.CheckBox(self, label="Summary plot")
+        self.sizer_2.Add(self.summary_plot_check, 0, wx.ALL | wx.CENTER, 5)
+        self.summary_plot_check.Bind(wx.EVT_CHECKBOX, self.set_summary_plot)
 
         # TEC Detrending (Only for Raw Data).
         self.TEC_detrending_check = wx.CheckBox(self, label="TEC Detrending (Only for high-rate TEC data)")
@@ -138,6 +154,115 @@ class Graphing(wx.Panel):
         self.night_subtraction_check = wx.CheckBox(self, label="Night Subtraction (Only for low-rate TEC data)")
         self.sizer_2.Add(self.night_subtraction_check, 0, wx.ALL | wx.CENTER, 5)
         self.night_subtraction_check.Bind(wx.EVT_CHECKBOX, self.set_night_subtraction)
+
+        # Vertical TEC (Low-rate TEC only).
+        self.vertical_TEC_check = wx.CheckBox(self, label="Vertical TEC (Only for low-rate TEC data)")
+        self.sizer_2.Add(self.vertical_TEC_check, 0, wx.ALL | wx.CENTER, 5)
+        self.vertical_TEC_check.Bind(wx.EVT_CHECKBOX, self.set_vertical_TEC)
+
+        """
+        Plot visual settings.
+        """
+
+        # Plot visual settings.
+        text = wx.StaticText(self, label='\n\nPlot visual settings:')
+        self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+
+        # Label PRNs on the plot.
+        self.label_prns_check = wx.CheckBox(self, label="Label PRNs")
+        self.sizer_2.Add(self.label_prns_check, 0, wx.ALL | wx.CENTER, 5)
+        self.label_prns_check.Bind(wx.EVT_CHECKBOX, self.set_label_prns)
+
+        # Show legend.
+        self.legend_check = wx.CheckBox(self, label="Include legend")
+        self.sizer_2.Add(self.legend_check, 0, wx.ALL | wx.CENTER, 5)
+        self.legend_check.Bind(wx.EVT_CHECKBOX, self.set_legend)
+
+        # Title font size.
+        self.hbox = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='Title font size:')
+        self.title_font_size_text = wx.TextCtrl(self, self.settings.title_font_size, size=(35, 20))
+        self.hbox.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(self.title_font_size_text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.hbox, 0, wx.ALL | wx.CENTER, 5)
+        self.title_font_size_text.Bind(wx.EVT_TEXT, self.set_title_font_size)
+
+        # Subtitle font size.
+        self.hbox = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='Subtitle font size:')
+        self.subtitle_font_size_text = wx.TextCtrl(self, self.settings.subtitle_font_size, size=(35, 20))
+        self.hbox.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(self.subtitle_font_size_text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.hbox, 0, wx.ALL | wx.CENTER, 5)
+        self.subtitle_font_size_text.Bind(wx.EVT_TEXT, self.set_subtitle_font_size)
+
+        # X-axis limits.
+        self.hbox2 = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='X-axis range:')
+        text2 = wx.StaticText(self, label='min:')
+        text3 = wx.StaticText(self, label='max:')
+        self.x_axis_limits_check = wx.CheckBox(self)
+        self.x_axis_min = wx.TextCtrl(self, self.settings.x_axis_start_value, size=(35, 20))
+        self.x_axis_max = wx.TextCtrl(self, self.settings.x_axis_final_value, size=(35, 20))
+        self.hbox2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(self.x_axis_limits_check, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(text2, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(self.x_axis_min, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(text3, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(self.x_axis_max, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.hbox2, 0, wx.ALL | wx.CENTER, 5)
+        self.x_axis_limits_check.Bind(wx.EVT_CHECKBOX, self.set_x_axis_limit_check)
+        self.x_axis_min.Bind(wx.EVT_TEXT, self.set_x_axis_start_value)
+        self.x_axis_max.Bind(wx.EVT_TEXT, self.set_x_axis_final_value)
+
+        # Y-axis limits.
+        self.hbox = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='Y-axis range:')
+        text2 = wx.StaticText(self, label='min:')
+        text3 = wx.StaticText(self, label='max:')
+        self.y_axis_limits_check = wx.CheckBox(self)
+        self.y_axis_min = wx.TextCtrl(self, self.settings.y_axis_start_value, size=(35, 20))
+        self.y_axis_max = wx.TextCtrl(self, self.settings.y_axis_final_value, size=(35, 20))
+        self.hbox.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(self.y_axis_limits_check, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(text2, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(self.y_axis_min, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(text3, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(self.y_axis_max, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.hbox, 0, wx.ALL | wx.CENTER, 5)
+        self.y_axis_limits_check.Bind(wx.EVT_CHECKBOX, self.set_y_axis_limit_check)
+        self.y_axis_min.Bind(wx.EVT_TEXT, self.set_y_axis_start_value)
+        self.y_axis_max.Bind(wx.EVT_TEXT, self.set_y_axis_final_value)
+
+        # Vertical line.
+        self.hbox = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='Vertical line:')
+        text2 = wx.StaticText(self, label='X-value:')
+        self.vertical_line_check = wx.CheckBox(self)
+        self.x_value_vertical_line_text = wx.TextCtrl(self, self.settings.x_value_vertical_line, size=(35, 20))
+        self.hbox.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(self.vertical_line_check, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(text2, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox.Add(self.x_value_vertical_line_text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.hbox, 0, wx.ALL | wx.CENTER, 5)
+        self.vertical_line_check.Bind(wx.EVT_CHECKBOX, self.set_vertical_line)
+        self.x_value_vertical_line_text.Bind(wx.EVT_TEXT, self.set_x_value_vertical_line)
+
+        # Format type (png, pdf, jpg, etc).
+        text = wx.StaticText(self, label='Select the plot format type:')
+        self.format_type_check = wx.ComboBox(self, choices=['png', 'pdf', 'jpg'], value=self.settings.format_type)
+        self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.format_type_check, 0, wx.ALL | wx.CENTER, 5)
+        self.format_type_check.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_format_type)
+
+        # Show plots in the screen.
+        self.show_plots_check = wx.CheckBox(self, label="Show plots")
+        self.sizer_2.Add(self.show_plots_check, 0, wx.ALL | wx.CENTER, 5)
+        self.show_plots_check.Bind(wx.EVT_CHECKBOX, self.set_show_plots)
+
+        """
+        Run EISA, or return to main menu.
+        """
 
         # Run EISA using the selected parameters.
         run_btn = wx.Button(self, label='Run EISA')
@@ -269,6 +394,57 @@ class Graphing(wx.Panel):
     def set_night_subtraction(self, _):
         self.settings.night_subtraction = self.night_subtraction_check.IsChecked()
 
+    def set_vertical_TEC(self, _):
+        self.settings.vertical_TEC = self.vertical_TEC_check.IsChecked()
+
+    def set_summary_plot(self, _):
+        self.settings.summary_plot = self.summary_plot_check.IsChecked()
+
+    def set_location(self, _):
+        self.settings.location = self.location_text.GetLineText(0)
+
+    def set_x_axis_limit_check(self, _):
+        self.settings.set_x_axis_range = self.x_axis_limits_check.IsChecked()
+
+    def set_x_axis_start_value(self, _):
+        self.settings.x_axis_start_value = self.x_axis_min.GetLineText(0)
+
+    def set_x_axis_final_value(self, _):
+        self.settings.x_axis_final_value = self.x_axis_max.GetLineText(0)
+
+    def set_y_axis_limit_check(self, _):
+        self.settings.set_y_axis_range = self.y_axis_limits_check.IsChecked()
+
+    def set_y_axis_start_value(self, _):
+        self.settings.y_axis_start_value = self.y_axis_min.GetLineText(0)
+
+    def set_y_axis_final_value(self, _):
+        self.settings.y_axis_final_value = self.y_axis_max.GetLineText(0)
+
+    def set_vertical_line(self, _):
+        self.settings.vertical_line = self.vertical_line_check.IsChecked()
+
+    def set_x_value_vertical_line(self, _):
+        self.settings.x_value_vertical_line = self.x_value_vertical_line_text.GetLineText(0)
+
+    def set_label_prns(self, _):
+        self.settings.label_prns = self.label_prns_check.IsChecked()
+
+    def set_title_font_size(self, _):
+        self.settings.title_font_size = self.title_font_size_text.GetLineText(0)
+
+    def set_subtitle_font_size(self, _):
+        self.settings.subtitle_font_size = self.subtitle_font_size_text.GetLineText(0)
+
+    def set_legend(self, _):
+        self.settings.legend = self.legend_check.IsChecked()
+
+    def set_format_type(self, _):
+        self.settings.format_type = self.format_type_check.GetStringSelection()
+
+    def set_show_plots(self, _):
+        self.settings.show_plots = self.show_plots_check.IsChecked()
+
     def run(self, _):
         # Catch selection errors. Run only if all stteings have been properly selected.
         if len(self.settings.PRNs_to_plot) == 0:
@@ -333,5 +509,5 @@ class TopFrame(wx.Frame):
 if __name__ == '__main__':
     # Program.
     app = wx.App()
-    frame = TopFrame(GraphSettings())
+    frame = TopFrame(GraphSettings(predefined_settings='Graphing/graph_settings_default.csv'))
     app.MainLoop()
