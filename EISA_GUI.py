@@ -25,25 +25,25 @@ class Graphing(wx.Panel):
     def __init__(self, parent, graph_settings):
         # Create panel & object.
         self.settings = graph_settings
-        wx.Panel.__init__(self, parent)
+        wx.Panel.__init__(self, parent, size=(0, 0))
         self.container = wx.BoxSizer(wx.VERTICAL)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Obtain path to the input CSV files.
         text = wx.StaticText(self, label='Select the directory where the CSV files are located:')
-        CSV_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.settings.CSV_dir, u"Select a folder", wx.DefaultPosition,
-                                       (550, 20), wx.DIRP_DEFAULT_STYLE)
-        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
-        self.sizer.Add(CSV_dir_btn, 0, wx.ALL | wx.CENTER, 5)
-        CSV_dir_btn.Bind(wx.EVT_DIRPICKER_CHANGED, self.set_csv_dir)
+        self.CSV_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.settings.CSV_dir, u"Select a folder",
+                                            wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+        self.sizer.Add(self.CSV_dir_btn, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+        self.CSV_dir_btn.Bind(wx.EVT_DIRPICKER_CHANGED, self.set_csv_dir)
 
         # Obtain directory where the output plots are going to be saved.
         text = wx.StaticText(self, label='Select the directory where you want to save the plots:')
-        output_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.settings.output_dir, u"Select a folder",
-                                          wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
+        self.output_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.settings.output_dir, u"Select a folder",
+                                               wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
-        self.sizer.Add(output_dir_btn, 0, wx.ALL | wx.CENTER, 5)
-        output_dir_btn.Bind(wx.EVT_DIRPICKER_CHANGED, self.set_output_dir)
+        self.sizer.Add(self.output_dir_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.output_dir_btn.Bind(wx.EVT_DIRPICKER_CHANGED, self.set_output_dir)
 
         # Obtain the file type (REDTEC, REDOBS, RAWTEC, or RAWOBS).
         text = wx.StaticText(self, label='Select the file type:')
@@ -68,11 +68,11 @@ class Graphing(wx.Panel):
         today = datetime.datetime.now()
         self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.year = wx.ComboBox(self, choices=[str(today.year - i) for i in range(0, today.year - 2014)],
-                                value=str(today.year))
-        self.month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)], value=str(today.month))
+                                value=str(self.settings.date[0]))
+        self.month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)], value=str(self.settings.date[1]))
         self.day = wx.ComboBox(self,
                                choices=[str(i) for i in range(1, int(self.get_month_length(str(today.month))) + 1)],
-                               value=str(today.day))
+                               value=str(self.settings.date[2]))
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.year, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.month, 0, wx.ALL | wx.CENTER, 5)
@@ -117,7 +117,8 @@ class Graphing(wx.Panel):
 
         # Threshold.
         text = wx.StaticText(self, label='Select the elevation threshold:')
-        self.threshold_slider = wx.Slider(self, value=30, minValue=0, maxValue=90, style=wx.SL_LABELS)
+        self.threshold_slider = wx.Slider(self, value=self.settings.threshold, minValue=0, maxValue=90,
+                                          style=wx.SL_LABELS)
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer.Add(self.threshold_slider, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
         self.threshold_slider.Bind(wx.EVT_SCROLL, self.set_threshold)
@@ -133,7 +134,7 @@ class Graphing(wx.Panel):
         # Location.
         self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
         text = wx.StaticText(self, label='Location:')
-        self.location_text = wx.TextCtrl(self, value=self.settings.location, size=(150, 20))
+        self.location_text = wx.TextCtrl(self, value=str(self.settings.location), size=(150, 20))
         self.location_text.SetFocus()
         self.hbox1.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.hbox1.Add(self.location_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
@@ -142,21 +143,25 @@ class Graphing(wx.Panel):
 
         # Summary plot.
         self.summary_plot_check = wx.CheckBox(self, label="Summary plot")
+        self.summary_plot_check.SetValue(self.settings.summary_plot)
         self.sizer_2.Add(self.summary_plot_check, 0, wx.ALL | wx.CENTER, 5)
         self.summary_plot_check.Bind(wx.EVT_CHECKBOX, self.set_summary_plot)
 
         # TEC Detrending (Only for Raw Data).
         self.TEC_detrending_check = wx.CheckBox(self, label="TEC Detrending (Only for high-rate TEC data)")
+        self.TEC_detrending_check.SetValue(self.settings.TEC_detrending)
         self.sizer_2.Add(self.TEC_detrending_check, 0, wx.ALL | wx.CENTER, 5)
         self.TEC_detrending_check.Bind(wx.EVT_CHECKBOX, self.set_TEC_detrending)
 
         # Night subtraction (Low-rate TEC only).
         self.night_subtraction_check = wx.CheckBox(self, label="Night Subtraction (Only for low-rate TEC data)")
+        self.night_subtraction_check.SetValue(self.settings.night_subtraction)
         self.sizer_2.Add(self.night_subtraction_check, 0, wx.ALL | wx.CENTER, 5)
         self.night_subtraction_check.Bind(wx.EVT_CHECKBOX, self.set_night_subtraction)
 
         # Vertical TEC (Low-rate TEC only).
         self.vertical_TEC_check = wx.CheckBox(self, label="Vertical TEC (Only for low-rate TEC data)")
+        self.vertical_TEC_check.SetValue(self.settings.vertical_TEC)
         self.sizer_2.Add(self.vertical_TEC_check, 0, wx.ALL | wx.CENTER, 5)
         self.vertical_TEC_check.Bind(wx.EVT_CHECKBOX, self.set_vertical_TEC)
 
@@ -170,18 +175,20 @@ class Graphing(wx.Panel):
 
         # Label PRNs on the plot.
         self.label_prns_check = wx.CheckBox(self, label="Label PRNs")
+        self.label_prns_check.SetValue(self.settings.label_prns)
         self.sizer_2.Add(self.label_prns_check, 0, wx.ALL | wx.CENTER, 5)
         self.label_prns_check.Bind(wx.EVT_CHECKBOX, self.set_label_prns)
 
         # Show legend.
         self.legend_check = wx.CheckBox(self, label="Include legend")
+        self.legend_check.SetValue(self.settings.legend)
         self.sizer_2.Add(self.legend_check, 0, wx.ALL | wx.CENTER, 5)
         self.legend_check.Bind(wx.EVT_CHECKBOX, self.set_legend)
 
         # Title font size.
         self.hbox = wx.BoxSizer(wx.HORIZONTAL)
         text = wx.StaticText(self, label='Title font size:')
-        self.title_font_size_text = wx.TextCtrl(self, self.settings.title_font_size, size=(35, 20))
+        self.title_font_size_text = wx.TextCtrl(self, value=str(self.settings.title_font_size), size=(35, 20))
         self.hbox.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.hbox.Add(self.title_font_size_text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer_2.Add(self.hbox, 0, wx.ALL | wx.CENTER, 5)
@@ -190,7 +197,7 @@ class Graphing(wx.Panel):
         # Subtitle font size.
         self.hbox = wx.BoxSizer(wx.HORIZONTAL)
         text = wx.StaticText(self, label='Subtitle font size:')
-        self.subtitle_font_size_text = wx.TextCtrl(self, self.settings.subtitle_font_size, size=(35, 20))
+        self.subtitle_font_size_text = wx.TextCtrl(self, value=str(self.settings.subtitle_font_size), size=(35, 20))
         self.hbox.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.hbox.Add(self.subtitle_font_size_text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer_2.Add(self.hbox, 0, wx.ALL | wx.CENTER, 5)
@@ -202,8 +209,9 @@ class Graphing(wx.Panel):
         text2 = wx.StaticText(self, label='min:')
         text3 = wx.StaticText(self, label='max:')
         self.x_axis_limits_check = wx.CheckBox(self)
-        self.x_axis_min = wx.TextCtrl(self, self.settings.x_axis_start_value, size=(35, 20))
-        self.x_axis_max = wx.TextCtrl(self, self.settings.x_axis_final_value, size=(35, 20))
+        self.x_axis_limits_check.SetValue(self.settings.set_x_axis_range)
+        self.x_axis_min = wx.TextCtrl(self, value=str(self.settings.x_axis_start_value), size=(35, 20))
+        self.x_axis_max = wx.TextCtrl(self, value=str(self.settings.x_axis_final_value), size=(35, 20))
         self.hbox2.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.hbox2.Add(self.x_axis_limits_check, 0, wx.ALL | wx.CENTER, 5)
         self.hbox2.Add(text2, 0, wx.ALL | wx.CENTER, 5)
@@ -221,8 +229,9 @@ class Graphing(wx.Panel):
         text2 = wx.StaticText(self, label='min:')
         text3 = wx.StaticText(self, label='max:')
         self.y_axis_limits_check = wx.CheckBox(self)
-        self.y_axis_min = wx.TextCtrl(self, self.settings.y_axis_start_value, size=(35, 20))
-        self.y_axis_max = wx.TextCtrl(self, self.settings.y_axis_final_value, size=(35, 20))
+        self.y_axis_limits_check.SetValue(self.settings.set_y_axis_range)
+        self.y_axis_min = wx.TextCtrl(self, value=str(self.settings.y_axis_start_value), size=(35, 20))
+        self.y_axis_max = wx.TextCtrl(self, value=str(self.settings.y_axis_final_value), size=(35, 20))
         self.hbox.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.hbox.Add(self.y_axis_limits_check, 0, wx.ALL | wx.CENTER, 5)
         self.hbox.Add(text2, 0, wx.ALL | wx.CENTER, 5)
@@ -239,7 +248,9 @@ class Graphing(wx.Panel):
         text = wx.StaticText(self, label='Vertical line:')
         text2 = wx.StaticText(self, label='X-value:')
         self.vertical_line_check = wx.CheckBox(self)
-        self.x_value_vertical_line_text = wx.TextCtrl(self, self.settings.x_value_vertical_line, size=(35, 20))
+        self.vertical_line_check.SetValue(self.settings.vertical_line)
+        self.x_value_vertical_line_text = wx.TextCtrl(self, value=str(self.settings.x_value_vertical_line),
+                                                      size=(35, 20))
         self.hbox.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.hbox.Add(self.vertical_line_check, 0, wx.ALL | wx.CENTER, 5)
         self.hbox.Add(text2, 0, wx.ALL | wx.CENTER, 5)
@@ -257,6 +268,7 @@ class Graphing(wx.Panel):
 
         # Show plots in the screen.
         self.show_plots_check = wx.CheckBox(self, label="Show plots")
+        self.show_plots_check.SetValue(self.settings.show_plots)
         self.sizer_2.Add(self.show_plots_check, 0, wx.ALL | wx.CENTER, 5)
         self.show_plots_check.Bind(wx.EVT_CHECKBOX, self.set_show_plots)
 
@@ -274,16 +286,17 @@ class Graphing(wx.Panel):
 
         # Place everything into the container.
         self.options = wx.BoxSizer(wx.HORIZONTAL)
-        self.options.Add(self.sizer, 0, wx.ALL | wx.CENTER, 5)
-        self.options.Add(wx.StaticLine(self, -1, size=(3, 600), style=wx.LI_VERTICAL), 0, wx.ALL | wx.CENTER, 5)
-        self.options.Add(self.sizer_2, 0, wx.ALL | wx.CENTER, 5)
-        self.container.Add(self.options, 0, wx.ALL | wx.CENTER, 5)
+        self.options.Add(self.sizer, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.options.Add(wx.StaticLine(self, -1, size=(3, 600), style=wx.LI_VERTICAL), 0,
+                         wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.options.Add(self.sizer_2, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.container.Add(self.options, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
         self.container.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
         self.container.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
 
         # Show panel.
-        self.SetSizer(self.container)
-        self.Show(True)
+        self.SetSizerAndFit(self.container)
+        self.Layout()
 
     # Getters.
     def get_graph_choices(self):
@@ -304,11 +317,12 @@ class Graphing(wx.Panel):
         return month_lengths[month]
 
     # Setters.
-    def set_csv_dir(self, event):
-        self.settings.CSV_dir = event.GetPath()
+    def set_csv_dir(self, _):
+        self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
 
-    def set_output_dir(self, event):
-        self.settings.output_dir = event.GetPath()
+    def set_output_dir(self, _):
+        self.settings.output_dir = self.output_dir_btn.GetPath()
+        print(self.settings.output_dir)
 
     def set_file_type(self, _):
         self.settings.file_type = self.file_types_menu.GetStringSelection()[:6]
@@ -450,6 +464,7 @@ class Graphing(wx.Panel):
         if len(self.settings.PRNs_to_plot) == 0:
             wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
         else:
+            self.settings.output_dir = self.output_dir_btn.GetPath()
             run_graphing(self.settings)
 
 
@@ -492,8 +507,9 @@ class TopFrame(wx.Frame):
     def graph(self, _):
         # Hide the main panel and display the graphing panel.
         self.panel.Hide()
+        self.panel = Graphing(self, self.settings)
         self.my_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.my_sizer.Add(Graphing(self, self.settings), 1, wx.EXPAND | wx.ALL, 2)
+        self.my_sizer.Add(self.panel, 1, wx.ALL | wx.EXPAND | wx.CENTER, 5)
 
         # Fit to window's size.
         self.SetSizerAndFit(self.my_sizer)

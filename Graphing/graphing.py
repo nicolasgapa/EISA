@@ -23,6 +23,16 @@ filesep = os.sep
 
 # Functions.
 def plot_prn(model, prn):
+    """
+    Function to plot the data of a satellite (prn) with the settigs in a given GraphSettings model.
+
+    :param model (GraphSettings): A GraphSettings model. Refere to the EISA_objects file, GraphSettings class.
+    :param prn (str): The satellite. E.g. G1 for GPS 1, or R5 for GLONASS 5.
+    :return: success (boolean), error (str): The success variable is True when the plots for the give prn were
+             generated succesfully, and False if there was an error. The error variable returns the Exception, or
+             None when success == True.
+    """
+
     # Set the directory to the output csv file.
     csv_to_graph = model.file_type + "_" + prn + "_" + model.get_date_str() + ".csv"
     csv_file = model.CSV_dir + filesep + model.get_date_str() + filesep + csv_to_graph
@@ -39,7 +49,12 @@ def plot_prn(model, prn):
     if model.file_type in ['RAWTEC', 'RAWOBS']:
         reduced_file = model.CSV_dir + filesep + "REDTEC" + "_" + prn + "_" + model.get_date_str() + ".csv"
         if not os.path.isfile(reduced_file):
-            return "Could not find the REDTEC file corresponding to the raw data."
+            return False, "Could not find the REDTEC file corresponding to the raw data."
+
+    # If the file can't be found, show an error message.
+    if not os.path.isfile(csv_file):
+        return False, ("The {} CSV data for the following PRN does not exist (or can't be found in the specified "
+                       "directory): {}.".format(model.file_type, prn))
 
     # Identify the time ranges in which the satellite is above the given threshold. The start_times array indicates
     # the times at which the satellite crosses the threshold and is gaining elevation, while the end_times array
@@ -148,6 +163,9 @@ def plot_prn(model, prn):
             x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
             plot(x_values, y_values, prn, graph_name, title, subtitle, model)
 
+    # Return Success.
+    return True, None
+
 
 # ----------- GRAPHING ------------ #
 def run_graphing(model):
@@ -155,14 +173,14 @@ def run_graphing(model):
     print("\n\n# --- " + model.file_type + ": Plotting Time vs. " + model.graph_type + " --- #")
     print('Date (year, month, day): {}, {}, {}'.format(model.date[0], model.date[1], model.date[2]))
 
-    # Add a folder the output directory.
+    # Add the date folder to the output directory.
     model.output_dir = model.output_dir + filesep + model.get_date_str()
-    print(model.output_dir)
 
     # Generate plots for the given date and PRNs.
     for prn in model.PRNs_to_plot:
-        plot_prn(model, prn)
-
+        success, error_msg = plot_prn(model, prn)
+        if not success:
+            print(error_msg)
 
 # Temporary.
 # from EISA_objects import GraphSettings

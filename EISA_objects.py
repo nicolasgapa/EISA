@@ -28,47 +28,42 @@ class GraphSettings:
         self.output_dir = DF.iloc[2][0]
 
         # File and graph type (REDTEC and Azimuth as default)
-        self.file_type = DF.iloc[4][0]
-        self.graph_type = DF.iloc[6][0]
+        self.file_type = 'REDTEC'
+        self.graph_type = ' Azimuth'
 
         # Date (Today as default)
         today = datetime.datetime.now()
         self.date = [today.year, today.month, today.day]
+        # self.date = [2020, 8, 2]
 
         # Select the PRNs to plot.
-        constellations = DF.iloc[10].dropna()
-        satellites = DF.iloc[12].dropna()
-        prns_to_plot = []
-        for c in constellations:
-            for s in satellites:
-                prns_to_plot.append(str(c) + str(s))
-        self.PRNs_to_plot = prns_to_plot
+        self.PRNs_to_plot = []
 
         # Data pre-processing options.
-        self.threshold = DF.iloc[8][0]
+        self.threshold = int(DF.iloc[4][0])
 
         # Other plot options.
-        self.location = DF.iloc[35][0]
-        self.summary_plot = False if DF.iloc[14][0] == 0 else True
-        self.TEC_detrending = False if DF.iloc[21][0] == 0 else True
-        self.night_subtraction = False if DF.iloc[16][0] == 0 else True
-        self.vertical_TEC = False if DF.iloc[29][0] == 0 else True
+        self.location = DF.iloc[27][0]
+        self.summary_plot = False if int(DF.iloc[6][0]) == 0 else True
+        self.TEC_detrending = False if int(DF.iloc[13][0]) == 0 else True
+        self.night_subtraction = False if int(DF.iloc[8][0]) == 0 else True
+        self.vertical_TEC = False if int(DF.iloc[21][0]) == 0 else True
 
         # Plot visual settings.
-        self.set_x_axis_range = False if DF.iloc[18][0] == 0 else True
-        self.set_y_axis_range = False if DF.iloc[19][0] == 0 else True
-        self.x_axis_start_value = DF.iloc[18][1]
-        self.x_axis_final_value = DF.iloc[18][2]
-        self.y_axis_start_value = DF.iloc[19][1]
-        self.y_axis_final_value = DF.iloc[19][2]
-        self.vertical_line = False if DF.iloc[27][0] == 0 else True
-        self.x_value_vertical_line = DF.iloc[27][1]
-        self.label_prns = False if DF.iloc[23][0] == 0 else True
-        self.title_font_size = DF.iloc[33][0]
-        self.subtitle_font_size = DF.iloc[33][1]
-        self.legend = False if DF.iloc[25][0] == 0 else True
-        self.format_type = DF.iloc[31][0]
-        self.show_plots = False if DF.iloc[37][0] == 0 else True
+        self.set_x_axis_range = False if int(DF.iloc[10][0]) == 0 else True
+        self.set_y_axis_range = False if int(DF.iloc[11][0]) == 0 else True
+        self.x_axis_start_value = DF.iloc[10][1]
+        self.x_axis_final_value = DF.iloc[10][2]
+        self.y_axis_start_value = DF.iloc[11][1]
+        self.y_axis_final_value = DF.iloc[11][2]
+        self.vertical_line = False if int(DF.iloc[19][0]) == 0 else True
+        self.x_value_vertical_line = DF.iloc[19][1]
+        self.label_prns = False if int(DF.iloc[15][0]) == 0 else True
+        self.title_font_size = DF.iloc[25][0]
+        self.subtitle_font_size = DF.iloc[25][1]
+        self.legend = False if int(DF.iloc[17][0]) == 0 else True
+        self.format_type = DF.iloc[23][0]
+        self.show_plots = False if int(DF.iloc[29][0]) == 0 else True
 
         # Predefined attributes (NovAtel GPStation-6 receiver).
         self.graph_types_REDTEC = [' Azimuth', ' Elev', ' SecSig Lock Time', ' SecSig CNo', 'TEC15', ' TECRate15',
