@@ -1,11 +1,11 @@
 Enter the path to the .GPS binary files:,,,,
-C:,Users,nicol,Desktop,Research Local Files,RX1
+C:,Users,nicol,Desktop,Research_Local_Files,RX1
 Enter the path to the Parsing Code:,,,,
-C:,Users,nicol,Desktop,Research Local Files,EISA,Parsing,
+C:,Users,nicol,Desktop,Research_Local_Files,EISA,Parsing,
 Enter 1 to parse ONLY reduced data. 2 for ONLY raw data. 3 for BOTH. ,,,,
 1
 Enter the directory to the folder where the csvfiles are going to be saved. ,,,,
-C:,Users,nicol,Desktop,Research Local Files,EISA_OUTPUT,RX1,CSVFILES
+C:,Users,nicol,Desktop,Research_Local_Files,EISA_OUTPUT,RX1,CSVFILES
 "Set the constellation you would like to use to parse the data (G for GPS, R for GLONASS, or E for Galileo)",,,,
 G,R,E
 Select the PRN you would like to use to parse the data (Insert T for all PRNs).,,,,
@@ -18,6 +18,6 @@ RX1
 Year (e.g. 2018):,,,,
 2020
 "Initial date (first cell = month, second cell = day):",,,,
-8,2
+12,13
 "Final date (first cell = month, second cell = day):",,,,
-8,2
+12,13

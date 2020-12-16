@@ -11,6 +11,7 @@ Author: Nicolas Gachancipa
 
 """
 # External imports.
+import matplotlib.pyplot as plt
 import pandas as pd
 import os
 
@@ -22,15 +23,14 @@ filesep = os.sep
 
 
 # Functions.
-def plot_prn(model, prn):
+def plot_prn(model, prn, shift=0):
     """
     Function to plot the data of a satellite (prn) with the settigs in a given GraphSettings model.
 
     :param model (GraphSettings): A GraphSettings model. Refere to the EISA_objects file, GraphSettings class.
     :param prn (str): The satellite. E.g. G1 for GPS 1, or R5 for GLONASS 5.
-    :return: success (boolean), error (str): The success variable is True when the plots for the give prn were
-             generated succesfully, and False if there was an error. The error variable returns the Exception, or
-             None when success == True.
+    :return: success (boolean): Whether the plot is created succesfully (True) or not (False).
+             error (str): Error message if success=False. None if success == True.
     """
 
     # Set the directory to the output csv file.
@@ -124,24 +124,32 @@ def plot_prn(model, prn):
             # For scintillation data, get rid of non-sense values (e.g. values above a value of 5).
             # These values may come from errors in the receiver/computer or signal interference and
             # are not representative of S4/sigma scintillation values.
-            if model.graph_type in [" S4", " S4_Cor", " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma",
-                                    " 60secsigma"]:
+            if model.graph_type in model.scintillation_types:
                 data = data[data[model.graph_type] <= 5]
 
             # TEC detrending (High-rate TEC data).
-            if model.TEC_detrending and (model.file_type == 'RAWTEC'):
+            if (model.file_type == 'RAWTEC') and model.TEC_detrending:
                 x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
                 data[model.graph_type] = tec_detrending(x_values, y_values)
 
-            # Night subtraction (Low-rate TEC data).
-            if model.night_subtraction and (model.file_type == 'REDTEC'):
-                y_values = data[model.graph_type]
-                data[model.graph_type] = y_values - min(y_values)
+            # Low-rate TEC processing.
+            if (model.file_type == 'REDTEC') and (model.graph_type in model.TEC_types):
 
-            # Vertical TEC conversion (Low-rate TEC data).
-            if model.vertical_TEC and (model.file_type == 'REDTEC'):
-                y_values, elevations = list(data[model.graph_type]), list(data[model.elevation_column_name])
-                data[model.graph_type] = slant_to_vertical_tec(y_values, elevations)
+                # Vertical TEC conversion (Low-rate TEC data).
+                if model.vertical_TEC:
+                    y_values, elevations = list(data[model.graph_type]), list(data[model.elevation_column_name])
+                    data[model.graph_type] = slant_to_vertical_tec(y_values, elevations)
+
+                # Night subtraction (Low-rate TEC individual plots). For summary plots, the normalization
+                # step is done after all PRNs are processed.
+                if model.night_subtraction and not model.summary_plot:
+                    # Update the y-values.
+                    y_values = data[model.graph_type]
+                    data[model.graph_type] = y_values - min(y_values)
+
+            # Shift value.
+            if shift != 0:
+                data[model.graph_type] = data[model.graph_type] + shift
 
             """
             
@@ -161,7 +169,23 @@ def plot_prn(model, prn):
 
             # Plot and save the figure.
             x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
-            plot(x_values, y_values, prn, graph_name, title, subtitle, model)
+            prn_plot, directory = plot(x_values, y_values, prn, graph_name, title, subtitle, model)
+
+            # If the summary plot option is NOT selected, save, show and clear the graph.
+            if not model.summary_plot:
+
+                # Print the directory in the command window.
+                print('Saving plot: ', directory)
+
+                # Save the figure.
+                plt.savefig(directory)
+
+                # Show the plot before clearing (if applicable).
+                if model.show_plots:
+                    plt.show()
+
+                # Clear the plot.
+                plt.clf()
 
     # Return Success.
     return True, None
@@ -178,30 +202,48 @@ def run_graphing(model):
 
     # Generate plots for the given date and PRNs.
     for prn in model.PRNs_to_plot:
+
+        # Plot.
         success, error_msg = plot_prn(model, prn)
+
+        # Show a message if there is an error.
         if not success:
             print(error_msg)
 
-# Temporary.
-# from EISA_objects import GraphSettings
+    # Summary plot post-processing.
+    if model.summary_plot:
 
-# m = GraphSettings()
-# m.date = [2020, 8, 2]
-# m.PRNs_to_plot = ['G1']
-# m.output_dir = r'C:\Users\nicol\Desktop\Research Local Files\EISA_OUTPUT\RX1\GRAPHS'
-# m.CSV_dir = r'C:\Users\nicol\Desktop\Research Local Files\EISA_OUTPUT\RX1\CSVFILES'
-# m.legend = True
-# run_graphing(m)
+        # Update y-values for night-subtraction (if selected).
+        if model.night_subtraction:
 
-# ------------------------- SECTION 5: PLOTTING --------------------------- #
-#    # Generate plots for the given date.
-#    for prn in settings.PRNstograph:
-#        plot_per_prn(settings, prn, normalize=0)
-#    if settings.normalize_data == 1:
-#        plt.clf()
-#        for prn in settings.PRNstograph:
-#            plot_per_prn(m, prn, normalize=1)
-#
-#    # Print message to the terminal.
-#    print("The following day has been processed: " + settings.monthname + " " + str(settings.daynumber) +
-#          " - Graph Type: " + str(graph_type) + " - Constellation: " + settings.constellationtype)
+            # Find the minimum value in the plot.
+            min_value = min([min(line.get_ydata()) for line in plt.gca().get_lines()])
+
+            # Clear plot.
+            plt.clf()
+
+            # Repeat the process with a shift value: Generate plots for the given date and PRNs.
+            for prn in model.PRNs_to_plot:
+
+                # Plot.
+                success, error_msg = plot_prn(model, prn, shift=-min_value)
+
+                # Show a message if there is an error.
+                if not success:
+                    print(error_msg)
+
+        # Save the plot.
+        graph_name, _, _ = naming(model, model.PRNs_to_plot[0], None)
+        ftype = "TEC" if model.file_type in ["REDTEC", 'RAWTEC'] else "OBS"
+        directory = model.output_dir + filesep + "Summary_Plots" + filesep + ftype
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        directory += filesep + graph_name + '.' + model.format_type
+        plt.savefig(directory)
+
+        # Show the summary plot (if applicable).
+        if model.show_plots:
+            plt.show()
+
+    # Clean plt.
+    plt.clf()

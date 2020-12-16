@@ -109,12 +109,12 @@ if numberofmonths != 0:
             if monthcount == 0:  #
                 month = int(monthi)  #
             else:  #
-                month = int(monthi) + monthcount  #
-            if month in [1, 3, 5, 7, 8, 10, 12]:  #
-                numofdays = 31;  #
-            elif month in [4, 6, 9, 11]:  #
-                numofdays = 30;  #
-            elif month == 2:  #
+                month = int(monthi) + monthcount
+            if month in [1, 3, 5, 7, 8, 10, 12]:
+                numofdays = 31
+            elif month in [4, 6, 9, 11]:
+                numofdays = 30
+            elif month == 2:
                 remainder = int(yeari) % 4  #
                 if remainder == 0:  #
                     numofdays = 29  #

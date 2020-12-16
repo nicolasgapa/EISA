@@ -66,7 +66,8 @@ def naming(model, prn, signal_type, time_period=1):
 
     :param model: GraphSettings model.
     :param prn (str): e.g. G1 for GPS 1, or R4 for GLONASS 4
-    :param signal_type (str): Name of the signal type, e.g. 'L1CA'
+    :param signal_type (str): Name of the signal type, e.g. 'L1CA' (Only valid for individual plots, can be set to
+                              None for summary plots).
     :param time_period (int): An integer indicating the time period of the plot. E.g. if the satellite is over the
                               elevation threshold during two time periods in a single day (e.g. 6-9AM and 3-5PM),
                               the plot showing time period "1" (6-9AM) must have time_period == 1, while the plot for
@@ -100,10 +101,11 @@ def naming(model, prn, signal_type, time_period=1):
         plot_name += '_' + model.graph_type + '_' + prn + "_Signal" + '-' + str(signal_type) + '_' + period
 
     # Normalization (night subtraction) and Vertical TEC.
-    if model.night_subtraction:
-        plot_name += "_Normalized"
-    if model.vertical_TEC:
-        plot_name += "_verticalTEC"
+    if model.graph_type in model.TEC_types:
+        if model.night_subtraction:
+            plot_name += "_Normalized"
+        if model.vertical_TEC:
+            plot_name += "_verticalTEC"
 
     # Set the title  and subtitle of the plot.
     month, day = model.get_date_str()[4:6], model.get_date_str()[6:8]
@@ -178,7 +180,7 @@ def slant_to_vertical_tec(y_values, elevations):
 
     :param y_values: The TEC values (y-axis values of a TEC plot).
     :param elevations: The elevation values corresponding to the TEC values.
-    :return: new_y_values (list):
+    :return: new_y_values (list): Corrected TEC values.
     """
     min_value = min(y_values)
     normalized = np.array([i - min_value for i in y_values])
@@ -190,7 +192,7 @@ def slant_to_vertical_tec(y_values, elevations):
 
 def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
     """
-    Function used to plot and save a graph.
+    Function used to plot, and to determine the directory where such plot will be saved.
 
     Inputs:
         x_values (list): values in the x-axis (usually time).
@@ -201,10 +203,10 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
         subttile (str): Plot subtitle (to print).
         model (GraphSettings): A GraphSettings model including all the plot settings.
     Output:
-        This function saves the plot to the predetermined directory, but the function itself does not return
-        anything.
+        plt: Resulting plot.
+        str: Directory to the new plot.
     """
-    # If the user wants a legend, put it on the right, next to the graph. Then, plot.
+    # If the user wants a legend, add the labels. Otherwise, plot without labels.
     if model.legend:
         plt.plot(x_values, y_values, label=prn)
     else:
@@ -238,7 +240,7 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
     # Set the directory, and create it if it does not exist.
     directory = model.output_dir
     if model.summary_plot:
-        ftype = "TEC" if model.filetype in ["REDTEC", 'RAWTEC'] else "OBS"
+        ftype = "TEC" if model.file_type in ["REDTEC", 'RAWTEC'] else "OBS"
         directory += filesep + "Summary_Plots" + filesep + ftype
     else:
         directory = directory + filesep + model.graph_type
@@ -246,23 +248,12 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
         os.makedirs(directory)
     directory += filesep + graph_name + '.' + model.format_type
 
-    # Print the directory in the command window.
-    print('Saving plot: ', directory)
-
     # Print the legend on the plot if legend == True.
     if model.legend:
         plt.legend()
 
-    # Save the figure.
-    plt.savefig(directory)
-
-    # Show the plot (if applicable).
-    if model.show_plots:
-        plt.show()
-
-    # If the summary plot option is not active, clear the graph.
-    if not model.summary_plot:
-        plt.clf()
+    # Return the plot.
+    return plt, directory
 
 
 def header_size(file_type):
@@ -274,6 +265,6 @@ def header_size(file_type):
     :return: header size (int): Number of rows in the header of such file.
     """
     if file_type == "REDTEC" or file_type == "ismRawTEC" or file_type == "ismRawTec" or file_type == "REDOBS":
-        return 18
+        return 12
     elif file_type == "ismRawObs" or file_type == "ismRawOBS" or file_type == "ismDetObs" or file_type == "ismDetOBS":
         return 7

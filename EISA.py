@@ -23,10 +23,10 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 
 # ------------ Inputs ------------ #
 # Insert the receiver name.
-receivers = ["RX1", "RX2"]
+receivers = ["RX1"]
 
 # '1' for yesterday. "2" for the day before yesterday, etc.
-days_before = 130
+days_before = 115
 
 # Set run_now to 1 if you want EISA to run now, rather than at a certain time.
 # Set run_now to 0 if you want EISA to run at a certain time every day.
@@ -152,10 +152,10 @@ def parse():
             writer.writerows(newcsv)
 
         # Run the parsing.py file.
-        # os.system("py parsing.py")
+        os.system("py parsing.py")
 
         # Now, proceed to step 3: Graphing.
-        graph(receiver_name)
+        # graph(receiver_name)
 
     # Print a message at the end.
     parse_end_time = datetime.today()
@@ -449,9 +449,9 @@ while eternalloop == 1:
         t = Timer(secs, parse)
         t.start()
 
-        break
+        # break
 
         # Run the loop again after parsing the files of the day before.
         time.sleep(secs)
 
-    break
+    # break
