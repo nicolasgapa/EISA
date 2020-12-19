@@ -47,6 +47,7 @@ def time_ranges(file, threshold=0, header=0, elev_col_name=' Elev', times_col_na
     # The difference > 1 indicates that the data was collected at a different time of the day, and the satellite
     # crossed the elevation theshold multiple times throughout the day.
     start_rows = filtered_DF[filtered_DF['Index difference'] > 1]
+    start_rows = start_rows.dropna()
     start_times = list(start_rows[times_col_name])
 
     # End rows.
@@ -54,7 +55,10 @@ def time_ranges(file, threshold=0, header=0, elev_col_name=' Elev', times_col_na
     for index, row in start_rows.iloc[1:].iterrows():
         end_row = filtered_DF.loc[int(index - row['Index difference']), :]
         end_times.append(int(end_row[times_col_name]))
-    end_times.append(int(filtered_DF.iloc[-1, :][times_col_name]))
+
+    # Append the last end time (Only if the start_times array is not empty).
+    if start_times:
+        end_times.append(int(filtered_DF.iloc[-1, :][times_col_name]))
 
     # Return.
     return start_times, end_times

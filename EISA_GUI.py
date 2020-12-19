@@ -50,7 +50,8 @@ class Graphing(wx.Panel):
         file_types = ['REDOBS - Reduced (low-rate) scintillation data.',
                       'REDTEC - Reduced (low-rate) TEC data.',
                       'RAWOBS - Raw (high-rate) scintillation data.',
-                      'RAWTEC - Raw (high-rate) TEC data.']
+                      'RAWTEC - Raw (high-rate) TEC data.',
+                      'DETOBS - Detrended (high-rate) scintillation data.']
         self.file_types_menu = wx.ComboBox(self, choices=file_types, value='REDTEC - Reduced (low-rate) TEC data.')
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer.Add(self.file_types_menu, 0, wx.ALL | wx.CENTER, 5)
@@ -304,7 +305,7 @@ class Graphing(wx.Panel):
             return self.settings.graph_types_REDTEC
         elif self.settings.file_type == 'REDOBS':
             return self.settings.graph_types_REDOBS
-        elif self.settings.file_type == 'RAWOBS':
+        elif self.settings.file_type == 'RAWOBS' or self.settings.file_type == 'DETOBS':
             return self.settings.graph_types_RAWOBS
         elif self.settings.file_type == 'RAWTEC':
             return self.settings.graph_types_RAWTEC

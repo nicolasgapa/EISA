@@ -65,6 +65,9 @@ def plot_prn(model, prn, shift=0):
     start_times, end_times = time_ranges(reduced_file, threshold=model.threshold,
                                          elev_col_name=model.elevation_column_name,
                                          times_col_name=model.times_column_name)
+    if not start_times:
+        return False, ('Either all the values of the follwoing PRN are below the elevation threshold, or the CSV file '
+                       'is empty: {}.'.format(prn))
     """
 
     Section: Data pre-processing.
@@ -135,16 +138,19 @@ def plot_prn(model, prn, shift=0):
             
             """
 
-            # For scintillation data, get rid of non-sense values (e.g. values above a value of 5).
-            # These values may come from errors in the receiver/computer or signal interference and
-            # are not representative of S4/sigma scintillation values.
+            # For low-rate scintillation data, get rid of non-sense values (e.g. values above a value of 5).
+            # These values may come from errors in the receiver/computer or signal interference and are not
+            # representative of S4/sigma scintillation values.
             if model.graph_type in model.scintillation_types:
                 data = data[data[model.graph_type] <= 5]
 
-            # TEC detrending (High-rate TEC data).
-            if (model.file_type == 'RAWTEC') and (model.graph_type in model.TEC_types) and model.TEC_detrending:
-                x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
-                data[model.graph_type] = tec_detrending(x_values, y_values)
+            # High-rate TEC processing:
+            if (model.file_type == 'RAWTEC') and (model.graph_type in model.TEC_types):
+
+                # TEC detrending (High-rate TEC data).
+                if model.TEC_detrending:
+                    x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
+                    data[model.graph_type] = tec_detrending(x_values, y_values)
 
             # Low-rate TEC processing.
             if (model.file_type == 'REDTEC') and (model.graph_type in model.TEC_types):
