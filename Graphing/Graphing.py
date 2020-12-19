@@ -16,7 +16,7 @@ import pandas as pd
 import os
 
 # Internal imports.
-from support_functions import (time_ranges, header_size, tec_detrending, slant_to_vertical_tec, naming, plot)
+from support_functions import (time_ranges, tec_detrending, slant_to_vertical_tec, naming, plot, times_to_filter_df)
 
 # Set the file separator to work in both Linux and Windows.
 filesep = os.sep
@@ -45,24 +45,29 @@ def plot_prn(model, prn, shift=0):
     """
     # For raw files, the elevation data must be extracted from the equivalent reduced file. Set the directory to
     # such file.
-    reduced_file = csv_file
-    if model.file_type in ['RAWTEC', 'RAWOBS']:
-        reduced_file = model.CSV_dir + filesep + "REDTEC" + "_" + prn + "_" + model.get_date_str() + ".csv"
+    if model.file_type in ['RAWTEC', 'RAWOBS', 'DETOBS']:
+        reduced_file = model.CSV_dir + filesep + model.get_date_str() + filesep + "REDTEC" + "_" + prn + "_" + \
+                       model.get_date_str() + ".csv"
         if not os.path.isfile(reduced_file):
-            return False, "Could not find the REDTEC file corresponding to the raw data."
+            return False, "Could not find the REDTEC file corresponding to the raw data: {}.".format(reduced_file)
+    else:
+        reduced_file = csv_file
 
     # If the file can't be found, show an error message.
     if not os.path.isfile(csv_file):
-        return False, ("The {} CSV data for the following PRN does not exist (or can't be found in the specified "
-                       "directory): {}.".format(model.file_type, prn))
+        return False, ("The {} CSV data for the following PRN does not exist: {}. It can't be found in the specified "
+                       "directory: {}.".format(model.file_type, prn, csv_file))
 
     # Identify the time ranges in which the satellite is above the given threshold. The start_times array indicates
     # the times at which the satellite crosses the threshold and is gaining elevation, while the end_times array
     # contains the times at which the satellite cross the threshold moving downwards (towards the horizon line).
     # Each pair of start-end times is the range of time in which the satellite was above the threshold.
-    start_times, end_times = time_ranges(reduced_file, threshold=model.threshold, header=header_size('REDTEC'),
+    start_times, end_times = time_ranges(reduced_file, threshold=model.threshold,
                                          elev_col_name=model.elevation_column_name,
                                          times_col_name=model.times_column_name)
+    if not start_times:
+        return False, ('Either all the values of the follwoing PRN are below the elevation threshold, or the CSV file '
+                       'is empty: {}.'.format(prn))
     """
 
     Section: Data pre-processing.
@@ -72,14 +77,26 @@ def plot_prn(model, prn, shift=0):
     """
     # Import and read the csv (if it exists).
     if not os.path.isfile(csv_file):
-        return "The following directory does not exist: " + csv_file
+        return "The following directory does not exist: {}.".format(csv_file)
 
     # Filter the dataset.
-    header = header_size(model.file_type)
-    DF = pd.read_csv(csv_file, header=header)
-    filtered_DF = DF[DF[model.elevation_column_name] >= model.threshold]
-    filtered_DF = filtered_DF[[model.times_column_name, model.elevation_column_name, model.signal_column_name,
-                               model.graph_type]]
+    DF = pd.read_csv(csv_file)
+
+    # Apply the elevation threshold.
+    if model.file_type in ['RAWTEC', 'RAWOBS', 'DETOBS']:
+        filtered_DF = times_to_filter_df(DF, start_times, end_times)
+    else:
+        filtered_DF = DF[DF[model.elevation_column_name] >= model.threshold]
+
+    # Obtain the following colums: Time, elevation, signal type, and graph type (i.e. what you want to plot).
+    # For RAW files, discard the elevation column, since the values were already filtered for the threshold in
+    # the previous step. Moreover, if the user wants to plot the elevation, only save the elevation column
+    # once under the 'graph_type' column.
+    if model.file_type in ['RAWTEC', 'RAWOBS', 'DETOBS'] or model.elevation_column_name == model.graph_type:
+        filtered_DF = filtered_DF[[model.times_column_name, model.signal_column_name, model.graph_type]]
+    else:
+        filtered_DF = filtered_DF[[model.times_column_name, model.elevation_column_name, model.signal_column_name,
+                                   model.graph_type]]
 
     # Identify the signal types present in the data (Signal types are an integer between 1 and 7).
     signal_types = filtered_DF[model.signal_column_name].unique()
@@ -121,16 +138,19 @@ def plot_prn(model, prn, shift=0):
             
             """
 
-            # For scintillation data, get rid of non-sense values (e.g. values above a value of 5).
-            # These values may come from errors in the receiver/computer or signal interference and
-            # are not representative of S4/sigma scintillation values.
+            # For low-rate scintillation data, get rid of non-sense values (e.g. values above a value of 5).
+            # These values may come from errors in the receiver/computer or signal interference and are not
+            # representative of S4/sigma scintillation values.
             if model.graph_type in model.scintillation_types:
                 data = data[data[model.graph_type] <= 5]
 
-            # TEC detrending (High-rate TEC data).
-            if (model.file_type == 'RAWTEC') and model.TEC_detrending:
-                x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
-                data[model.graph_type] = tec_detrending(x_values, y_values)
+            # High-rate TEC processing:
+            if (model.file_type == 'RAWTEC') and (model.graph_type in model.TEC_types):
+
+                # TEC detrending (High-rate TEC data).
+                if model.TEC_detrending:
+                    x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
+                    data[model.graph_type] = tec_detrending(x_values, y_values)
 
             # Low-rate TEC processing.
             if (model.file_type == 'REDTEC') and (model.graph_type in model.TEC_types):
