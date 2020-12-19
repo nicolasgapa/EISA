@@ -305,23 +305,10 @@ ParseLog_REDOBS( unsigned char* pucStr_, unsigned long ulRequestedPrn_, FILE* fO
    sIsmrHeaderData_ = *((HEADER_DATA*) &pucStr_[0]);
    if( bFirstOBS )
    {
-      fprintf ( fOut_, "Phase and Amplitude Scintillation Indices\n\n");
-      fprintf ( fOut_, "Satellite System: 0 = GPS, 1 = GLONASS, 2 = SBAS, 5 = GALILEO, 6 = COMPASS, 7 = QZSS, 8 = LBAND\n\n" );
-      fprintf ( fOut_, "Frequency: GLONASS frequency channel (-7 to +6) \n\n");
-      fprintf ( fOut_, "Signal Type for each Satellite System\n\n" );
-      fprintf ( fOut_, "GPS     : 1 = L1CA,     4 = L2Y,  5 = L2C, 6 = L2P,    7 = L5Q\n");
-      fprintf ( fOut_, "GLONASS : 1 = L1CA,     3 = L2CA, 4 = L2P\n");
-      fprintf ( fOut_, "SBAS    : 1 = L1CA,     2 = L5I\n");					
-      fprintf ( fOut_, "GALILEO : 1 = E1,       2 = E5A,  3 = E5B, 4 = ALTBOC, 5 = E6\n");
-      fprintf ( fOut_, "COMPASS : 1 = E2\n");
-      fprintf ( fOut_, "QZSS    : 1 = L1CA,     3 = L2C,  4 = L5Q\n");
-      fprintf ( fOut_, "LBAND   : 1 = OMNISTAR, 2 = CDGPS\n\n");	       fprintf  ( fOut_, "GPS Week: %4d, ", sIsmrHeaderData_.usWeek);
-      fprintf ( fOut_, " Satellite System: %d", eSystemChoice_);
-       
       if (ulRequestedPrn_ == JUST_AZ_EL)
-         fprintf ( fOut_, "\n\nGPS TOW , PRN, Freq, SigType, Az  ,  Elv \n" );
+         fprintf ( fOut_, "GPS TOW,PRN,Freq,SigType,Azimuth,Elevation\n" );
       else
-         fprintf ( fOut_, "\n\nGPS TOW , PRN, Freq, SigType, Az , Elv , CNo , Lock Time, CMC Avg, CMC Std , S4 , S4 Cor, 1SecSigma, 3SecSigma, 10SecSigma, 30SecSigma, 60SecSigma \n");
+         fprintf ( fOut_, "GPS TOW,PRN,Freq,SigType,Azimuth,Elevation,CNo,Lock Time,CMC Avg,CMC Std,S4,S4 Cor,1SecSigma,3SecSigma,10SecSigma,30SecSigma,60SecSigma\n");
 
       bFirstOBS = false;
       bRedObs = true; //flag if Reduced Observation log exists
@@ -392,25 +379,13 @@ ParseLog_REDTEC( unsigned char* pucStr_, unsigned long ulRequestedPrn_, FILE* fO
    
    if( bFirstTEC )
    {
-      fprintf ( fOut_, "TEC and TEC Rate\n\n" );
-      fprintf ( fOut_, "Satellite System: 0 = GPS, 1 = GLONASS, 2 = SBAS, 5 = GALILEO, 6 = COMPASS, 7 = QZSS, 8 = LBAND\n\n" );
-      fprintf ( fOut_, "Frequency: GLONASS frequency channel (-7 to +6) \n\n" );
-      fprintf ( fOut_, "Signal Type for each Satellite System\n\n" );
-      fprintf ( fOut_, "GPS     : 1 = L1CA,     4 = L2Y,  5 = L2C, 6 = L2P,    7 = L5Q\n");
-      fprintf ( fOut_, "GLONASS : 1 = L1CA,     3 = L2CA, 4 = L2P\n");
-      fprintf ( fOut_, "SBAS    : 1 = L1CA,     2 = L5I\n");					
-      fprintf ( fOut_, "GALILEO : 1 = E1,       2 = E5A,  3 = E5B, 4 = ALTBOC, 5 = E6\n");
-      fprintf ( fOut_, "COMPASS : 1 = E2\n");
-      fprintf ( fOut_, "QZSS    : 1 = L1CA,     3 = L2C,  4 = L5Q\n");
-      fprintf ( fOut_, "LBAND   : 1 = OMNISTAR, 2 = CDGPS\n\n");	           fprintf ( fOut_, "GPS Week: %4d,", sIsmrHeaderData_.usWeek);
-      fprintf ( fOut_, "  Satellite System: %d", eSystemChoice_);
       if (ulRequestedPrn_ != JUST_AZ_EL)
       {      
-         fprintf ( fOut_, "\n\nGPS TOW,PRN, Freq, PrimSig, SecSig, Azimuth, Elev, SecSig Lock Time, SecSig CNo,TEC15, TECRate15, TEC30, TECRate30, TEC45, TECRate45, TECTOW, TECRateTOW\n" );
+         fprintf ( fOut_, "GPS TOW,PRN,Freq,PrimSig,SigType,Azimuth,Elevation,SecSig Lock Time,SecSig CNo,TEC15,TECRate15,TEC30,TECRate30,TEC45,TECRate45,TECTOW,TECRateTOW\n" );
       }
       else
       {
-         fprintf ( fOut_, "\n\nGPS TOW, System, PRN, Freq, PrimSig, SecSig, Azimuth, Elev\n" );
+         fprintf ( fOut_, "GPS TOW,System,PRN,Freq,PrimSig,SigType,Azimuth,Elevation\n" );
       }
 		
       bFirstTEC = false;

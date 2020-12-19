@@ -328,6 +328,7 @@ class Graphing(wx.Panel):
         self.settings.file_type = self.file_types_menu.GetStringSelection()[:6]
         self.graph_types_menu.Set(self.get_graph_choices())
         self.graph_types_menu.SetSelection(0)
+        self.set_graph_type(None)
 
     def set_graph_type(self, _):
         self.settings.graph_type = self.graph_types_menu.GetStringSelection()
@@ -421,34 +422,34 @@ class Graphing(wx.Panel):
         self.settings.set_x_axis_range = self.x_axis_limits_check.IsChecked()
 
     def set_x_axis_start_value(self, _):
-        self.settings.x_axis_start_value = self.x_axis_min.GetLineText(0)
+        self.settings.x_axis_start_value = float(self.x_axis_min.GetLineText(0))
 
     def set_x_axis_final_value(self, _):
-        self.settings.x_axis_final_value = self.x_axis_max.GetLineText(0)
+        self.settings.x_axis_final_value = float(self.x_axis_max.GetLineText(0))
 
     def set_y_axis_limit_check(self, _):
         self.settings.set_y_axis_range = self.y_axis_limits_check.IsChecked()
 
     def set_y_axis_start_value(self, _):
-        self.settings.y_axis_start_value = self.y_axis_min.GetLineText(0)
+        self.settings.y_axis_start_value = float(self.y_axis_min.GetLineText(0))
 
     def set_y_axis_final_value(self, _):
-        self.settings.y_axis_final_value = self.y_axis_max.GetLineText(0)
+        self.settings.y_axis_final_value = float(self.y_axis_max.GetLineText(0))
 
     def set_vertical_line(self, _):
         self.settings.vertical_line = self.vertical_line_check.IsChecked()
 
     def set_x_value_vertical_line(self, _):
-        self.settings.x_value_vertical_line = self.x_value_vertical_line_text.GetLineText(0)
+        self.settings.x_value_vertical_line = float(self.x_value_vertical_line_text.GetLineText(0))
 
     def set_label_prns(self, _):
         self.settings.label_prns = self.label_prns_check.IsChecked()
 
     def set_title_font_size(self, _):
-        self.settings.title_font_size = self.title_font_size_text.GetLineText(0)
+        self.settings.title_font_size = float(self.title_font_size_text.GetLineText(0))
 
     def set_subtitle_font_size(self, _):
-        self.settings.subtitle_font_size = self.subtitle_font_size_text.GetLineText(0)
+        self.settings.subtitle_font_size = float(self.subtitle_font_size_text.GetLineText(0))
 
     def set_legend(self, _):
         self.settings.legend = self.legend_check.IsChecked()
@@ -525,5 +526,5 @@ class TopFrame(wx.Frame):
 if __name__ == '__main__':
     # Program.
     app = wx.App()
-    frame = TopFrame(GraphSettings(predefined_settings='Graphing/graph_settings_default.csv'))
+    frame = TopFrame(GraphSettings())
     app.MainLoop()

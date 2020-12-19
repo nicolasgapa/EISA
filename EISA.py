@@ -26,7 +26,7 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 receivers = ["RX1"]
 
 # '1' for yesterday. "2" for the day before yesterday, etc.
-days_before = 115
+days_before = 120
 
 # Set run_now to 1 if you want EISA to run now, rather than at a certain time.
 # Set run_now to 0 if you want EISA to run at a certain time every day.
@@ -109,7 +109,7 @@ def parse():
                     add_line = (parsing_directory.split(filesep))
                 elif count == 6:
                     # Only reduced data when running EISA.
-                    add_line = ['1']
+                    add_line = ['2']
                 elif count == 8:
                     # Split the cwd into words.
                     cwd_split_directory = (cwd.split(filesep))

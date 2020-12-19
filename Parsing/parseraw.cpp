@@ -270,17 +270,13 @@ ParseLog_RAWSIN( unsigned char* pucStr_, unsigned long ulRequestedPrn_, SYSTEM_T
          { 
             if( bDetrended_ &&  bDET_FirstRawSin)
             {
-               fprintf( fOut_, "Detrended phase and amplitude\n\n");
-               fprintf( fOut_, "Week Num: %4d,   GPS PRN# %2d\n\n", stSinbHeaderData.usWeek, stSinbChanData.usPrn );
-               fprintf( fOut_, "  GPS TOW ,   TEC   ,  TECdot ,  ADR ,   Power   \n" );
+               fprintf( fOut_, "GPS TOW,TEC,TECdot,ADR,Power\n" );
                bDetrSin=true;
                bDET_FirstRawSin = false;
             }
             else if (!bDetrended_ && bRaw_FirstRawSin)
             {
-               fprintf( fOut_, "Raw phase and amplitude\n\n");
-               fprintf( fOut_, "Week Num: %4d,   GPS PRN# %2d\n\n", stSinbHeaderData.usWeek, stSinbChanData.usPrn );
-               fprintf( fOut_, "  GPS TOW ,   TEC   ,  TECdot ,  ADR ,   Power   \n" );
+               fprintf( fOut_, "GPS TOW,TEC,TECdot,ADR,Power\n" );
                bRawSin=true;
                bRaw_FirstRawSin = false;
             }
@@ -381,23 +377,15 @@ ParseLog_OBS( unsigned char* pucStr_, unsigned long ulRequestedPrn_, SYSTEM_TYPE
             if( bDET_FirstRawObs && bDetrended_)
             {
                //First log; print the header for detrended data
-               fprintf( fOut_, "Detrended phase and amplitude data\n\n");
-               fprintf( fOut_, "%s\n\n",cGNSS_SigType);
-               //fprintf( fOut_, "Frequency: GLONASS frequency channel (-7 to +6) \n\n");
                bDET_FirstRawObs=false;
-               fprintf( fOut_, " \nWeek Num: %4d,  %s   PRN# %d   \n\n", stSinbHeaderData.usWeek, cGNSS, ulRequestedPrn_  );
-               fprintf(fOut_, " GPS TOW , Freq, Signal Type, ADR , Power   \n" );
+               fprintf(fOut_, "GPS TOW,Freq,SigType,ADR,Power\n" );
                bIsmDetObs = true;
             }
             else if(bRAW_FirstRawObs && !bDetrended_)
             {
                //First log; print the header for raw data
-               fprintf( fOut_, "Raw phase and amplitude data\n\n");
-               fprintf( fOut_, "%s\n\n",cGNSS_SigType);
-               //fprintf( fOut_, "Frequency: GLONASS frequency channel (-7 to +6) \n\n");
                bRAW_FirstRawObs=false;
-               fprintf( fOut_, " \nWeek Num: %4d, %s PRN# %d   \n\n  ", stSinbHeaderData.usWeek, cGNSS, ulRequestedPrn_ );
-               fprintf(fOut_, " GPS TOW , Freq, Signal Type, ADR , Power   \n" );
+               fprintf(fOut_, "GPS TOW,Freq,SigType,ADR,Power\n" );
                bIsmRawObs = true;
             }
                    
@@ -489,20 +477,8 @@ ParseLog_TEC( unsigned char* pucStr_, unsigned long ulRequestedPrn_, SYSTEM_TYPE
                break;
             }
             if( bFirst )
-            {                   
-               fprintf ( fOutTEC_, "Raw TEC and Rate of change of TEC\n\n" );
-               fprintf ( fOutTEC_, "Satellite System: 0 = GPS, 1 = GLONASS, 2 = SBAS, 5 = GALILEO, 6 = COMPASS, 7 = QZSS, 8 = LBAND\n\n" );
-               fprintf ( fOutTEC_, "Frequency: GLONASS frequency channel (-7 to +6) \n\n" );
-               fprintf ( fOutTEC_, "Signal Type for each Satellite System\n\n" );
-               fprintf ( fOutTEC_, "GPS     : 1 = L1CA, 4 = L2Y,  5 = L2C, 6 = L2P,    7 = L5Q\n");
-               fprintf ( fOutTEC_, "GLONASS : 1 = L1CA, 3 = L2CA, 4 = L2P\n");
-               fprintf ( fOutTEC_, "SBAS    : 1 = L1CA, 2 = L5I\n");					
-               fprintf ( fOutTEC_, "GALILEO : 1 = E1,   2 = E5A,  3 = E5B, 4 = ALTBOC, 5 = E6\n");
-               fprintf ( fOutTEC_, "COMPASS : 1 = E2\n");
-               fprintf ( fOutTEC_, "QZSS    : 1 = L1CA, 3 = L2C,  4 = L5Q\n");
-               fprintf ( fOutTEC_, "LBAND   : 1 = OMNISTAR, 2 = CDGPS\n\n");					
-               fprintf ( fOutTEC_, "Week Num: %4d,  %s, Prn# %d\n\n", stSinbHeaderData.usWeek,cGNSS, stRawTECChanData_n.ucPrn );
-               fprintf ( fOutTEC_, "GPS TOW , Freq, SV Sys, PrimSig, SecSig, TEC  ,   TECdot    \n" );
+            {
+               fprintf ( fOutTEC_, "GPS TOW,Freq,SV Sys,PrimSig,SigType,TEC,TECdot\n" );
                bFirst     = false;
                bIsmRawTEC = true; //flag raw log exists
             }

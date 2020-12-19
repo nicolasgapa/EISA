@@ -19,7 +19,7 @@ import pandas as pd
 
 # Graph settings (This object contains all the settings used to create plots).
 class GraphSettings:
-    def __init__(self, predefined_settings='graph_settings_default.csv'):
+    def __init__(self, predefined_settings='Graphing/graph_settings_default.csv'):
 
         # Open the settings CSV file.
         DF = pd.read_csv(predefined_settings)
@@ -30,7 +30,7 @@ class GraphSettings:
 
         # File and graph type (REDTEC and Azimuth as default)
         self.file_type = 'REDTEC'
-        self.graph_type = ' Azimuth'
+        self.graph_type = 'Azimuth'
 
         # Date (Today as default)
         today = datetime.datetime.now()
@@ -53,33 +53,31 @@ class GraphSettings:
         # Plot visual settings.
         self.set_x_axis_range = False if int(DF.iloc[6][0]) == 0 else True
         self.set_y_axis_range = False if int(DF.iloc[7][0]) == 0 else True
-        self.x_axis_start_value = DF.iloc[6][1]
-        self.x_axis_final_value = DF.iloc[6][2]
-        self.y_axis_start_value = DF.iloc[7][1]
-        self.y_axis_final_value = DF.iloc[7][2]
+        self.x_axis_start_value = float(DF.iloc[6][1])
+        self.x_axis_final_value = float(DF.iloc[6][2])
+        self.y_axis_start_value = float(DF.iloc[7][1])
+        self.y_axis_final_value = float(DF.iloc[7][2])
         self.vertical_line = False if int(DF.iloc[15][0]) == 0 else True
-        self.x_value_vertical_line = DF.iloc[15][1]
+        self.x_value_vertical_line = float(DF.iloc[15][1])
         self.label_prns = False if int(DF.iloc[11][0]) == 0 else True
-        self.title_font_size = DF.iloc[21][0]
-        self.subtitle_font_size = DF.iloc[21][1]
+        self.title_font_size = float(DF.iloc[21][0])
+        self.subtitle_font_size = float(DF.iloc[21][1])
         self.legend = False if int(DF.iloc[13][0]) == 0 else True
         self.format_type = DF.iloc[19][0]
         self.show_plots = False if int(DF.iloc[25][0]) == 0 else True
 
         # Predefined attributes (NovAtel GPStation-6 receiver).
-        self.graph_types_REDTEC = [' Azimuth', ' Elev', ' SecSig Lock Time', ' SecSig CNo', 'TEC15', ' TECRate15',
-                                   ' TEC30', ' TECRate30', ' TEC45', ' TECRate45', ' TECTOW', ' TECRateTOW']
-        self.graph_types_REDOBS = ['Azimuth', 'Elevation', 'CNo', 'Lock Time', 'CMC avg', 'CMC std', " S4", " S4_Cor",
-                                   " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma", " 60secsigma"]
+        self.graph_types_REDTEC = ['Azimuth', 'Elevation', 'SecSig Lock Time', 'SecSig CNo', 'TEC15', 'TECRate15',
+                                   'TEC30', 'TECRate30', 'TEC45', 'TECRate45', 'TECTOW', 'TECRateTOW']
+        self.graph_types_REDOBS = ['Azimuth', 'Elevation', 'CNo', 'Lock Time', 'CMC Avg', 'CMC Std', "S4", "S4 Cor",
+                                   "1SecSigma", "3SecSigma", "10SecSigma", "30SecSigma", "60SecSigma"]
         self.graph_types_RAWTEC = ['TEC', 'TECdot']
         self.graph_types_RAWOBS = ['ADR', 'Power']
-        self.scintillation_types = [" S4", " S4_Cor", " 1secsigma", " 3secsigma", " 10secsigma", " 30secsigma",
-                                    " 60secsigma"]
-        self.TEC_types = ['TEC15', ' TECRate15', ' TEC30', ' TECRate30', ' TEC45', ' TECRate45', ' TECTOW',
-                          ' TECRateTOW']
-        self.elevation_column_name = ' Elev'
+        self.scintillation_types = ["S4", "S4 Cor", "1SecSigma", "3SecSigma", "10SecSigma", "30SecSigma", "60SecSigma"]
+        self.TEC_types = ['TEC15', 'TEC30', 'TEC45', 'TECTOW', 'TEC']
+        self.elevation_column_name = 'Elevation'
         self.times_column_name = 'GPS TOW'
-        self.signal_column_name = ' SecSig'
+        self.signal_column_name = 'SigType'
         self.signal_types = {"G": {"1": "L1CA", "4": "L2Y", "5": "L2C", "6": "L2P", "7": "L5Q"},
                              "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"},
                              "E": {"1": "E1", "2": "E5A", "3": "E5B", "4": "AltBOC"}}

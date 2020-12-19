@@ -132,13 +132,16 @@ def naming(model, prn, signal_type, time_period=1):
     return plot_name, title, subtitle
 
 
-def tec_detrending(x_values, y_values):
+def tec_detrending(x_values, y_values, poly_degree=3, cutoff=0.1, order=6):
     """"
     Fuction: Detrend the TEC data using a butterworth filter.
 
     Inputs:
-        x_values (list): time values
-        y_values (list): TEC values
+        x_values (list): time values.
+        y_values (list): TEC values.
+        poly_degree (int): Degree of the polynomial.
+        cutoff (float): Desired cut off frequency [Hz]
+        order (int): Order of the butterworth filter.
     Output:
         This function returns the detrended TEC (y-axis) values only.
     """
@@ -148,7 +151,6 @@ def tec_detrending(x_values, y_values):
     bfTEC = [float(y) for y in y_values]
 
     # TEC: Polyfit subtraction and then a type of Butterworth filtering/ Sliding Avg
-    poly_degree = 3  # Filtering on TEC time series (TEC_ts values).
     poly_coef = np.polyfit(bftimes, bfTEC, poly_degree)  # Degree of the polynomial.
     poly = np.polyval(poly_coef, bftimes)  # In this case, y-axis is the TEC vector.
     poly_sub_tec = bfTEC - poly
@@ -159,9 +161,6 @@ def tec_detrending(x_values, y_values):
     tec_fft = np.fft.fftshift(np.fft.fft(np.fft.ifftshift(polyfit_tec)))
 
     # ------------------- Butterworth filter -------------------------- #
-    cutoff = 0.1  # Desired cut off frequency [Hz]
-    order = 6  # Order of the butterworth filter.
-
     # This extract creates a kernel for low pass butterworth filter.
     freq = np.arange(-LP / 2 * dfreq + dfreq, (LP / 2 * dfreq) + dfreq, dfreq)  # Create frequency array
     butterlow = np.divide(1, np.sqrt(1 + (np.power((freq / cutoff), (2 * order)))))  # Size(freq)
@@ -206,13 +205,19 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
         plt: Resulting plot.
         str: Directory to the new plot.
     """
-    # If the user wants a legend, add the labels. Otherwise, plot without labels.
-    if model.legend:
-        plt.plot(x_values, y_values, label=prn)
-    else:
-        plt.plot(x_values, y_values)
+    # Plot.
+    # If the user wants a legend, add the labels. Otherwise, plot without labels. For summary plots, reduce the
+    # line width to 0.4.
     if model.summary_plot:
-        plt.linewidth = 0.4
+        if model.legend:
+            plt.plot(x_values, y_values, label=prn, linewidth=0.4)
+        else:
+            plt.plot(x_values, y_values, linewidth=0.4)
+    else:
+        if model.legend:
+            plt.plot(x_values, y_values, label=prn)
+        else:
+            plt.plot(x_values, y_values)
 
     # Add the X and Y-axis labels.
     plt.ylabel(model.graph_type)
@@ -220,9 +225,9 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
 
     # Change the limits of the axes (if applicable).
     if model.set_x_axis_range:
-        plt.xlim([model.x_axis_start_value, model.x_axis_final_value])
+        plt.xlim(model.x_axis_start_value, model.x_axis_final_value)
     if model.set_y_axis_range:
-        plt.ylim([model.y_axis_start_value, model.y_axis_final_value])
+        plt.ylim(model.y_axis_start_value, model.y_axis_final_value)
 
     # If the user wants to print a vertical line, use the axvline function - Line 29 of the GRAPHSETTINGS.csv file.
     if model.vertical_line:
@@ -256,15 +261,20 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
     return plt, directory
 
 
-def header_size(file_type):
+def times_to_filter_df(df, start_times, end_times):
     """
-    Function to obtain the number of rows in the header of a CSV file (Output of a NovAtel GPStation 6).
-    The function can be further modified for EISA to be capable of handling data from other receivers.
+    Filter a DF given a set of start and end times. All the data inside the time intervals defined y the start_times
+    and end_times lists are returned in a new DF.
 
-    :param file_type (string): File type (reduced/raw, or TEC/scintillation). E.g. "REDTEC"
-    :return: header size (int): Number of rows in the header of such file.
+    :param df (pandas dataframe): Original data frame.
+    :param start_times (list): A list of the start times of each time interval.
+    :param end_times (list): A list of the end times of each time interval
+    :return: pandas data frame: The filtered data frame.
     """
-    if file_type == "REDTEC" or file_type == "ismRawTEC" or file_type == "ismRawTec" or file_type == "REDOBS":
-        return 12
-    elif file_type == "ismRawObs" or file_type == "ismRawOBS" or file_type == "ismDetObs" or file_type == "ismDetOBS":
-        return 7
+    new_df = []
+    for s, e in zip(start_times, end_times):
+        data = df[df['GPS TOW'] >= s]
+        data = data[data['GPS TOW'] <= e]
+        new_df.append(data)
+    new_df = pd.concat(new_df)
+    return new_df
