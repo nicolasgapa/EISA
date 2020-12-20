@@ -224,7 +224,10 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
             plt.plot(x_values, y_values)
 
     # Add the X and Y-axis labels.
-    plt.ylabel(model.graph_type)
+    if model.units[model.graph_type] is None:
+        plt.ylabel(model.graph_type)
+    else:
+        plt.ylabel(model.graph_type + ' ({})'.format(model.units[model.graph_type]))
     plt.xlabel('Time (UTC)')
 
     # Change the limits of the axes (if applicable).

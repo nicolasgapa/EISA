@@ -166,6 +166,12 @@ class Graphing(wx.Panel):
         self.sizer_2.Add(self.vertical_TEC_check, 0, wx.ALL | wx.CENTER, 5)
         self.vertical_TEC_check.Bind(wx.EVT_CHECKBOX, self.set_vertical_TEC)
 
+        # Generate only one plot per PRN.
+        self.one_plot_per_prn_check = wx.CheckBox(self, label="Only one plot per PRN")
+        self.one_plot_per_prn_check.SetValue(self.settings.one_plot_per_prn)
+        self.sizer_2.Add(self.one_plot_per_prn_check, 0, wx.ALL | wx.CENTER, 5)
+        self.one_plot_per_prn_check.Bind(wx.EVT_CHECKBOX, self.set_one_plot_per_prn)
+
         """
         Plot visual settings.
         """
@@ -460,6 +466,9 @@ class Graphing(wx.Panel):
 
     def set_show_plots(self, _):
         self.settings.show_plots = self.show_plots_check.IsChecked()
+
+    def set_one_plot_per_prn(self, _):
+        self.settings.one_plot_per_prn = self.one_plot_per_prn_check.IsChecked()
 
     def run(self, _):
         # Catch selection errors. Run only if all stteings have been properly selected.

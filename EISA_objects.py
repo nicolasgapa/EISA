@@ -49,6 +49,7 @@ class GraphSettings:
         self.TEC_detrending = False if int(DF.iloc[9][0]) == 0 else True
         self.night_subtraction = False if int(DF.iloc[4][0]) == 0 else True
         self.vertical_TEC = False if int(DF.iloc[17][0]) == 0 else True
+        self.one_plot_per_prn = False if int(DF.iloc[27][0]) == 0 else True
 
         # Plot visual settings.
         self.set_x_axis_range = False if int(DF.iloc[6][0]) == 0 else True
@@ -81,6 +82,12 @@ class GraphSettings:
         self.signal_types = {"G": {"1": "L1CA", "4": "L2Y", "5": "L2C", "6": "L2P", "7": "L5Q"},
                              "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"},
                              "E": {"1": "E1", "2": "E5A", "3": "E5B", "4": "AltBOC"}}
+        self.units = {'Azimuth': '°', 'Elevation': '°', 'SecSig Lock Time': 'seconds',
+                      'SecSig CNo': None, 'TEC15': 'TECU', 'TECRate15': 'TECU', 'TEC30': 'TECU',
+                      'TECRate30': 'TECU', 'TEC45': 'TECU', 'TECRate45': 'TECU', 'TECTOW': 'TECU', 'TECRateTOW': 'TECU',
+                      'CNo': None, 'Lock Time': 'seconds', 'CMC Avg': 'm.', 'CMC Std': 'm.', "S4": None, "S4 Cor": None,
+                      "1SecSigma": 'radians', "3SecSigma": 'radians', "10SecSigma": 'radians', "30SecSigma": 'radians',
+                      "60SecSigma": 'radians', 'TEC': 'TECU', 'TECdot': 'TECU', 'ADR': None, 'Power': None}
 
     def get_date_str(self):
         year, month, day = [str(i) for i in self.date]

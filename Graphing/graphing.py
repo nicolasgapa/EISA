@@ -207,8 +207,12 @@ def plot_prn(model, prn, shift=0):
                 # Clear the plot.
                 plt.clf()
 
+        # Break out of the loop if the user chose to plot only one signal per PRN.
+        if model.one_plot_per_prn:
+            break
+
     # Return Success.
-    return True, None
+    return True, 'All plots were generated succesfully.'
 
 
 # ----------- GRAPHING ------------ #
