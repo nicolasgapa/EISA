@@ -14,6 +14,7 @@ Author: Nicolas Gachancipa
 # Imports
 from EISA_objects import GraphSettings, ParseSettings
 from Graphing import run_graphing
+from Parsing import run_parsing
 import datetime
 import wx
 
@@ -475,6 +476,7 @@ class Graphing(wx.Panel):
         if len(self.settings.PRNs_to_plot) == 0:
             wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
         else:
+            self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
             self.settings.output_dir = self.output_dir_btn.GetPath()
             run_graphing(self.settings)
 
@@ -506,6 +508,122 @@ class Parsing(wx.Panel):
         self.sizer.Add(self.CSV_dir_btn, 0, wx.ALL | wx.CENTER, 5)
         self.CSV_dir_btn.Bind(wx.EVT_DIRPICKER_CHANGED, self.set_csv_dir)
 
+        # Obtain the name of the receiver.
+        self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='Receiver name:')
+        self.receiver_name_text = wx.TextCtrl(self, value=str(self.settings.receiver_name), size=(150, 20))
+        self.receiver_name_text.SetFocus()
+        self.hbox1.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox1.Add(self.receiver_name_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+        self.sizer.Add(self.hbox1, 0, wx.ALL | wx.CENTER, 5)
+        self.receiver_name_text.Bind(wx.EVT_TEXT, self.set_receiver_name)
+
+        # Obtain the start date.
+        text = wx.StaticText(self, label='Start date:')
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        today = datetime.datetime.now()
+        self.start_year = wx.ComboBox(self, choices=[str(today.year - i) for i in range(0, today.year - 2014)],
+                                      value=str(self.settings.start_date[0]))
+        self.start_month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)],
+                                       value=str(self.settings.start_date[1]))
+        self.start_day = wx.ComboBox(self, choices=[str(i) for i in
+                                                    range(1, int(self.get_month_length(str(today.month))) + 1)],
+                                     value=str(self.settings.start_date[2]))
+        self.local_sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.start_year, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.start_month, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.start_day, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.start_year.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_start_date)
+        self.start_month.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_start_month)
+        self.start_day.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_start_date)
+
+        # Obtain the end date.
+        text_2 = wx.StaticText(self, label='End date:')
+        self.end_year = wx.ComboBox(self, choices=[str(today.year - i) for i in range(0, today.year - 2014)],
+                                    value=str(self.settings.end_date[0]))
+        self.end_month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)],
+                                     value=str(self.settings.end_date[1]))
+        self.end_day = wx.ComboBox(self, choices=[str(i) for i in
+                                                  range(1, int(self.get_month_length(str(today.month))) + 1)],
+                                   value=str(self.settings.end_date[2]))
+        self.local_sizer.Add(text_2, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.end_year, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.end_month, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.end_day, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.end_year.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_end_date)
+        self.end_month.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_end_month)
+        self.end_day.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_end_date)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+
+        # Obtain the file types (raw or reduced).
+        text = wx.StaticText(self, label='Select the file types that you want to parse:')
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.reduced_check = wx.CheckBox(self, label="Reduced (REDTEC and REDOBS)")
+        self.raw_check = wx.CheckBox(self, label="Raw (RAWTEC, RAWOBS, and DETOBS)")
+        self.reduced_check.SetValue(self.settings.reduced)
+        self.raw_check.SetValue(self.settings.raw)
+        self.local_sizer.Add(self.reduced_check, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.raw_check, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.reduced_check.Bind(wx.EVT_CHECKBOX, self.set_reduced)
+        self.raw_check.Bind(wx.EVT_CHECKBOX, self.set_raw)
+
+        # PRNs - Select all.
+        text = wx.StaticText(self, label='Select the satellites that you want to parse: \n'
+                                         'G: GPS, R: GLONASS, E: GALILEO')
+        text_2 = wx.StaticText(self, label='Select all:')
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.local_sizer.Add(text_2, 0, wx.ALL | wx.CENTER, 5)
+        self.GPS_check = wx.CheckBox(self, label="G")
+        self.GLONASS_check = wx.CheckBox(self, label="R")
+        self.GALILEO_check = wx.CheckBox(self, label="E")
+        self.local_sizer.Add(self.GPS_check, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GLONASS_check, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GALILEO_check, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.GPS_check.Bind(wx.EVT_CHECKBOX, self.set_GPS_PRNs)
+        self.GLONASS_check.Bind(wx.EVT_CHECKBOX, self.set_GLONASS_PRNs)
+        self.GALILEO_check.Bind(wx.EVT_CHECKBOX, self.set_GALILEO_PRNs)
+
+        # PRNs - Select individual satellites.
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.GPS_satellites_menu = wx.ListBox(self, style=wx.LB_MULTIPLE, choices=['G' + str(i) for i in range(1, 33)])
+        self.GLONASS_satellites_menu = wx.ListBox(self, style=wx.LB_MULTIPLE,
+                                                  choices=['R' + str(i) for i in range(1, 25)])
+        self.GALILEO_satellites_menu = wx.ListBox(self, style=wx.LB_MULTIPLE,
+                                                  choices=['E' + str(i) for i in range(1, 31)])
+        self.local_sizer.Add(self.GPS_satellites_menu, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GLONASS_satellites_menu, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GALILEO_satellites_menu, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.GPS_satellites_menu.Bind(wx.EVT_LISTBOX, self.set_PRNs_to_parse)
+        self.GLONASS_satellites_menu.Bind(wx.EVT_LISTBOX, self.set_PRNs_to_parse)
+        self.GALILEO_satellites_menu.Bind(wx.EVT_LISTBOX, self.set_PRNs_to_parse)
+
+        # Time range.
+        self.hbox2 = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='Time range in hours (0 - 24):')
+        text2 = wx.StaticText(self, label='Start:')
+        text3 = wx.StaticText(self, label='End:')
+        self.time_range_check = wx.CheckBox(self)
+        self.time_range_check.SetValue(self.settings.set_time_range)
+        self.time_start_value = wx.TextCtrl(self, value=str(self.settings.time_start_value), size=(35, 20))
+        self.time_end_value = wx.TextCtrl(self, value=str(self.settings.time_end_value), size=(35, 20))
+        self.hbox2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(self.time_range_check, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(text2, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(self.time_start_value, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(text3, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox2.Add(self.time_end_value, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.hbox2, 0, wx.ALL | wx.CENTER, 5)
+        self.time_range_check.Bind(wx.EVT_CHECKBOX, self.set_time_range_check)
+        self.time_start_value.Bind(wx.EVT_TEXT, self.set_time_start_value)
+        self.time_end_value.Bind(wx.EVT_TEXT, self.set_time_end_value)
+
         """
         Other parsing options.
         """
@@ -533,6 +651,12 @@ class Parsing(wx.Panel):
         self.SetSizerAndFit(self.container)
         self.Layout()
 
+    # Getters.
+    def get_month_length(self, month):
+        month_lengths = {'1': '31', '2': '29', '3': '31', '4': '30', '5': '31', '6': '30', '7': '31', '8': '31',
+                         '9': '30', '10': '31', '11': '30', '12': '31', }
+        return month_lengths[month]
+
     # Setters.
     def set_binary_dir(self, _):
         self.settings.binary_dir = self.binary_dir_btn.GetPath()
@@ -541,13 +665,122 @@ class Parsing(wx.Panel):
     def set_csv_dir(self, _):
         self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
 
+    def set_receiver_name(self, _):
+        self.settings.receiver_name = self.receiver_name_text.GetLineText(0)
+
+    def set_start_month(self, _):
+        self.start_day.Set(
+            [str(i) for i in range(1, int(self.get_month_length(self.start_month.GetStringSelection())) + 1)])
+        self.start_day.SetSelection(0)
+        self.set_start_date(None)
+
+    def set_end_month(self, _):
+        # Set the date
+        self.end_day.Set(
+            [str(i) for i in range(1, int(self.get_month_length(self.end_month.GetStringSelection())) + 1)])
+        self.end_day.SetSelection(0)
+        self.set_end_date(None)
+
+    def set_start_date(self, _):
+
+        # If one part of the date is not set, it must be defined by the code itself (default = today's date).
+        today = datetime.datetime.now()
+        if self.start_year.GetStringSelection() == "":
+            self.start_year.SetStringSelection(str(today.year))
+        if self.start_month.GetStringSelection() == "":
+            self.start_month.SetStringSelection(str(today.month))
+        if self.start_day.GetStringSelection() == "":
+            self.start_day.SetStringSelection(str(today.day))
+
+        # Update the model's start date.
+        self.settings.start_date = [int(self.start_year.GetStringSelection()),
+                                    int(self.start_month.GetStringSelection()),
+                                    int(self.start_day.GetStringSelection())]
+
+    def set_end_date(self, _):
+
+        # If one part of the date is not set, it must be defined by the code itself (default = today's date).
+        today = datetime.datetime.now()
+        if self.end_year.GetStringSelection() == "":
+            self.end_year.SetStringSelection(str(today.year))
+        if self.end_month.GetStringSelection() == "":
+            self.end_month.SetStringSelection(str(today.month))
+        if self.end_day.GetStringSelection() == "":
+            self.end_day.SetStringSelection(str(today.day))
+
+        # Update the model's end date.
+        self.settings.end_date = [int(self.end_year.GetStringSelection()),
+                                  int(self.end_month.GetStringSelection()),
+                                  int(self.end_day.GetStringSelection())]
+
+    def set_reduced(self, _):
+        self.settings.reduced = self.reduced_check.IsChecked()
+
+    def set_raw(self, _):
+        self.settings.raw = self.raw_check.IsChecked()
+
+    def set_GPS_PRNs(self, _):
+
+        # GPS.
+        for i in range(32):
+            if self.GPS_check.IsChecked():
+                self.GPS_satellites_menu.SetSelection(i)
+            else:
+                if i in self.GPS_satellites_menu.GetSelections():
+                    self.GPS_satellites_menu.Deselect(i)
+
+        # Set PRNs.
+        self.set_PRNs_to_parse(None)
+
+    def set_GLONASS_PRNs(self, _):
+
+        # GLONASS.
+        for i in range(24):
+            if self.GLONASS_check.IsChecked():
+                self.GLONASS_satellites_menu.SetSelection(i)
+            else:
+                if i in self.GLONASS_satellites_menu.GetSelections():
+                    self.GLONASS_satellites_menu.Deselect(i)
+
+        # Set PRNs.
+        self.set_PRNs_to_parse(None)
+
+    def set_GALILEO_PRNs(self, _):
+
+        # GALILEO.
+        for i in range(30):
+            if self.GALILEO_check.IsChecked():
+                self.GALILEO_satellites_menu.SetSelection(i)
+            else:
+                if i in self.GALILEO_satellites_menu.GetSelections():
+                    self.GALILEO_satellites_menu.Deselect(i)
+
+        # Set PRNs.
+        self.set_PRNs_to_parse(None)
+
+    def set_PRNs_to_parse(self, _):
+        GPS_selections = ['G' + str(i + 1) for i in self.GPS_satellites_menu.GetSelections()]
+        GLONASS_selections = ['R' + str(i + 1) for i in self.GLONASS_satellites_menu.GetSelections()]
+        GALILEO_selections = ['E' + str(i + 1) for i in self.GALILEO_satellites_menu.GetSelections()]
+        self.settings.PRNs_to_parse = GPS_selections + GLONASS_selections + GALILEO_selections
+
+    def set_time_range_check(self, _):
+        self.settings.set_time_range = self.time_range_check.IsChecked()
+
+    def set_time_start_value(self, _):
+        self.settings.time_start_value = float(self.time_start_value.GetLineText(0))
+
+    def set_time_end_value(self, _):
+        self.settings.time_end_value = float(self.time_end_value.GetLineText(0))
+
     def run(self, _):
         # Catch selection errors. Run only if all stteings have been properly selected.
-        if len(self.settings.PRNs_to_plot) == 0:
+        if len(self.settings.PRNs_to_parse) == 0:
             wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
         else:
-            self.settings.output_dir = self.output_dir_btn.GetPath()
-            run_graphing(self.settings)
+            self.settings.binary_dir = self.binary_dir_btn.GetPath()
+            self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
+            run_parsing(self.settings)
 
 
 # Main window frame.

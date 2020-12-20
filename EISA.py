@@ -84,7 +84,7 @@ def parse():
         print("Receiver: ", receiver_name, "  Date:", datetime.today() - timedelta(days_before))
         print("--------------------------- Step 1: Parse ---------------------------")
 
-        # Identify the directory to the parsing.py file.
+        # Identify the directory to the Parsing.py file.
         parsing_directory = cwd + filesep + "Parsing" + filesep
         os.chdir(parsing_directory)
 
@@ -119,7 +119,7 @@ def parse():
                     cwd_split_directory.append("CSVFILES")
                     add_line = cwd_split_directory
                 elif count == 10:
-                    # Parse data for all constellations when running parsing.py
+                    # Parse data for all constellations when running Parsing.py
                     # add_line = ['G', 'R', 'E']
                     add_line = ['G', 'R', 'E']
                 elif count == 12:
@@ -151,8 +151,8 @@ def parse():
             writer = csv.writer(csvfile)
             writer.writerows(newcsv)
 
-        # Run the parsing.py file.
-        os.system("py parsing.py")
+        # Run the Parsing.py file.
+        os.system("py Parsing.py")
 
         # Now, proceed to step 3: Graphing.
         # graph(receiver_name)

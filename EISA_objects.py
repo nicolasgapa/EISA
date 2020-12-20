@@ -104,8 +104,26 @@ class ParseSettings:
         # Open the settings CSV file.
         DF = pd.read_csv(predefined_settings)
 
-        # Directories.
-        self.binary_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\RX1'
-        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\GRAPHS'
+        # Receiver name.
+        self.receiver_name = DF.iloc[0][0]
 
-        #
+        # Directories.
+        self.binary_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + '\\' + self.receiver_name
+        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
+            self.receiver_name)
+
+        # Dates.
+        self.start_date = [2020, 8, 22]
+        self.end_date = [2020, 8, 22]
+
+        # File types.
+        self.reduced = False if int(DF.iloc[2][0]) == 0 else True
+        self.raw = False if int(DF.iloc[4][0]) == 0 else True
+
+        # Select the PRNs to parse.
+        self.PRNs_to_parse = []
+
+        # Time range to parse.
+        self.set_time_range = False if int(DF.iloc[6][0]) == 0 else True
+        self.time_start_value = float(DF.iloc[6][1])
+        self.time_end_value = float(DF.iloc[6][2])

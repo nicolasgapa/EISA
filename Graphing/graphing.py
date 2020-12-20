@@ -16,7 +16,7 @@ import pandas as pd
 import os
 
 # Internal imports.
-from support_functions import (time_ranges, tec_detrending, slant_to_vertical_tec, naming, plot, times_to_filter_df)
+from support_graphing_functions import (time_ranges, tec_detrending, slant_to_vertical_tec, naming, plot, times_to_filter_df)
 
 # Set the file separator to work in both Linux and Windows.
 filesep = os.sep

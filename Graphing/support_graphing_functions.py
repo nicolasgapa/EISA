@@ -2,7 +2,7 @@
 
 Embry-Riddle Ionospheric Scintillation Algorithm (EISA)
 Version 2
-Support functions
+Support functions (Graphing)
 
 Embry-Riddle Aeronautical University
 Department of Physical Sciences
