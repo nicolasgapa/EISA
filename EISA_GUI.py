@@ -12,7 +12,7 @@ Author: Nicolas Gachancipa
 """
 
 # Imports
-from EISA_objects import GraphSettings
+from EISA_objects import GraphSettings, ParseSettings
 from Graphing import run_graphing
 import datetime
 import wx
@@ -33,8 +33,8 @@ class Graphing(wx.Panel):
         text = wx.StaticText(self, label='Select the directory where the CSV files are located:')
         self.CSV_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.settings.CSV_dir, u"Select a folder",
                                             wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
-        self.sizer.Add(text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
-        self.sizer.Add(self.CSV_dir_btn, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.CSV_dir_btn, 0, wx.ALL | wx.CENTER, 5)
         self.CSV_dir_btn.Bind(wx.EVT_DIRPICKER_CHANGED, self.set_csv_dir)
 
         # Obtain directory where the output plots are going to be saved.
@@ -479,16 +479,88 @@ class Graphing(wx.Panel):
             run_graphing(self.settings)
 
 
+# Parsing panel.
+class Parsing(wx.Panel):
+
+    # Initializer.
+    def __init__(self, parent, parse_settings):
+        # Create panel & object.
+        self.settings = parse_settings
+        wx.Panel.__init__(self, parent, size=(0, 0))
+        self.container = wx.BoxSizer(wx.VERTICAL)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Obtain directory where the output plots are going to be saved.
+        text = wx.StaticText(self, label='Select the directory where the binary files are located:')
+        self.binary_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.settings.binary_dir, u"Select a folder",
+                                               wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.binary_dir_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.binary_dir_btn.Bind(wx.EVT_DIRPICKER_CHANGED, self.set_binary_dir)
+
+        # Obtain path to the output dir, where the CSV files will be saved.
+        text = wx.StaticText(self, label='Select the directory where you want to save the CSV files:')
+        self.CSV_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.settings.CSV_dir, u"Select a folder",
+                                            wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.CSV_dir_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.CSV_dir_btn.Bind(wx.EVT_DIRPICKER_CHANGED, self.set_csv_dir)
+
+        """
+        Other parsing options.
+        """
+        self.sizer_2 = wx.BoxSizer(wx.VERTICAL)
+
+        # Run EISA using the selected parameters.
+        run_btn = wx.Button(self, label='Run EISA')
+        run_btn.Bind(wx.EVT_BUTTON, self.run)
+
+        # Return to main menu.
+        return_btn = wx.Button(self, label='Return')
+        return_btn.Bind(wx.EVT_BUTTON, parent.return_to_menu)
+
+        # Place everything into the container.
+        self.options = wx.BoxSizer(wx.HORIZONTAL)
+        self.options.Add(self.sizer, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.options.Add(wx.StaticLine(self, -1, size=(3, 600), style=wx.LI_VERTICAL), 0,
+                         wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.options.Add(self.sizer_2, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.container.Add(self.options, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.container.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.container.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
+
+        # Show panel.
+        self.SetSizerAndFit(self.container)
+        self.Layout()
+
+    # Setters.
+    def set_binary_dir(self, _):
+        self.settings.binary_dir = self.binary_dir_btn.GetPath()
+        print(self.settings.binary_dir)
+
+    def set_csv_dir(self, _):
+        self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
+
+    def run(self, _):
+        # Catch selection errors. Run only if all stteings have been properly selected.
+        if len(self.settings.PRNs_to_plot) == 0:
+            wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
+        else:
+            self.settings.output_dir = self.output_dir_btn.GetPath()
+            run_graphing(self.settings)
+
+
 # Main window frame.
 class TopFrame(wx.Frame):
 
     # Initializer.
-    def __init__(self, graph_settings):
+    def __init__(self, graph_settings, parse_settings):
         super().__init__(parent=None, title='Embry-Riddle Ionospheric Scintillation Algorithm (EISA) v2.0',
                          size=(600, 175))
 
         # Create panel.
-        self.settings = graph_settings
+        self.graph_settings = graph_settings
+        self.parse_settings = parse_settings
         self.panel = wx.Panel(self)
         self.my_sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -503,6 +575,7 @@ class TopFrame(wx.Frame):
         # Parsing settings.
         my_btn_3 = wx.Button(self.panel, label='Parsing')
         self.my_sizer.Add(my_btn_3, 0, wx.ALL | wx.CENTER, 5)
+        my_btn_3.Bind(wx.EVT_BUTTON, self.parse)
 
         # Graphing settings.
         my_btn_4 = wx.Button(self.panel, label='Graphing')
@@ -518,7 +591,19 @@ class TopFrame(wx.Frame):
     def graph(self, _):
         # Hide the main panel and display the graphing panel.
         self.panel.Hide()
-        self.panel = Graphing(self, self.settings)
+        self.panel = Graphing(self, self.graph_settings)
+        self.my_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.my_sizer.Add(self.panel, 1, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+
+        # Fit to window's size.
+        self.SetSizerAndFit(self.my_sizer)
+        self.Center()
+
+    # Parsing.
+    def parse(self, _):
+        # Hide the main panel and display the parsing panel.
+        self.panel.Hide()
+        self.panel = Parsing(self, self.parse_settings)
         self.my_sizer = wx.BoxSizer(wx.VERTICAL)
         self.my_sizer.Add(self.panel, 1, wx.ALL | wx.EXPAND | wx.CENTER, 5)
 
@@ -529,12 +614,12 @@ class TopFrame(wx.Frame):
     # Retunr to main menu.
     def return_to_menu(self, _):
         self.Hide()
-        self.__init__(self.settings)
+        self.__init__(self.graph_settings, self.parse_settings)
 
 
 # Run program.
 if __name__ == '__main__':
     # Program.
     app = wx.App()
-    frame = TopFrame(GraphSettings())
+    frame = TopFrame(GraphSettings(), ParseSettings())
     app.MainLoop()

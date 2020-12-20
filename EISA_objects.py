@@ -96,3 +96,16 @@ class GraphSettings:
         if len(day) == 1:
             day = '0' + str(day)
         return year + month + day
+
+
+# Parse settings (This object contains all the settings to parse binary files and create CSVs).
+class ParseSettings:
+    def __init__(self, predefined_settings='Parsing/parse_settings_default.csv'):
+        # Open the settings CSV file.
+        DF = pd.read_csv(predefined_settings)
+
+        # Directories.
+        self.binary_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\RX1'
+        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\GRAPHS'
+
+        #
