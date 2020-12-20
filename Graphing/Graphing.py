@@ -16,7 +16,7 @@ import pandas as pd
 import os
 
 # Internal imports.
-from support_functions import (time_ranges, tec_detrending, slant_to_vertical_tec, naming, plot, times_to_filter_df)
+from support_graphing_functions import (time_ranges, tec_detrending, slant_to_vertical_tec, naming, plot, times_to_filter_df)
 
 # Set the file separator to work in both Linux and Windows.
 filesep = os.sep
@@ -207,8 +207,12 @@ def plot_prn(model, prn, shift=0):
                 # Clear the plot.
                 plt.clf()
 
+        # Break out of the loop if the user chose to plot only one signal per PRN.
+        if model.one_plot_per_prn:
+            break
+
     # Return Success.
-    return True, None
+    return True, 'All plots were generated succesfully.'
 
 
 # ----------- GRAPHING ------------ #
