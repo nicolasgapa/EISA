@@ -11,15 +11,36 @@ Author: Nicolas Gachancipa
 
 """
 # Imports.
-import math
+from gnsscal import gpswd2date
+import ntpath
 import os
 import pandas as pd
+from shutil import move
 import subprocess
 
 filesep = os.sep
 
 
-def parse_file(binary_file, reduced_or_raw, exe_dir, model):
+def parse_file(binary_dir, output_dir, exe_dir, PRNs_to_parse, week_number, week_day_number, reduced_or_raw='reduced',
+               time_range=False, start_time=0, end_time=24):
+    """
+    Function to parse a binary file.
+
+    :param binary_dir (str): Input (binary) file, including directory.
+    :param output_dir (str): Output directory, where the CSV files will be saved.
+    :param exe_dir (str): Directory to where the C++ and .exe parsing files are located (not including the name of the
+                          files).
+    :param PRNs_to_parse (list): List of satellites to parse. For example: [G1, G10, R2, R5, E7, E14].
+    :param week_number (int): GPS Week.
+    :param week_day_number (int): Day of the week (i.e. 0: Monday, 1: Tuesday, ..., 6: Sunday).
+    :param reduced_or_raw (str): Either 'reduced' or 'raw'. Default: 'reduced'.
+    :param time_range (boolean): Parse a specific time range. Default: False.
+    :param start_time (float): If time_range is True, the start time of the time range to parse (in hours). Default: 0.
+    :param end_time (float): If time_range is True, the end time of the time range to parse (in hours). Default: 24.
+
+    :return: boolean, str: Fist value indicates if the function ran properly (True) or not (False). Second value is
+             a msg (string). If the first value is False, the error message indicates what went wrong.
+    """
     # Obtain directory to the exe parsing files.
     if reduced_or_raw == 'reduced':
         exe_file = exe_dir + filesep + 'ParseReduced.exe'
@@ -28,291 +49,93 @@ def parse_file(binary_file, reduced_or_raw, exe_dir, model):
         exe_file = exe_dir + filesep + 'ParseRaw.exe'
         file_types = ['ismRawTec', 'ismRawObs', 'ismDetObs']
     else:
-        return False, "File type must be defined: Either 'reduced' or 'raw'"
+        return False, "File type must be defined: Either 'reduced' or 'raw'."
 
-    # Obtain week number and directory to file.
-    week_number = int(binary_file[:4])
-    day_number = int(binary_file[5])
-    binary_dir = model.binary_dir + filesep + str(week_number)
+    # Obtain the binary file name, from the directory.
+    binary_file = ntpath.basename(binary_dir)
 
-    # TODO: FIX - constellationandprns = '-'
-    for satellite in model.PRNs_to_parse:
+    # Determine if the binary file exists, otherwise return an error.
+    if not os.path.exists(binary_dir):
+        return False, 'The following binary file does not exist: {}.'.format(binary_dir)
+
+    # The Raw file type names are modified when the CSV files are created. Define the new names (for later use).
+    new_raw_names = {'ismRawTec': 'RAWTEC', 'ismRawObs': 'RAWOBS', 'ismDetObs': 'DETOBS'}
+
+    # Obtain week number, day-of-the-week number, and date.
+    date = gpswd2date(week_number, week_day_number)
+    year, month, day = date.year, date.month, date.day
+
+    # Add a trailing zero to the day (or month), if it is a number smaller than 10. Convert all values to strings. The
+    # date string is used later to generate the names of the csv files.
+    if day <= 9:
+        day = "0" + str(day)
+    if month <= 9:
+        month = "0" + str(month)
+    date_str = str(year) + str(month) + str(day)
+
+    # Print intro log.
+    if reduced_or_raw == 'reduced':
+        print('\n ----- GPStation-6 Reduced Observation Post-Processing Utility. Date: {} -----'.format(date))
+    elif reduced_or_raw == 'raw':
+        print('\n ----- GPStation-6 Raw Observation Post-Processing Utility. Date: {} -----'.format(date))
+
+    # Parse the binary file for each of the selected satellites (PRNs). Keep track of the PRNs that are parsed.
+    parsed_PRNs = []
+    for satellite in PRNs_to_parse:
 
         # Obtain the command to run in the exe.
         CSV_name = binary_file + "_" + satellite + ".csv"
-        exe_command = satellite + " " + binary_dir + filesep + binary_file + " " + CSV_name
+        exe_command = satellite + " " + binary_dir + " " + CSV_name
 
         # For raw files only: If the user selects a specific period of time to parse, add the parameter to the command.
-        if model.set_time_range:
-            start_time_GPS_TOW = day_number * 86400 + model.time_start_value * 3600
-            end_time_GPS_TOW = day_number * 86400 + model.time_end_value * 3600
-            exe_command = exe_command + " " + str(start_time_GPS_TOW) + " " + str(end_time_GPS_TOW)
+        if time_range and reduced_or_raw == 'raw':
+            start_time_GPS_TOW = week_day_number * 86400 + start_time * 3600
+            end_time_GPS_TOW = week_day_number * 86400 + end_time * 3600
+            exe_command = exe_command + " " + str(start_time_GPS_TOW) + " " + str(end_time_GPS_TOW) + " " + str(
+                week_number) + " " + str(week_number)
 
         # Parse the file by running the command.
-        # subprocess.call(exe_file + ' ' + exe_command)
+        subprocess.call(exe_file + ' ' + exe_command)
 
         # Process each of the file types (e.g. REDTEC and REDOBS for reduced files).
-        ys = {'ismRawTec': 'RAWTEC', 'ismRawObs': 'RAWOBS', 'ismDetObs': 'DETOBS'}
         for file_type in file_types:
+            # Identify the name of the CSV file.
             csv_file = file_type + '_' + CSV_name
-            y = csv_file
-            if reduced_or_raw == 'raw':
-                y = ys[file_type]
-            csv_file = exe_dir + filesep + csv_file
 
-            # Process the csv file (if it exists).
-            print('here', csv_file)
+            # Process the csv file (if it exists). Otherwise, print an error message. The CSV file, which is the output
+            # of the exe file is initially placed in the working directory.
             if os.path.exists(csv_file):
                 # Open the CSV file.
                 DF = pd.read_csv(csv_file)
 
-                # If the DF is empty, return an error msg.
+                # If the DF is empty, print an error msg.
                 if len(DF) == 0:
-                    return False, 'The following file was discarded, because it was empty: {}.'.format(CSV_name)
+                    print('The following file (corresponding to satellite {}) was discarded, because it was '
+                          'empty: {}. The file was deleted.'.format(satellite, CSV_name))
 
-                # Extract the times column.
-                times = DF[model.times_column_name].astype(float)
-                first_second = times.iloc[0]
-                week_day = math.floor(first_second/86400)
+                # Identify the directory where the new csv file will be saved (given by the user).
+                new_csv_file_path = output_dir + filesep + date_str
 
-                savelength = len(times)
-                if firstsecond < 86400:  # for the first time (day of the week).
-                    firstday = "Sunday"
-                    rownumber = 0
-                elif 86400 <= firstsecond < 172800:
-                    firstday = "Monday"
-                    rownumber = 1
-                elif 172800 <= firstsecond < 259200:
-                    firstday = "Tuesday"
-                    rownumber = 2
-                elif 259200 <= firstsecond < 345600:
-                    firstday = "Wednesday"
-                    rownumber = 3
-                elif 345600 <= firstsecond < 432000:
-                    firstday = "Thursday"
-                    rownumber = 4
-                elif 432000 <= firstsecond < 518400:
-                    firstday = "Friday"
-                    rownumber = 5
-                elif 518400 <= firstsecond < 604800:
-                    firstday = "Saturday"
-                    rownumber = 6
-                start = week_day*86400
-                end = start + 86400
-                name = "GPSCALENDAR.csv"
-                with open(name) as csvfile:
-                    readCSV = csv.reader(csvfile, delimiter=',')
-                    yearlist = []
-                    monthlist = []
-                    daylist = []
-                    dayoftheyearlist = []
-                    dayoftheweeklist = []
-                    weeklist = []
-                    for row in readCSV:
-                        year = row[0]
-                        month = row[1]
-                        day = row[2]
-                        dayoftheyear = row[3]
-                        dayoftheweek = row[4]
-                        week = row[5]
-                        yearlist.append(year)
-                        monthlist.append(month)
-                        daylist.append(day)
-                        dayoftheyearlist.append(dayoftheyear)
-                        dayoftheweeklist.append(dayoftheweek)
-                        weeklist.append(week)
-                weeklistint = []  # Convert the week numbers to integers, so they can be compared to the
-                for item in weeklist:  # week number from the csv file.
-                    weeklistint.append(int(item))  #
-                weekpositions = []  # Compare each item in the week list to the week number. Identify which
-                csvcolumn = (i for i, item in enumerate(weeklistint) if
-                             item == week_number)  # rows in the GPScalendar file correspond to the week number. Then,
-                for i in csvcolumn:  # read the row to select the date (day, year, month etc).
-                    weekpositions.append(i)
-                csvrownumber = weekpositions[rownumber]
-                daynumber = int(daylist[csvrownumber])
-                yearnumber = int(yearlist[csvrownumber])
-                monthnumber = int(monthlist[csvrownumber])
-                if monthnumber == 1:  # Change the month number to its corresponding name.
-                    monthname = "January"
-                elif monthnumber == 2:
-                    monthname = "February"
-                elif monthnumber == 3:
-                    monthname = "March"
-                elif monthnumber == 4:
-                    monthname = "April"
-                elif monthnumber == 5:
-                    monthname = "May"
-                elif monthnumber == 6:
-                    monthname = "June"
-                elif monthnumber == 7:
-                    monthname = "July"
-                elif monthnumber == 8:
-                    monthname = "August"
-                elif monthnumber == 9:
-                    monthname = "September"
-                elif monthnumber == 10:
-                    monthname = "October"
-                elif monthnumber == 11:
-                    monthname = "November"
-                elif monthnumber == 12:
-                    monthname = "December"
-                day1 = []  # This section will read through the variables collected earlier in this
-                selection = (i for i, item in enumerate(timesflt) if
-                             item >= start and item < end)  # code and will identify the corresponding lines in the csv file for
-                for i in selection:  # each date. The first part corresponds to the first day of the data, and
-                    day1.append(
-                        i)  # the second part consists of a while loop that will repeat until all the
-                lenday1 = len(day1)  # rows in the csv file are read.
-                timesflt = timesflt[
-                           lenday1:lentimes]  # The code will print the corresponding row numbers and dates after reading the
-                if lenday1 == 0:  # file.
-                    beginning1 = 0
-                    end1 = 0  #
-                    stringtoprint = "There is no data for day 1."
-                    totallength = 1
-                elif lenday1 != 0:
-                    beginning1 = 1
-                    end1 = lenday1 + 1
-                    stringtoprint = "Day 1 goes from cell " + str(beginning1) + " to cell " + str(
-                        end1) + ". (" + firstday + ", " + monthname + " " + str(
-                        daynumber) + ", " + str(
-                        yearnumber) + ")"
-                    totallength = end1  #
-                with open(x) as csvfile:  #
-                    readCSV = csv.reader(csvfile, delimiter=',')  #
-                    day1toprint = []
-                    rowcount = 1
-                    for row in readCSV:
-                        if rowcount <= end1:
-                            day1toprint.append(row)
-                        rowcount = rowcount + 1
-                if daynumber <= 9:  # Print the new csv file for day 1.
-                    daynumber = "0" + str(daynumber)
-                if monthnumber <= 9:
-                    monthnumber = "0" + str(monthnumber)
-                pathtoprint = CSVfilesdirectory + filesep + str(yearnumber) + str(
-                    monthnumber) + str(
-                    daynumber)
-                if not os.path.exists(pathtoprint):
-                    os.makedirs(pathtoprint)
-                csvfilename1 = pathtoprint + filesep + y + "_" + constellation + str(
-                    satellite) + "_" + str(yearnumber) + str(monthnumber) + str(daynumber) + ".csv"
-                with open(csvfilename1, "w+", newline='') as csvfile:  #
-                    writer = csv.writer(csvfile)  #
-                    writer.writerows(day1toprint)  #
-                firstdaycode = rownumber  # Do the same for all of the days.
-                daycount = 2
+                # Create the directory if it does not exist yet.
+                if not os.path.exists(new_csv_file_path):
+                    os.makedirs(new_csv_file_path)
 
-                while totallength < savelength:
-                    if start == 518400:  #
-                        start = 0  #
-                        end = 86400  #
-                    else:  #
-                        start = start + 86400  #
-                        end = end + 86400  #
-                    day2 = []  #
-                    selection = (i for i, item in enumerate(timesflt) if
-                                 item >= start and item < end)
-                    for i in selection:
-                        day2.append(i)
-                    lenday2 = len(day2)
-                    lentimes = len(timesflt)
-                    timesflt = timesflt[lenday2:lentimes]
-                    if lenday2 == 0:
-                        beginning2 = 0
-                        end2 = 0
-                        stringtoprint = "There is no data for day " + str(daynumber) + "."
-                    elif lenday2 != 0:
-                        if totallength != 1:
-                            beginning2 = totallength + 1
-                        elif totallength == 1:
-                            beginning2 = totallength
-                        if firstdaycode != 6:
-                            firstdaycode = firstdaycode + 1
-                        elif firstdaycode == 6:
-                            firstdaycode = 0
-                        end2 = totallength + lenday2
-                        if firstdaycode == 0:
-                            firstday = "Sunday"
-                        elif firstdaycode == 1:
-                            firstday = "Monday"
-                        elif firstdaycode == 2:
-                            firstday = "Tuesday"
-                        elif firstdaycode == 3:
-                            firstday = "Wednesday"
-                        elif firstdaycode == 4:
-                            firstday = "Thursday"
-                        elif firstdaycode == 5:
-                            firstday = "Friday"
-                        elif firstdaycode == 6:
-                            firstday = "Saturday"
-                        m = csvrownumber + daycount - 1
-                        daynumber = int(daylist[m])
-                        yearnumber = int(yearlist[m])
-                        monthnumber = int(monthlist[m])
-                        if monthnumber == 1:  # Change the month name.
-                            monthname = "January"
-                        elif monthnumber == 2:
-                            monthname = "February"
-                        elif monthnumber == 3:
-                            monthname = "March"
-                        elif monthnumber == 4:
-                            monthname = "April"
-                        elif monthnumber == 5:
-                            monthname = "May"
-                        elif monthnumber == 6:
-                            monthname = "June"
-                        elif monthnumber == 7:
-                            monthname = "July"
-                        elif monthnumber == 8:
-                            monthname = "August"
-                        elif monthnumber == 9:
-                            monthname = "September"
-                        elif monthnumber == 10:
-                            monthname = "October"
-                        elif monthnumber == 11:
-                            monthname = "November"
-                        elif monthnumber == 12:
-                            monthname = "December"
-                        stringtoprint = "Day " + str(daycount) + " goes from cell " + str(
-                            beginning2) + " to cell " + str(
-                            end2) + ". (" + firstday + ", " + monthname + " " + str(
-                            daynumber) + ", " + str(yearnumber) + ")"
-                        with open(x) as csvfile:  #
-                            readCSV = csv.reader(csvfile, delimiter=',')  #
-                            header = []  #
-                            rowcount = 1  #
-                            for row in readCSV:  #
-                                if rowcount < 1:  #
-                                    header.append(row)  #
-                                rowcount = rowcount + 1
-                        with open(x) as csvfile:  #
-                            readCSV = csv.reader(csvfile, delimiter=',')  #
-                            daytoprintwoheader = []
-                            rowcount = 1
-                            for row in readCSV:
-                                if beginning2 <= rowcount <= end2:
-                                    daytoprintwoheader.append(row)
-                                rowcount = rowcount + 1
-                            daytoprint = header + daytoprintwoheader
-                        if daynumber <= 9:
-                            daynumber = "0" + str(daynumber)
-                        if monthnumber <= 9:
-                            monthnumber = "0" + str(monthnumber)
-                        pathtoprint = CSVfilesdirectory + filesep + str(yearnumber) + str(
-                            monthnumber) + str(daynumber)
-                        if not os.path.exists(pathtoprint):
-                            os.makedirs(pathtoprint)
-                        csvfilename = pathtoprint + filesep + y + "_" + constellation + str(
-                            satellite) + "_" + str(yearnumber) + str(monthnumber) + str(
-                            daynumber) + ".csv"
-                        with open(csvfilename, "w+",
-                                  newline='') as csvfile:  # Create the new csvfile.
-                            writer = csv.writer(csvfile)
-                            writer.writerows(daytoprint)
-                        totallength = end2
-                    daycount = daycount + 1
-                os.remove(x)  # Remove miscelanous files.
-        # TODO: Print parsing review.
-        return False, 'Fail'
+                # Update the file type name (only for Raw file types).
+                if reduced_or_raw == 'raw':
+                    file_type = new_raw_names[file_type]
+
+                # Create the new CSV file by moving the old file and renaming it.
+                new_csv_file = new_csv_file_path + filesep + file_type + "_" + satellite + "_" + date_str + ".csv"
+                move(csv_file, new_csv_file)
+            else:
+                print('The {} data corresponding to satellite {} could not be parsed.'.format(file_type, satellite))
+
+        # Add the parsed PRN to the list.
+        parsed_PRNs.append(satellite)
+
+    # Print return message.
+    parsed_PRNs = ', '.join(parsed_PRNs) if parsed_PRNs else None
+    print('Date: {} - The data of the following satellites was processed: {}.'.format(date, parsed_PRNs))
+
+    # Return.
+    return True, 'Success'

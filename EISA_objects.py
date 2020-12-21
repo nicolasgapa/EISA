@@ -25,7 +25,7 @@ class GraphSettings:
         DF = pd.read_csv(predefined_settings)
 
         # Directories.
-        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\CSVFILES'
+        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\CSV_FILES'
         self.output_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\GRAPHS'
 
         # File and graph type (REDTEC and Azimuth as default)
@@ -109,7 +109,7 @@ class ParseSettings:
 
         # Directories.
         self.binary_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + '\\' + self.receiver_name
-        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
+        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
             self.receiver_name)
 
         # Dates.

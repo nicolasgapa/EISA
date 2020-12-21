@@ -513,8 +513,10 @@ ScanForLogs( FILE* fIn_,
    unsigned long  ulMessageID;
    unsigned long  ulMessageLength;
    int            iBufferPtr = NULL;
+   int            iLogCount = 0;
    int            iBytesRead = 0;
    int            iBufferSize = 0;
+   int            printSummary = false;
    bool           bFileExhausted = false;
 
    for( i = 0; i < MAX_SYSTEMS; i++ )
@@ -571,6 +573,16 @@ ScanForLogs( FILE* fIn_,
                     ulMessageID == 0x573) && 
                     ulMessageLength < MAX_LOG_SIZE)
                {
+
+                  // Print log if no start time was specified.
+                  if( dStartTime_/86400 - floor(dStartTime_/86400) == 0 && dEndTime_ == 999999.00)
+                  {
+                     if( iLogCount % 3600 == 1 && ulMessageID == 0x56E )
+                     {
+                         printf(" %.0f", iLogCount/3600.0);
+                     }
+                  }
+
                   if ( ulMessageID == 0x147 || ulMessageID == 0x56D || ulMessageID == 0x56E )
                      bDetrended=false;
                   else
@@ -619,11 +631,27 @@ ScanForLogs( FILE* fIn_,
                            usWeek > usStartWeek_)
                      {
                         //We've passed the start time (but not the end time); parse this log
-                        if      ( ulMessageID == 0x147) ParseLog_RAWSIN( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_RAWSIN, bDetrended );   //for rawsin and TEC (single file)
-                        else if ( ulMessageID == 0x146) ParseLog_RAWSIN( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_DETRSIN, bDetrended );  //for detrended sin
-                        else if ( ulMessageID == 0x56D) ParseLog_OBS( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_ISMRAWOBS, bDetrended );   //for raw obs
-                        else if ( ulMessageID == 0x573) ParseLog_OBS( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_ISMDETOBS, bDetrended );   //for detrended obs logs
-                        else if ( ulMessageID == 0x56E) ParseLog_TEC( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_ISMRAWTEC, bDetrended );   //for raw TEC logs
+                        if ( ulMessageID == 0x147) //for rawsin and TEC (single file)
+                        {
+                            ParseLog_RAWSIN( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_RAWSIN, bDetrended );
+                        }
+                        else if ( ulMessageID == 0x146) //for detrended sin
+                        {
+                            ParseLog_RAWSIN( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_DETRSIN, bDetrended );
+                        }
+                        else if ( ulMessageID == 0x56D) //for raw obs
+                        {
+                            ParseLog_OBS( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_ISMRAWOBS, bDetrended );
+                        }
+                        else if ( ulMessageID == 0x573) //for detrended obs logs
+                        {
+                            ParseLog_OBS( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_ISMDETOBS, bDetrended );
+                        }
+                        else if ( ulMessageID == 0x56E) //for raw TEC logs
+                        {
+                            ParseLog_TEC( &aucParseString[0], ulPrn_, eSystemChoice_, fOut_ISMRAWTEC, bDetrended );
+                            iLogCount++;
+                        }
                      }
                   }
                }
@@ -677,40 +705,54 @@ ScanForLogs( FILE* fIn_,
       }
    }
 
-   fprintf( stdout, "\nPrn #Detrended       #Raw\n" );
-   for( i = 0; i < MAX_SYSTEMS; i++ )
+   // Final log.
+   if( dStartTime_/86400 - floor(dStartTime_/86400) == 0 && dEndTime_ == 999999.00)
    {
-      switch(i)
-      {
-      case SYS_GPS:
-         fprintf(stdout, "\nSystem GPS\n");
-         break;
-      case SYS_GLO:
-         fprintf(stdout, "\nSystem GLONASS\n");
-         break;
-      case SYS_GAL:
-         fprintf(stdout, "\nSystem GALILEO\n");
-         break;
-      case SYS_QZSS:
-         fprintf(stdout, "\nSystem QZSS\n");
-         break;
-      case SYS_SBAS:
-         fprintf(stdout, "\nSystem SBAS\n");
-         break;
-      case SYS_COMPASS:
-         fprintf(stdout, "\nSystem COMPASS\n");
-         break;
-      }
-
-      for( j = 0; j < MAX_NUM_PRNS; j++ )
-      {
-         if( aiPrnStatsDetrended[i][j] > 0 || aiPrnStatsRaw[i][j] > 0 )
-         {
-            fprintf(stdout, "%3d %10d %10d\n", (i == SYS_SBAS ? j+BASE_PRN_SBAS : (i == SYS_QZSS ? j+BASE_PRN_QZSS : j+1)), aiPrnStatsDetrended[i][j], aiPrnStatsRaw[i][j] );
-         }
-      }
+     printf(" %.0f.\n", iLogCount/3600.0);
    }
-   fprintf(stdout, "\n");
+   else
+   {
+     printf(" Done.\n");
+   }
+
+   // Print summary.
+   if (printSummary)
+   {
+       fprintf( stdout, "\nPrn #Detrended       #Raw\n" );
+       for( i = 0; i < MAX_SYSTEMS; i++ )
+       {
+          switch(i)
+          {
+          case SYS_GPS:
+             fprintf(stdout, "\nSystem GPS\n");
+             break;
+          case SYS_GLO:
+             fprintf(stdout, "\nSystem GLONASS\n");
+             break;
+          case SYS_GAL:
+             fprintf(stdout, "\nSystem GALILEO\n");
+             break;
+          case SYS_QZSS:
+             fprintf(stdout, "\nSystem QZSS\n");
+             break;
+          case SYS_SBAS:
+             fprintf(stdout, "\nSystem SBAS\n");
+             break;
+          case SYS_COMPASS:
+             fprintf(stdout, "\nSystem COMPASS\n");
+             break;
+          }
+
+          for( j = 0; j < MAX_NUM_PRNS; j++ )
+          {
+             if( aiPrnStatsDetrended[i][j] > 0 || aiPrnStatsRaw[i][j] > 0 )
+             {
+                fprintf(stdout, "%3d %10d %10d\n", (i == SYS_SBAS ? j+BASE_PRN_SBAS : (i == SYS_QZSS ? j+BASE_PRN_QZSS : j+1)), aiPrnStatsDetrended[i][j], aiPrnStatsRaw[i][j] );
+             }
+          }
+       }
+       fprintf(stdout, "\n");
+   }
 }
 
 int main( int argc, char* argv[] )
@@ -737,7 +779,7 @@ int main( int argc, char* argv[] )
    FILE*          fOut_ISMRAWTEC = NULL;
    errno_t        err;
      
-   printf("\nGPStation-6 Raw Observation Post-Processing Utility\n");
+   // printf("\nGPStation-6 Raw Observation Post-Processing Utility\n");
 #if ATNOVATEL
    //More detailed version information based on NovAtel's VCS
    PrintVersion();
@@ -830,6 +872,17 @@ int main( int argc, char* argv[] )
       }
    }
 
+   // Print satellite name.
+   if (dStartTime == -1)
+   {
+    printf("Parsing raw satellite data: %s. Hours parsed:", pcPRNSelector);
+   }
+   else
+   {
+    printf("Parsing raw satellite data: %s, between TOWs %.1f (%.1f UTC) and %.1f (%.1f UTC).", pcPRNSelector, dStartTime,
+    24* ((dStartTime / 86400) - floor(dStartTime / 86400)), dEndTime, 24* ((dEndTime / 86400) - floor(dEndTime / 86400)));
+   }
+
    err = fopen_s(&fIn, szInFileName, "rb");
    if( err != 0 )
    {
@@ -895,6 +948,9 @@ int main( int argc, char* argv[] )
    if (!bIsmRawObs) remove(szOut_ISMRAWOBS_file);
    if (!bIsmDetObs) remove(szOut_ISMDETOBS_file);
    if (!bIsmRawTEC) remove(szOut_ISMRAWTEC_file);
-   
+   if (!bIsmRawObs || !bIsmDetObs || !bIsmRawTEC)
+   {
+   printf("The RAW files are empty (There is no data for the specified satellite and/or time interval.) Files deleted.\n");
+   }
    return 0;
 }

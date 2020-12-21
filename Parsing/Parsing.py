@@ -12,21 +12,23 @@ start_time = time.time()
 
 def parse_binary_file(binary_file, model):
     # Obtain directory to file.
-    week_number = binary_file[:4]
-    binary_dir = model.binary_dir + filesep + week_number + filesep + binary_file
+    week_number, week_day_number = int(binary_file[:4]), int(binary_file[5])
+    binary_dir = model.binary_dir + filesep + str(week_number) + filesep + binary_file
 
     # Determine if the file exists within binary_dir. Otherwise, return an error.
-    if os.path.exists(binary_dir):
-        if model.reduced:
-            success, msg = parse_file(binary_file, 'reduced', os.getcwd() + filesep + 'Parsing', model)
-            if not success:
-                return False, msg
-        if model.raw:
-            success, msg = parse_file(binary_file, 'raw', os.getcwd() + filesep + 'Parsing', model)
-            if not success:
-                return False, msg
-    else:
-        return False, 'The following file does not exist: {}.'.format(binary_file)
+    if model.reduced:
+        success, msg = parse_file(binary_dir, model.CSV_dir, os.getcwd(), model.PRNs_to_parse, week_number,
+                                  week_day_number, time_range=model.set_time_range, start_time=model.time_start_value,
+                                  end_time=model.time_end_value)
+        if not success:
+            return False, msg
+    if model.raw:
+        success, msg = parse_file(binary_dir, model.CSV_dir, os.getcwd(), model.PRNs_to_parse, week_number,
+                                  week_day_number, reduced_or_raw='raw', time_range=model.set_time_range,
+                                  start_time=model.time_start_value, end_time=model.time_end_value)
+        if not success:
+            return False, msg
+    return True, 'Success'
 
 
 # ----------- PARSING (NovAtel receivers only) ------------ #

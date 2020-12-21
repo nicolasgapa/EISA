@@ -559,18 +559,17 @@ ScanForLogs( FILE* fIn_, int iPrn_, FILE* fOut_, FILE* fOBS_, FILE* fTEC_, SYSTE
 
                // Log messages supported...
                // ISMREDOBS (1393), ISMREDTEC (1394) and ISMR (274)
-               if( ulMessageID == 0x112 
-                   || ulMessageID == 0x571 
-                   || ulMessageID == 0x572
+               if( ulMessageID == 0x112  || ulMessageID == 0x571 || ulMessageID == 0x572
                    && ulMessageLength < MAX_LOG_SIZE)
                {
                   
-				   if( iLogCountRedObs % 10 == 1 && ulMessageID == 0x571 )
-                     printf("Parsed %i ISMREDOBS logs (= %f hours)\n", iLogCountRedObs, iLogCountRedObs/60.0);
-                  if( iLogCountRedTec % 10 == 1 && ulMessageID == 0x572)
-                     printf("Parsed %i ISMREDTEC logs (= %f hours)\n", iLogCountRedTec, iLogCountRedTec/60.0);
-                  if( iLogCountIsmr % 10 == 1  && ulMessageID == 0x112)
-                     printf("Parsed %i ISMR logs (= %f hours)\n", iLogCountIsmr, iLogCountIsmr/60.0);
+				  if( iLogCountRedObs % 60 == 1 && ulMessageID == 0x571 )
+                     printf(" %.0f", iLogCountRedObs/60.0);
+                  //  printf("Parsed %i REDUCED logs (= %f hours)\n", iLogCountRedObs, iLogCountRedObs/60.0);
+                  // if( iLogCountRedTec % 60 == 0 && ulMessageID == 0x572)
+                  //   printf("Parsed %i ISMREDTEC logs (= %f hours)\n", iLogCountRedTec, iLogCountRedTec/60.0);
+                  // if( iLogCountIsmr % 60 == 0  && ulMessageID == 0x112)
+                  //    printf("Parsed %i ISMR logs (= %f hours)\n", iLogCountIsmr, iLogCountIsmr/60.0);
 
                   for(int i=0; i < (ulMessageLength + ucHeaderLength - 6); i++)
                   {
@@ -643,6 +642,9 @@ ScanForLogs( FILE* fIn_, int iPrn_, FILE* fOut_, FILE* fOBS_, FILE* fTEC_, SYSTE
             aucFileBuffer[i] = aucTempFileBuffer[i];
       }
    }
+
+   // Final log.
+   printf(" %.0f.\n", iLogCountRedObs/60.0);
 }
 
 int main( int argc, char* argv[] )
@@ -662,7 +664,7 @@ int main( int argc, char* argv[] )
    FILE*         fOut_REDOBS;
    FILE*         fOut_REDTEC;
      
-   printf("\nGPStation-6 Reduced Observation Post-Processing Utility\n");
+   //printf("\nGPStation-6 Reduced Observation Post-Processing Utility\n");
 #if ATNOVATEL
    //More detailed version information based on NovAtel's VCS
    PrintVersion();
@@ -720,6 +722,9 @@ int main( int argc, char* argv[] )
       iPrn = ALL_PRNS;                  //User entered only a System, output all PRN for that system
    else if(strlen(pcPRNSelector) > 1)
       iPrn = atol( &pcPRNSelector[1] ); //User entered a system & value, invalide PRN number defaults to 0
+
+   // Print satellite name.
+   printf("Parsing reduced satellite data: %s. Hours parsed:", pcPRNSelector);
       
    //Open input file
    err = fopen_s(&fIn, szInFileName, "rb");

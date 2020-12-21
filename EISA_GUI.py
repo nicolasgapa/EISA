@@ -12,11 +12,15 @@ Author: Nicolas Gachancipa
 """
 
 # Imports
+import datetime
 from EISA_objects import GraphSettings, ParseSettings
 from Graphing.Graphing import run_graphing
+import os
 from Parsing.Parsing import run_parsing
-import datetime
+from pathlib import Path
 import wx
+
+filesep = os.sep
 
 
 # Graphing panel.
@@ -29,6 +33,9 @@ class Graphing(wx.Panel):
         wx.Panel.__init__(self, parent, size=(0, 0))
         self.container = wx.BoxSizer(wx.VERTICAL)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Get the directory to this object's file (i.e. the directory to EISA_GUI.py).
+        self.this_file_dir = str(Path(__file__).resolve().parent)
 
         # Obtain path to the input CSV files.
         text = wx.StaticText(self, label='Select the directory where the CSV files are located:')
@@ -316,8 +323,6 @@ class Graphing(wx.Panel):
             return self.settings.graph_types_RAWOBS
         elif self.settings.file_type == 'RAWTEC':
             return self.settings.graph_types_RAWTEC
-        else:
-            print('Invalid file type.')
 
     def get_month_length(self, month):
         month_lengths = {'1': '31', '2': '29', '3': '31', '4': '30', '5': '31', '6': '30', '7': '31', '8': '31',
@@ -330,7 +335,6 @@ class Graphing(wx.Panel):
 
     def set_output_dir(self, _):
         self.settings.output_dir = self.output_dir_btn.GetPath()
-        print(self.settings.output_dir)
 
     def set_file_type(self, _):
         self.settings.file_type = self.file_types_menu.GetStringSelection()[:6]
@@ -476,8 +480,14 @@ class Graphing(wx.Panel):
         if len(self.settings.PRNs_to_plot) == 0:
             wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
         else:
+            # Set working directory to this file's (EISA) directory. Then, change dir to the Graphing folder.
+            os.chdir(self.this_file_dir + filesep + 'Graphing')
+
+            # Set the directories.
             self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
             self.settings.output_dir = self.output_dir_btn.GetPath()
+
+            # Run Graphing.
             run_graphing(self.settings)
 
 
@@ -491,6 +501,9 @@ class Parsing(wx.Panel):
         wx.Panel.__init__(self, parent, size=(0, 0))
         self.container = wx.BoxSizer(wx.VERTICAL)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Get the directory to this object's file (i.e. the directory to EISA_GUI.py).
+        self.this_file_dir = str(Path(__file__).resolve().parent)
 
         # Obtain directory where the output plots are going to be saved.
         text = wx.StaticText(self, label='Select the directory where the binary files are located:')
@@ -533,7 +546,6 @@ class Parsing(wx.Panel):
         self.local_sizer.Add(self.start_year, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.start_month, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.start_day, 0, wx.ALL | wx.CENTER, 5)
-        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
         self.start_year.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_start_date)
         self.start_month.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_start_month)
         self.start_day.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_start_date)
@@ -606,7 +618,7 @@ class Parsing(wx.Panel):
 
         # Time range.
         self.hbox2 = wx.BoxSizer(wx.HORIZONTAL)
-        text = wx.StaticText(self, label='Time range in hours (0 - 24):')
+        text = wx.StaticText(self, label='Time range in hours (0 - 24) - Only for raw data:')
         text2 = wx.StaticText(self, label='Start:')
         text3 = wx.StaticText(self, label='End:')
         self.time_range_check = wx.CheckBox(self)
@@ -660,7 +672,6 @@ class Parsing(wx.Panel):
     # Setters.
     def set_binary_dir(self, _):
         self.settings.binary_dir = self.binary_dir_btn.GetPath()
-        print(self.settings.binary_dir)
 
     def set_csv_dir(self, _):
         self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
@@ -778,8 +789,14 @@ class Parsing(wx.Panel):
         if len(self.settings.PRNs_to_parse) == 0:
             wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
         else:
+            # Set working directory to this file's (EISA) directory. Then, change dir to the Parsing folder.
+            os.chdir(self.this_file_dir + filesep + 'Parsing')
+
+            # Update directories.
             self.settings.binary_dir = self.binary_dir_btn.GetPath()
             self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
+
+            # Run Parsing.
             run_parsing(self.settings)
 
 
