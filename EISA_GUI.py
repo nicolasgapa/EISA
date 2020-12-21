@@ -13,8 +13,8 @@ Author: Nicolas Gachancipa
 
 # Imports
 from EISA_objects import GraphSettings, ParseSettings
-from Graphing import run_graphing
-from Parsing import run_parsing
+from Graphing.Graphing import run_graphing
+from Parsing.Parsing import run_parsing
 import datetime
 import wx
 

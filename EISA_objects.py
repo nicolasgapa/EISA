@@ -127,3 +127,6 @@ class ParseSettings:
         self.set_time_range = False if int(DF.iloc[6][0]) == 0 else True
         self.time_start_value = float(DF.iloc[6][1])
         self.time_end_value = float(DF.iloc[6][2])
+
+        # Predefined attributes (NovAtel GPStation-6)
+        self.times_column_name = 'GPS TOW'

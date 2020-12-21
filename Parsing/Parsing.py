@@ -3,7 +3,7 @@ import os
 import time
 from datetime import date, timedelta
 from gnsscal import date2gpswd
-from support_parsing_functions import parse_file
+from Parsing.support_parsing_functions import parse_file
 
 filesep = os.sep
 
@@ -18,18 +18,18 @@ def parse_binary_file(binary_file, model):
     # Determine if the file exists within binary_dir. Otherwise, return an error.
     if os.path.exists(binary_dir):
         if model.reduced:
-            success, msg = parse_file(binary_file, 'reduced', os.getcwd() + r'\Parsing', model)
+            success, msg = parse_file(binary_file, 'reduced', os.getcwd() + filesep + 'Parsing', model)
             if not success:
                 return False, msg
         if model.raw:
-            success, msg = parse_file(binary_file, 'raw', os.getcwd() + r'\Parsing', model)
+            success, msg = parse_file(binary_file, 'raw', os.getcwd() + filesep + 'Parsing', model)
             if not success:
                 return False, msg
     else:
         return False, 'The following file does not exist: {}.'.format(binary_file)
 
 
-# ----------- PARSING ------------ #
+# ----------- PARSING (NovAtel receivers only) ------------ #
 def run_parsing(model):
     # Process the dates. Obtain the names of the binary files.
     start_year, start_month, start_day = model.start_date
