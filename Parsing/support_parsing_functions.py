@@ -24,7 +24,7 @@ filesep = os.sep
 def parse_file(binary_dir, output_dir, exe_dir, PRNs_to_parse, week_number, week_day_number, reduced_or_raw='reduced',
                time_range=False, start_time=0, end_time=24):
     """
-    Function to parse a binary file.
+    Function to parse a binary file and obtain CSV files.
 
     :param binary_dir (str): Input (binary) file, including directory.
     :param output_dir (str): Output directory, where the CSV files will be saved.
@@ -40,6 +40,7 @@ def parse_file(binary_dir, output_dir, exe_dir, PRNs_to_parse, week_number, week
 
     :return: boolean, str: Fist value indicates if the function ran properly (True) or not (False). Second value is
              a msg (string). If the first value is False, the error message indicates what went wrong.
+             Moreover, the CSV Files are saved to the specified directory (output_dir).
     """
     # Obtain directory to the exe parsing files.
     if reduced_or_raw == 'reduced':
