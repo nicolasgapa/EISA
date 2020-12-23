@@ -116,9 +116,10 @@ class ParseSettings:
             self.receiver_name)
 
         # Dates.
+        today = datetime.datetime.today()
         self.date_range = False if int(DF.iloc[8][0]) == 0 else True
-        self.start_date = [2020, 8, 22]
-        self.end_date = [2020, 8, 22]
+        self.start_date = [today.year, today.month, today.day]
+        self.end_date = [today.year, today.month, today.day]
 
         # File types.
         self.reduced = False if int(DF.iloc[2][0]) == 0 else True

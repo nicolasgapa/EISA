@@ -10,20 +10,20 @@ filesep = os.sep
 start_time = time.time()
 
 
-def parse_binary_file(binary_file, model):
+def parse_binary_file(binary_file, exe_dir, model):
     # Obtain directory to file.
     week_number, week_day_number = int(binary_file[:4]), int(binary_file[5])
     binary_dir = model.binary_dir + filesep + str(week_number) + filesep + binary_file
 
     # Determine if the file exists within binary_dir. Otherwise, return an error.
     if model.reduced:
-        success, msg = parse_file(binary_dir, model.CSV_dir, os.getcwd(), model.PRNs_to_parse, week_number,
+        success, msg = parse_file(binary_dir, model.CSV_dir, exe_dir, model.PRNs_to_parse, week_number,
                                   week_day_number, time_range=model.set_time_range, start_time=model.time_start_value,
                                   end_time=model.time_end_value)
         if not success:
             return False, msg
     if model.raw:
-        success, msg = parse_file(binary_dir, model.CSV_dir, os.getcwd(), model.PRNs_to_parse, week_number,
+        success, msg = parse_file(binary_dir, model.CSV_dir, exe_dir, model.PRNs_to_parse, week_number,
                                   week_day_number, reduced_or_raw='raw', time_range=model.set_time_range,
                                   start_time=model.time_start_value, end_time=model.time_end_value)
         if not success:
@@ -32,7 +32,7 @@ def parse_binary_file(binary_file, model):
 
 
 # ----------- PARSING (NovAtel receivers only) ------------ #
-def run_parsing(model):
+def run_parsing(model, exe_dir):
     # Process the dates. Obtain the names of the binary files.
     start_year, start_month, start_day = model.start_date
     end_year, end_month, end_day = model.end_date
@@ -47,6 +47,6 @@ def run_parsing(model):
     for binary_file in binary_files:
 
         # Parse file.
-        success, error = parse_binary_file(binary_file, model)
+        success, error = parse_binary_file(binary_file, exe_dir, model)
         if not success:
             print(error)

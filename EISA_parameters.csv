@@ -1,11 +1,11 @@
 "Start today (Yes: 1, No: 0):",,
-0,,
+1,,
 "Start date (if start today = 0) - year, month, day:",,
-2020,8,22
+2020,12,23
 "Run now (Yes: 1, No: 0):",,
 0,,
 "Time (if run now = 0) - hour, minute:",,
-17,0,
+18,19,
 "Receiver names (1 per cell, 3 maximum):",,
 RX1,RX2,
 Elevation threshold:,,

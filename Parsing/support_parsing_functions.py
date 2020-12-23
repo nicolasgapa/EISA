@@ -129,7 +129,7 @@ def parse_file(binary_dir, output_dir, exe_dir, PRNs_to_parse, week_number, week
                 new_csv_file = new_csv_file_path + filesep + file_type + "_" + satellite + "_" + date_str + ".csv"
                 move(csv_file, new_csv_file)
             else:
-                print('The {} data corresponding to satellite {} could not be parsed.'.format(file_type, satellite))
+                print('The {} data corresponding to satellite {} could not be parsed'.format(file_type, satellite))
 
         # Add the parsed PRN to the list.
         parsed_PRNs.append(satellite)
