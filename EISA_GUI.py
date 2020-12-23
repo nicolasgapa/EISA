@@ -531,6 +531,20 @@ class Parsing(wx.Panel):
         self.sizer.Add(self.hbox1, 0, wx.ALL | wx.CENTER, 5)
         self.receiver_name_text.Bind(wx.EVT_TEXT, self.set_receiver_name)
 
+        # Individual date, or date range.
+        text = wx.StaticText(self, label='Parse data for an individual day, or a date range:')
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.individual_check = wx.CheckBox(self, label="Individual date")
+        self.date_range_check = wx.CheckBox(self, label="Date range")
+        self.date_range_check.SetValue(self.settings.date_range)
+        self.individual_check.SetValue(True if not self.settings.date_range else False)
+        self.local_sizer.Add(self.individual_check, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.date_range_check, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.individual_check.Bind(wx.EVT_CHECKBOX, self.set_individual_date)
+        self.date_range_check.Bind(wx.EVT_CHECKBOX, self.set_date_range)
+
         # Obtain the start date.
         text = wx.StaticText(self, label='Start date:')
         self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -567,7 +581,12 @@ class Parsing(wx.Panel):
         self.end_year.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_end_date)
         self.end_month.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_end_month)
         self.end_day.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_end_date)
-        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+
+        # Disable the end date if the 'individual date' option is selected.
+        if self.individual_check.IsChecked():
+            self.end_year.Disable()
+            self.end_month.Disable()
+            self.end_day.Disable()
 
         # Obtain the file types (raw or reduced).
         text = wx.StaticText(self, label='Select the file types that you want to parse:')
@@ -783,6 +802,54 @@ class Parsing(wx.Panel):
 
     def set_time_end_value(self, _):
         self.settings.time_end_value = float(self.time_end_value.GetLineText(0))
+
+    def set_individual_date(self, _):
+
+        # Either the individual date or date range option must be selected. Not both.
+        if self.individual_check.IsChecked():
+            self.date_range_check.SetValue(False)
+            self.settings.date_range = False
+
+            # Disable the end date buttons.
+            self.end_year.Disable()
+            self.end_month.Disable()
+            self.end_day.Disable()
+
+            # End date and start date must be the same (individual date).
+            self.end_year.SetStringSelection(self.start_year.GetValue())
+            self.end_month.SetStringSelection(self.start_month.GetValue())
+            self.end_day.SetStringSelection(self.start_day.GetValue())
+            self.set_end_date(None)
+
+        else:
+            self.date_range_check.SetValue(True)
+            self.settings.date_range = True
+            self.end_year.Enable()
+            self.end_month.Enable()
+            self.end_day.Enable()
+
+    def set_date_range(self, _):
+
+        # Update the corresponding values. Only one of the following should be selected: individual date, date range.
+        self.date_range_check.SetValue(self.date_range_check.IsChecked())
+        self.settings.date_range = self.date_range_check.IsChecked()
+        self.individual_check.SetValue(False if self.date_range_check.IsChecked() else True)
+
+        # Enable/disable end date buttons correspondingly.
+        if self.date_range_check.IsChecked():
+            self.end_year.Enable()
+            self.end_month.Enable()
+            self.end_day.Enable()
+        else:
+            self.end_year.Disable()
+            self.end_month.Disable()
+            self.end_day.Disable()
+
+            # End date and start date must be the same (individual date).
+            self.end_year.SetStringSelection(self.start_year.GetValue())
+            self.end_month.SetStringSelection(self.start_month.GetValue())
+            self.end_day.SetStringSelection(self.start_day.GetValue())
+            self.set_end_date(None)
 
     def run(self, _):
         # Catch selection errors. Run only if all stteings have been properly selected.

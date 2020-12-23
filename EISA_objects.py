@@ -113,6 +113,7 @@ class ParseSettings:
             self.receiver_name)
 
         # Dates.
+        self.date_range = False if int(DF.iloc[8][0]) == 0 else True
         self.start_date = [2020, 8, 22]
         self.end_date = [2020, 8, 22]
 

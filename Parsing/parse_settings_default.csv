@@ -6,3 +6,5 @@ RX1,,
 1,,
 "For Parseraw, if you want to parse the data between a specific time range insert 1. Otherwise, insert 0. If column 1 is set to 1, insert the start time in the second cell and the end time in the third cell. TIME IN HOURS (0 - 24)",,
 0,0,24
+Parse individual date (0) or a range of dates (1):,,
+0,,
