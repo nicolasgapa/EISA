@@ -1,0 +1,6 @@
+"Start today (Yes:1, No: 0):",,
+1,,
+"If start today is not selected (i.e. Start today = 0), define the start date (year, month, day):",,
+2020,8,22
+"Time to run everyday (hour, minute):",,
+12,30,

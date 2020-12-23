@@ -16,11 +16,117 @@ import datetime
 from EISA_objects import GraphSettings, ParseSettings
 from Graphing.Graphing import run_graphing
 import os
+import pandas as pd
 from Parsing.Parsing import run_parsing
 from pathlib import Path
 import wx
 
 filesep = os.sep
+
+
+# Functions.
+def get_month_length(month):
+    month_lengths = {'1': '31', '2': '29', '3': '31', '4': '30', '5': '31', '6': '30', '7': '31', '8': '31',
+                     '9': '30', '10': '31', '11': '30', '12': '31', }
+    return month_lengths[month]
+
+
+# Modify parameters panel.
+class EISAParameters(wx.Panel):
+
+    # Initializer.
+    def __init__(self, parent, default_parameters='EISA_parameters.csv'):
+        # Create panel & object.
+        wx.Panel.__init__(self, parent, size=(0, 0))
+        self.container = wx.BoxSizer(wx.VERTICAL)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Open the EISA parameters CSV file.
+        DF = pd.read_csv(default_parameters)
+        self.DF = DF.values
+        print(self.DF)
+
+        # Start from today.
+        self.start_today_check = wx.CheckBox(self,
+                                             label="Start from today (will parse and graph data - from today on - "
+                                                   "at the specified time below).")
+        self.start_today_check.SetValue(False if self.DF[0][0] == 0 else True)
+        self.start_today_check.Bind(wx.EVT_CHECKBOX, self.set_start_today)
+
+        # Start date (EISA will parse data from this date, including all subsequent dates up to the present).
+        text = wx.StaticText(self, label='Start date (EISA will parse data from this date, and data from all the '
+                                         'subsequent dates up to the present)')
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        today = datetime.datetime.now()
+        self.start_year = wx.ComboBox(self, choices=[str(today.year - i) for i in range(0, today.year - 2014)],
+                                      value=str(today.year))
+        self.start_month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)], value=str(today.month))
+        self.start_day = wx.ComboBox(self, choices=[str(i) for i in
+                                                    range(1, int(get_month_length(str(today.month))) + 1)],
+                                     value=str(today.day))
+        self.local_sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.start_year, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.start_month, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.start_day, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.start_today_check, 0, wx.ALL | wx.CENTER, 5)
+
+        # Set the start date (as defined by the user in the EISA parameters file).
+        if self.start_today_check.IsChecked():
+            self.start_year.SetStringSelection(str(today.year))
+            self.start_month.SetStringSelection(str(today.month))
+            self.start_day.SetStringSelection(str(today.day))
+            self.start_year.Disable()
+            self.start_month.Disable()
+            self.start_day.Disable()
+        else:
+            self.start_year.SetStringSelection(self.DF[2][0])
+            self.start_month.SetStringSelection(self.DF[2][1])
+            self.start_day.SetStringSelection(self.DF[2][2])
+
+        # Save and override the parameters.
+        save_btn = wx.Button(self, label='Save parameters')
+        save_btn.Bind(wx.EVT_BUTTON, self.save)
+
+        # Run EISA using the selected parameters.
+        run_btn = wx.Button(self, label='Run EISA')
+        run_btn.Bind(wx.EVT_BUTTON, parent.run)
+
+        # Return to main menu.
+        return_btn = wx.Button(self, label='Return')
+        return_btn.Bind(wx.EVT_BUTTON, parent.return_to_menu)
+
+        # Place everything into the sizer.
+        self.sizer.Add(save_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
+
+        # Show panel.
+        self.SetSizerAndFit(self.sizer)
+        self.Layout()
+
+    # Setters.
+    def set_start_today(self, _):
+        if self.start_today_check.IsChecked():
+            self.start_year.Disable()
+            self.start_month.Disable()
+            self.start_day.Disable()
+        else:
+            self.start_year.Enable()
+            self.start_month.Enable()
+            self.start_day.Enable()
+
+    def save(self, _):
+
+        # Start today checkbox.
+        self.DF[0][0] = 1 if self.start_today_check.IsChecked() else 0
+
+        # Start date.
+        self.DF[2][0] = self.start_year.GetStringSelection()
+        self.DF[2][1] = self.start_month.GetStringSelection()
+        self.DF[2][2] = self.start_day.GetStringSelection()
+
+        print(self.DF)
 
 
 # Graphing panel.
@@ -80,7 +186,7 @@ class Graphing(wx.Panel):
                                 value=str(self.settings.date[0]))
         self.month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)], value=str(self.settings.date[1]))
         self.day = wx.ComboBox(self,
-                               choices=[str(i) for i in range(1, int(self.get_month_length(str(today.month))) + 1)],
+                               choices=[str(i) for i in range(1, int(get_month_length(str(today.month))) + 1)],
                                value=str(self.settings.date[2]))
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.year, 0, wx.ALL | wx.CENTER, 5)
@@ -324,11 +430,6 @@ class Graphing(wx.Panel):
         elif self.settings.file_type == 'RAWTEC':
             return self.settings.graph_types_RAWTEC
 
-    def get_month_length(self, month):
-        month_lengths = {'1': '31', '2': '29', '3': '31', '4': '30', '5': '31', '6': '30', '7': '31', '8': '31',
-                         '9': '30', '10': '31', '11': '30', '12': '31', }
-        return month_lengths[month]
-
     # Setters.
     def set_csv_dir(self, _):
         self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
@@ -347,7 +448,7 @@ class Graphing(wx.Panel):
 
     def set_month(self, _):
         # Update the days list corresponding to the selected month (e.g. January = 31 days).
-        self.day.Set([str(i) for i in range(1, int(self.get_month_length(self.month.GetStringSelection())) + 1)])
+        self.day.Set([str(i) for i in range(1, int(get_month_length(self.month.GetStringSelection())) + 1)])
         self.day.SetSelection(0)
         # Set the date.
         self.set_date(None)
@@ -554,7 +655,7 @@ class Parsing(wx.Panel):
         self.start_month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)],
                                        value=str(self.settings.start_date[1]))
         self.start_day = wx.ComboBox(self, choices=[str(i) for i in
-                                                    range(1, int(self.get_month_length(str(today.month))) + 1)],
+                                                    range(1, int(get_month_length(str(today.month))) + 1)],
                                      value=str(self.settings.start_date[2]))
         self.local_sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.start_year, 0, wx.ALL | wx.CENTER, 5)
@@ -571,7 +672,7 @@ class Parsing(wx.Panel):
         self.end_month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)],
                                      value=str(self.settings.end_date[1]))
         self.end_day = wx.ComboBox(self, choices=[str(i) for i in
-                                                  range(1, int(self.get_month_length(str(today.month))) + 1)],
+                                                  range(1, int(get_month_length(str(today.month))) + 1)],
                                    value=str(self.settings.end_date[2]))
         self.local_sizer.Add(text_2, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.end_year, 0, wx.ALL | wx.CENTER, 5)
@@ -658,8 +759,6 @@ class Parsing(wx.Panel):
         """
         Other parsing options.
         """
-        self.sizer_2 = wx.BoxSizer(wx.VERTICAL)
-
         # Run EISA using the selected parameters.
         run_btn = wx.Button(self, label='Run EISA')
         run_btn.Bind(wx.EVT_BUTTON, self.run)
@@ -668,25 +767,13 @@ class Parsing(wx.Panel):
         return_btn = wx.Button(self, label='Return')
         return_btn.Bind(wx.EVT_BUTTON, parent.return_to_menu)
 
-        # Place everything into the container.
-        self.options = wx.BoxSizer(wx.HORIZONTAL)
-        self.options.Add(self.sizer, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
-        self.options.Add(wx.StaticLine(self, -1, size=(3, 600), style=wx.LI_VERTICAL), 0,
-                         wx.ALL | wx.EXPAND | wx.CENTER, 5)
-        self.options.Add(self.sizer_2, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
-        self.container.Add(self.options, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
-        self.container.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
-        self.container.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
+        # Place everything into the sizer.
+        self.sizer.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
 
         # Show panel.
-        self.SetSizerAndFit(self.container)
+        self.SetSizerAndFit(self.sizer)
         self.Layout()
-
-    # Getters.
-    def get_month_length(self, month):
-        month_lengths = {'1': '31', '2': '29', '3': '31', '4': '30', '5': '31', '6': '30', '7': '31', '8': '31',
-                         '9': '30', '10': '31', '11': '30', '12': '31', }
-        return month_lengths[month]
 
     # Setters.
     def set_binary_dir(self, _):
@@ -700,14 +787,14 @@ class Parsing(wx.Panel):
 
     def set_start_month(self, _):
         self.start_day.Set(
-            [str(i) for i in range(1, int(self.get_month_length(self.start_month.GetStringSelection())) + 1)])
+            [str(i) for i in range(1, int(get_month_length(self.start_month.GetStringSelection())) + 1)])
         self.start_day.SetSelection(0)
         self.set_start_date(None)
 
     def set_end_month(self, _):
         # Set the date
         self.end_day.Set(
-            [str(i) for i in range(1, int(self.get_month_length(self.end_month.GetStringSelection())) + 1)])
+            [str(i) for i in range(1, int(get_month_length(self.end_month.GetStringSelection())) + 1)])
         self.end_day.SetSelection(0)
         self.set_end_date(None)
 
@@ -884,10 +971,12 @@ class TopFrame(wx.Frame):
         # Run EISA (for today).
         my_btn = wx.Button(self.panel, label='Run EISA')
         self.my_sizer.Add(my_btn, 0, wx.ALL | wx.CENTER, 5)
+        my_btn.Bind(wx.EVT_BUTTON, self.run)
 
-        # EISA default values.
+        # Run EISA settings (modify parameters).
         my_btn_2 = wx.Button(self.panel, label='Modify parameters')
         self.my_sizer.Add(my_btn_2, 0, wx.ALL | wx.CENTER, 5)
+        my_btn_2.Bind(wx.EVT_BUTTON, self.modify_parameters)
 
         # Parsing settings.
         my_btn_3 = wx.Button(self.panel, label='Parsing')
@@ -904,11 +993,27 @@ class TopFrame(wx.Frame):
         self.Center()
         self.Show(True)
 
+    # Run EISA.
+    def run(self, _):
+        print('Here')
+
     # Graphing.
     def graph(self, _):
         # Hide the main panel and display the graphing panel.
         self.panel.Hide()
         self.panel = Graphing(self, self.graph_settings)
+        self.my_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.my_sizer.Add(self.panel, 1, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+
+        # Fit to window's size.
+        self.SetSizerAndFit(self.my_sizer)
+        self.Center()
+
+    # Modify parameters (Run EISA settings).
+    def modify_parameters(self, _):
+        # Hide the main panel and display the 'Modify Parameters' panel.
+        self.panel.Hide()
+        self.panel = EISAParameters(self)
         self.my_sizer = wx.BoxSizer(wx.VERTICAL)
         self.my_sizer.Add(self.panel, 1, wx.ALL | wx.EXPAND | wx.CENTER, 5)
 
