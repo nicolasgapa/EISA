@@ -13,8 +13,10 @@ Author: Nicolas Gachancipa
 
 # Imports
 import datetime
+from EISA import run_EISA
 from EISA_objects import GraphSettings, ParseSettings
 from Graphing.Graphing import run_graphing
+import numpy as np
 import os
 import pandas as pd
 from Parsing.Parsing import run_parsing
@@ -42,22 +44,31 @@ class EISAParameters(wx.Panel):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Open the EISA parameters CSV file.
-        DF = pd.read_csv(default_parameters)
-        self.DF = DF.values
-        print(self.DF)
+        self.parent = parent
+        self.parameters = default_parameters
+        self.DF = pd.read_csv(self.parameters).values
+
+        # Dates and times.
+        today = datetime.datetime.now()
+        utc_time = datetime.datetime.utcnow()
+
+        # Title.
+        title = wx.StaticText(self, label="EISA Settings:")
+        title_font = wx.Font(13, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+        title.SetFont(title_font)
+        self.sizer.Add(title, 0, wx.ALL | wx.CENTER, 5)
 
         # Start from today.
         self.start_today_check = wx.CheckBox(self,
                                              label="Start from today (will parse and graph data - from today on - "
-                                                   "at the specified time below).")
-        self.start_today_check.SetValue(False if self.DF[0][0] == 0 else True)
+                                                   "at the specified time - See note below).")
+        self.start_today_check.SetValue(False if int(self.DF[0][0]) == 0 else True)
         self.start_today_check.Bind(wx.EVT_CHECKBOX, self.set_start_today)
 
         # Start date (EISA will parse data from this date, including all subsequent dates up to the present).
         text = wx.StaticText(self, label='Start date (EISA will parse data from this date, and data from all the '
                                          'subsequent dates up to the present)')
         self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        today = datetime.datetime.now()
         self.start_year = wx.ComboBox(self, choices=[str(today.year - i) for i in range(0, today.year - 2014)],
                                       value=str(today.year))
         self.start_month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)], value=str(today.month))
@@ -72,6 +83,9 @@ class EISAParameters(wx.Panel):
         self.sizer.Add(self.start_today_check, 0, wx.ALL | wx.CENTER, 5)
 
         # Set the start date (as defined by the user in the EISA parameters file).
+        self.start_year.SetStringSelection(str(int(self.DF[2][0])))
+        self.start_month.SetStringSelection(str(int(self.DF[2][1])))
+        self.start_day.SetStringSelection(str(int(self.DF[2][2])))
         if self.start_today_check.IsChecked():
             self.start_year.SetStringSelection(str(today.year))
             self.start_month.SetStringSelection(str(today.month))
@@ -79,30 +93,121 @@ class EISAParameters(wx.Panel):
             self.start_year.Disable()
             self.start_month.Disable()
             self.start_day.Disable()
-        else:
-            self.start_year.SetStringSelection(self.DF[2][0])
-            self.start_month.SetStringSelection(self.DF[2][1])
-            self.start_day.SetStringSelection(self.DF[2][2])
+
+        # Run now.
+        self.run_now_check = wx.CheckBox(self, label="Run now (EISA will run at the same time every day).")
+        self.run_now_check.SetValue(False if int(self.DF[4][0]) == 0 else True)
+        self.run_now_check.Bind(wx.EVT_CHECKBOX, self.set_run_now)
+
+        # Run time.
+        text = wx.StaticText(self, label='Time (EISA will run at the specified time every day - Hour, Minute).')
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.run_hour = wx.ComboBox(self, choices=[str(i) for i in range(0, 24)], value=str(today.hour))
+        self.run_minute = wx.ComboBox(self, choices=[str(i) for i in range(0, 60)], value=str(today.minute))
+        self.local_sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.run_hour, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.run_minute, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.run_now_check, 0, wx.ALL | wx.CENTER, 5)
+
+        # Set the start time (as defined by the user in the EISA parameters file).
+        self.run_hour.SetStringSelection(str(int(self.DF[6][0])))
+        self.run_minute.SetStringSelection(str(int(self.DF[6][1])))
+        if self.run_now_check.IsChecked():
+            self.run_hour.SetStringSelection(str(today.hour))
+            self.run_minute.SetStringSelection(str(today.minute))
+            self.run_hour.Disable()
+            self.run_minute.Disable()
+
+        # Note.
+        self.local_sizer = wx.BoxSizer(wx.VERTICAL)
+        title = wx.StaticText(self, label="Note:")
+        title_font = wx.Font(13, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+        title.SetFont(title_font)
+        note_text = wx.StaticText(self, label="Binary files containing today's data are generated by the "
+                                              "receiver at 23:59 UTC ({}, {}, {}).".format(today.year, today.month,
+                                                                                           today.day))
+        note_text_2 = wx.StaticText(self, label="Therefore, if the 'start from today' option is selected, and the "
+                                                "selected time is before 23:59 UTC ({}, {}, {}), EISA will start by "
+                                                "parsing the data from yesterday.".format(today.year, today.month,
+                                                                                          today.day))
+        note_text_3 = wx.StaticText(self, label="The current UTC date and time is "
+                                                "{}:{} UTC ({}, {}, {}).".format(utc_time.hour, utc_time.minute,
+                                                                                 utc_time.year, utc_time.month,
+                                                                                 utc_time.day))
+        self.local_sizer.Add(title, 1, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(note_text, 1, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(note_text_2, 1, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(note_text_3, 1, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+
+        """
+        Other settings.
+        """
+        # Title.
+        self.sizer_2 = wx.BoxSizer(wx.VERTICAL)
+        title = wx.StaticText(self, label="Other settings:")
+        title_font = wx.Font(13, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+        title.SetFont(title_font)
+        self.sizer_2.Add(title, 0, wx.ALL | wx.CENTER, 5)
+
+        # Obtain the name of the receivers.
+        text = wx.StaticText(self, label='Receivers (separated by commas with no blank spaces - e.g. RX1,RX2,RX3 - '
+                                         'Max: 3 receivers):')
+        default = ','.join([str(i) for i in self.DF[8] if str(i) != 'nan'])
+        self.receivers_names_text = wx.TextCtrl(self, value=default, size=(150, 20))
+        self.receivers_names_text.SetFocus()
+        self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.receivers_names_text, 0, wx.ALL | wx.CENTER, 5)
+
+        # Threshold.
+        text = wx.StaticText(self, label='Select the elevation threshold:')
+        self.threshold_slider = wx.Slider(self, value=int(self.DF[10][0]), minValue=0, maxValue=90, style=wx.SL_LABELS)
+        self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.threshold_slider, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+
+        # Location.
+        self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='Location:')
+        self.location_text = wx.TextCtrl(self, value=self.DF[12][0], size=(150, 20))
+        self.location_text.SetFocus()
+        self.hbox1.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox1.Add(self.location_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+        self.sizer_2.Add(self.hbox1, 0, wx.ALL | wx.CENTER, 5)
+
+        """
+        Container and layout.
+        """
 
         # Save and override the parameters.
-        save_btn = wx.Button(self, label='Save parameters')
+        save_btn = wx.Button(self, label='Save parameters as default')
         save_btn.Bind(wx.EVT_BUTTON, self.save)
 
         # Run EISA using the selected parameters.
         run_btn = wx.Button(self, label='Run EISA')
-        run_btn.Bind(wx.EVT_BUTTON, parent.run)
+        run_btn.Bind(wx.EVT_BUTTON, self.save_and_run)
 
         # Return to main menu.
         return_btn = wx.Button(self, label='Return')
         return_btn.Bind(wx.EVT_BUTTON, parent.return_to_menu)
 
-        # Place everything into the sizer.
-        self.sizer.Add(save_btn, 0, wx.ALL | wx.CENTER, 5)
-        self.sizer.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
-        self.sizer.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
+        # Place everything into the container.
+        self.options = wx.BoxSizer(wx.HORIZONTAL)
+        self.options.Add(self.sizer, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.options.Add(wx.StaticLine(self, -1, size=(3, 300), style=wx.LI_VERTICAL), 0,
+                         wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.options.Add(self.sizer_2, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.container.Add(self.options, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.container.Add(save_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.container.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.container.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
 
         # Show panel.
-        self.SetSizerAndFit(self.sizer)
+        self.SetSizerAndFit(self.container)
+        self.Layout()
+
+        # Show panel.
+        self.SetSizerAndFit(self.container)
         self.Layout()
 
     # Setters.
@@ -116,17 +221,41 @@ class EISAParameters(wx.Panel):
             self.start_month.Enable()
             self.start_day.Enable()
 
+    def set_run_now(self, _):
+        if self.run_now_check.IsChecked():
+            self.run_hour.Disable()
+            self.run_minute.Disable()
+        else:
+            self.run_hour.Enable()
+            self.run_minute.Enable()
+
     def save(self, _):
 
-        # Start today checkbox.
-        self.DF[0][0] = 1 if self.start_today_check.IsChecked() else 0
+        # Receiver names.
+        receivers = self.receivers_names_text.GetLineText(0).split(',')
+        receivers = receivers + [''] * (3 - len(receivers))
 
-        # Start date.
-        self.DF[2][0] = self.start_year.GetStringSelection()
-        self.DF[2][1] = self.start_month.GetStringSelection()
-        self.DF[2][2] = self.start_day.GetStringSelection()
+        # Update CSV file with selected default values.
+        parameters = np.array([['Start today (Yes: 1, No: 0):', '', ''],
+                               ['1' if self.start_today_check.IsChecked() else '0', '', ''],
+                               ['Start date (if start today = 0) - year, month, day:', '', ''],
+                               [self.start_year.GetStringSelection(), self.start_month.GetStringSelection(),
+                                self.start_day.GetStringSelection()],
+                               ['Run now (Yes: 1, No: 0):', '', ''],
+                               ['1' if self.run_now_check.IsChecked() else '0', '', ''],
+                               ['Time (if run now = 0) - hour, minute:', '', ''],
+                               [self.run_hour.GetStringSelection(), self.run_minute.GetStringSelection(), ''],
+                               ['Receiver names (1 per cell, 3 maximum):', '', ''],
+                               receivers[:3],
+                               ['Elevation threshold:', '', ''],
+                               [str(self.threshold_slider.GetValue()), '', ''],
+                               ['Location:', '', ''],
+                               [self.location_text.GetLineText(0), '', '']])
+        pd.DataFrame(parameters).to_csv(self.parameters, header=False, index=False)
 
-        print(self.DF)
+    def save_and_run(self, _):
+        self.save(None)
+        self.parent.run(None)
 
 
 # Graphing panel.
@@ -995,7 +1124,7 @@ class TopFrame(wx.Frame):
 
     # Run EISA.
     def run(self, _):
-        print('Here')
+        run_EISA(parameters='EISA_parameters.csv')
 
     # Graphing.
     def graph(self, _):
