@@ -67,7 +67,7 @@ def plot_prn(model, prn, shift=0):
                                          elev_col_name=model.elevation_column_name,
                                          times_col_name=model.times_column_name)
     if not start_times:
-        return False, ('Either all the values of the follwoing PRN are below the elevation threshold, or the CSV file '
+        return False, ('Either all the values of the following PRN are below the elevation threshold, or the CSV file '
                        'is empty: {}.'.format(prn))
     """
 
@@ -127,6 +127,10 @@ def plot_prn(model, prn, shift=0):
             # Cut the times and y-axis columns for the current time period.
             data = signal_data[signal_data[model.times_column_name] <= end_time]
             data = data[start_time <= data[model.times_column_name]]
+
+            # If the dataset is empty, continue with the next time range (break out of the loop).
+            if len(list(data[model.graph_type])) == 0:
+                continue
 
             """
             
@@ -188,15 +192,15 @@ def plot_prn(model, prn, shift=0):
             # Name the plot.
             graph_name, title, subtitle = naming(model, prn, signal_type_name, time_period=i)
 
-            # Plot and save the figure.
+            # Plot and save the figure. Plot only if the dataframe is not empty.
             x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
             prn_plot, directory = plot(x_values, y_values, prn, graph_name, title, subtitle, model)
 
+            # Print the directory in the command window.
+            print('Saving plot: {}. PRN: {}.'.format(directory, prn))
+
             # If the summary plot option is NOT selected, save, show and clear the graph.
             if not model.summary_plot:
-
-                # Print the directory in the command window.
-                print('Saving plot: ', directory)
 
                 # Save the figure.
                 plt.savefig(directory)
@@ -213,17 +217,21 @@ def plot_prn(model, prn, shift=0):
             break
 
     # Return Success.
-    return True, 'All plots were generated succesfully.'
+    return True, 'The plots for PRN {} have been processed.'
 
 
 # ----------- GRAPHING ------------ #
-def run_graphing(model):
+def run_graphing(model, output_dir):
     # Print start message to terminal.
     print("\n\n# --- " + model.file_type + ": Plotting Time vs. " + model.graph_type + " --- #")
+    if model.summary_plot:
+        constellation_names = {'G': 'GPS', 'R': 'GLONASS', 'E': 'GALILEO'}
+        constellations = [constellation_names[c] for c in list(set([prn[0] for prn in model.PRNs_to_plot]))]
+        print("Summary plot - Constellations: {}.".format(', '.join(constellations)))
     print('Date (year, month, day): {}, {}, {}'.format(model.date[0], model.date[1], model.date[2]))
 
     # Add the date folder to the output directory.
-    model.output_dir = model.output_dir + filesep + model.get_date_str()
+    model.output_dir = output_dir
 
     # Generate plots for the given date and PRNs.
     for prn in model.PRNs_to_plot:

@@ -11,7 +11,8 @@
 
 # Imports.
 from datetime import datetime, timedelta
-from EISA_objects import ParseSettings
+from EISA_objects import GraphSettings, ParseSettings
+from Graphing.Graphing import run_graphing
 import os
 import pandas as pd
 from Parsing.Parsing import run_parsing
@@ -23,28 +24,35 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 
 
 # ----- Part 1: Parse ----- #
-def parse(days_before, receivers):
+def parse(days_before, receivers, constellations):
     print("\n---------------------------------------------------------------------")
-    # Run iteratively for every receiver in the folder:
+    # Run iteratively for every receiver.
     for receiver_name in receivers:
         # Print a message.
         date = datetime.today() - timedelta(days_before)
         print("Receiver: ", receiver_name, "  Date: ({}, {}, {})".format(date.year, date.month, date.day))
 
         # Define PRNs.
-        GPS_PRNs = ['G' + str(i) for i in range(1, 33)]
-        GLONASS_PRNs = ['R' + str(i) for i in range(1, 25)]
-        GALILEO_PRNs = ['E' + str(i) for i in range(1, 31)]
+        PRNs_to_parse = []
+        if 'G' in constellations:
+            PRNs_to_parse.extend(['G' + str(i) for i in range(1, 33)])
+        if 'R' in constellations:
+            PRNs_to_parse.extend(['R' + str(i) for i in range(1, 25)])
+        if 'E' in constellations:
+            PRNs_to_parse.extend(['E' + str(i) for i in range(1, 31)])
 
         # Define parsing parameters.
         parameters = ParseSettings()
+        parameters.binary_dir = os.path.abspath(os.path.join(cwd, os.pardir)) + '\\' + receiver_name
+        parameters.CSV_dir = os.path.abspath(os.path.join(cwd, os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
+            receiver_name)
         parameters.receiver_name = receiver_name
         parameters.date_range = False
         parameters.start_date = [date.year, date.month, date.day]
         parameters.end_date = [date.year, date.month, date.day]
         parameters.reduced = True
         parameters.raw = False
-        parameters.PRNs_to_parse = GPS_PRNs + GLONASS_PRNs + GALILEO_PRNs
+        parameters.PRNs_to_parse = PRNs_to_parse
         parameters.set_time_range = False
 
         # Parse.
@@ -52,145 +60,160 @@ def parse(days_before, receivers):
 
 
 # ----- Part 2: Graph ----- #
-def graph(receiver):
-    # Print message.
-    print("--------------------------- Step 2: Graph ---------------------------")
-    graphormat = '.png'
+def graph(days_before, receivers, constellations, threshold, location):
+    print("\n---------------------------------------------------------------------")
+    # Run iteratively for every receiver.
+    for receiver_name in receivers:
 
-    # Identify the directory to the graphing.py file.
-    graphing_directory = cwd + filesep + "Graphing" + filesep
-    os.chdir(graphing_directory)
+        # Run the graphing tool only if the csvfiles exist.
+        date = datetime.today() - timedelta(days_before)
+        year, month, day = str(date.year), str(date.month), str(date.day)
+        if len(month) == 1:
+            month = "0" + month
+        if len(day) == 1:
+            day = "0" + day
+        date = year + month + day
 
-    # Define the three constellations (GPS, GLONASS, and GALILEO)
-    constellations = ['G']  # , 'R', 'E']
+        # Set graphing parameters.
+        parameters = GraphSettings()
+        parameters.CSV_dir = os.path.abspath(
+            os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(receiver_name)
+        parameters.date = [year, month, day]
+        parameters.threshold = threshold
 
-    # Run the graphing tool only if the csvfiles exist.
-    yesterday = datetime.today() - timedelta(days_before)
-    if len(str(yesterday.month)) == 1:
-        month = "0" + str(yesterday.month)
-    else:
-        month = str(yesterday.month)
-    if len(str(yesterday.day)) == 1:
-        day = "0" + str(yesterday.day)
-    else:
-        day = str(yesterday.day)
-    location = ""
-    for u in csvfiles_location:
-        location = location + u + filesep
-    print(location + str(yesterday.year) + month + day)
-    if os.path.exists(location + str(yesterday.year) + month + day):
+        # Other plot options.
+        parameters.location = location
+        parameters.summary_plot = False
+        parameters.TEC_detrending = False
+        parameters.night_subtraction = False
+        parameters.vertical_TEC = False
+        parameters.one_plot_per_prn = True
 
-        # REDUCED SCINTILLATION (REDOBS)
-        # count = 1: Azimuth, count = 2: Elevation, count = 3: CNo, count = 4: Lock Time, count = 5: CMC avg,
-        # count = 6: CMC std, count = 7: S4, count = 8: S4 Cor, count = 9: 1secsigma, count = 10: 3secsigma
-        # count = 11: 10secsigma, count = 12: 30secsigma, count = 13: 60secsigma.
-        # Individual plots.
-        count = 1
-        while count <= 1:
-            for constellation in constellations:
+        # Plot visual settings.
+        parameters.set_x_axis_range = False
+        parameters.set_y_axis_range = False
+        parameters.vertical_line = False
+        parameters.label_prns = False
+        parameters.legend = False
+        parameters.format_type = 'png'
+        parameters.show_plots = False
 
-                if count in [7, 8]:
-                    yaxis = ['1', '0', '0.8']
-                # For 1secsigma through 60secsigma, set the y axis range from 0 to 0.4.
-                elif 9 <= count <= 13:
-                    yaxis = ['1', '0', '0.8']
+        # Define output directory, with date.
+        output_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
+            receiver_name)
+        output_dir += filesep + parameters.get_date_str()
+
+        # Define PRNs.
+        PRNs_to_plot = []
+        if 'G' in constellations:
+            PRNs_to_plot.extend(['G' + str(i) for i in range(1, 33)])
+        if 'R' in constellations:
+            PRNs_to_plot.extend(['R' + str(i) for i in range(1, 25)])
+        if 'E' in constellations:
+            PRNs_to_plot.extend(['E' + str(i) for i in range(1, 31)])
+        GPS_satellites = [prn for prn in PRNs_to_plot if prn[0] == 'G']
+        GLONASS_satellites = [prn for prn in PRNs_to_plot if prn[0] == 'R']
+        GALILEO_satellites = [prn for prn in PRNs_to_plot if prn[0] == 'E']
+        parameters.PRNs_to_plot = PRNs_to_plot
+
+        # Continue only if the files of the corresponding date exist.
+        if os.path.exists(parameters.CSV_dir + filesep + date):
+
+            # REDUCED SCINTILLATION (REDOBS): Individual plots.
+            parameters.file_type = 'REDOBS'
+            for graph_type in parameters.graph_types_REDOBS:
+
+                # Define the file type and parameters.
+                parameters.graph_type = graph_type
+                parameters.one_plot_per_prn = False
+
+                # Define the y axis range.
+                if graph_type in parameters.scintillation_types:
+                    parameters.set_y_axis_range = True
+                    parameters.y_axis_start_value = 0
+                    parameters.y_axis_end_value = 0.8
                 else:
-                    yaxis = ['0', '0', '0']
+                    parameters.set_y_axis_range = False
 
-                # Individual plots.
-                graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
-                              ['0', '0', '0'], yaxis, ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat],
-                              ['12', '12'], receiver_location)
+                # Plot.
+                run_graphing(parameters, output_dir)
 
-                # Run the graphing.py file.
-                os.system("py graphing.py no_menu " + str(count))
-            count = count + 1
+            # Scintillation summary plots. Save them to a different folder.
+            parameters.summary_plot = True
+            for graph_type in ['Elevation'] + parameters.scintillation_types:
 
-        ## Summary plots. Save them to a different folder.
-        valid_categories = [2, 7, 8, 9, 10, 11, 12, 13]
-        for count in valid_categories:
-            for constellation in constellations:
-                onlyonesignal_settings = ['1']
-                yaxis = ['0', '0', '0']
-                plabel = ['0']
+                # Create a summary plot per constellation.
+                for satellites in [GPS_satellites, GLONASS_satellites, GALILEO_satellites]:
 
-                if count == 2:
-                    plabel = ['1']
+                    # Define file type and parameters.
+                    parameters.PRNs_to_plot = satellites
+                    parameters.graph_type = graph_type
+                    parameters.one_plot_per_prn = True
+                    parameters.label_prns = True
 
-                if count >= 7:
-                    yaxis = ['1', '0', '0.8']
+                    # Define the y axis range.
+                    if graph_type in parameters.scintillation_types:
+                        parameters.set_y_axis_range = True
+                        parameters.y_axis_start_value = 0
+                        parameters.y_axis_end_value = 0.8
+                        parameters.label_prns = False
+                    else:
+                        parameters.set_y_axis_range = False
+                        parameters.label_prns = True
 
-                # Summary plots.
-                graphsettings(["RED", "OBS"], elevation_threshold, [constellation], ["T"], ["1", "0"], ['0'],
-                              ['0', '0', '0'],
-                              yaxis, plabel, ['0'], ['0', '0'], ['0'], onlyonesignal_settings, [graphormat],
-                              ['12', '12'],
-                              receiver_location)
+                    # Plot.
+                    run_graphing(parameters, output_dir)
 
-                # Run the graphing.py code.
-                os.system("py Graphing.py no_menu " + str(count))
+            # REDUCED TOTAL ELECTRON CONTENT (REDTEC)
+            parameters.file_type = 'REDTEC'
+            parameters.summary_plot = False
+            for graph_type in parameters.graph_types_REDTEC[2:]:
+                # Set parameters.
+                parameters.graph_type = graph_type
+                parameters.set_y_axis_range = False
+                parameters.one_plot_per_prn = False
+                parameters.label_prns = False
 
-        # REDUCED TOTAL ELECTRON CONTENT (REDTEC)
-        # count = 1: Azimuth, count = 2: Elevation, count = 3: CNo, count = 4: Lock Time, count = 5: CMC avg,
-        # count = 6: CMC std, count = 7: S4, count = 8: S4 Cor, count = 9: 1secsigma, count = 10: 3secsigma
-        # count = 11: 10secsigma, count = 12: 30secsigma.
-        # Individual TEC plots.
-        valid_categories = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-        for count in valid_categories:
-            for constellation in constellations:
-                # Individual plots.
-                graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], ['0', '0'], ['0'],
-                              ['0', '0', '0'],
-                              ['0', '0', '0'], ['0'], ['0'], ['0', '0'], ['0'], ['0'], [graphormat], ['12', '12'],
-                              receiver_location)
+                # Plot.
+                run_graphing(parameters, output_dir)
 
-                # Run the graphing.py file.
-                os.system("py Graphing.py no_menu " + str(count))
+            # TEC Summary plots. Save them to a different folder.
+            parameters.summary_plot = True
+            for graph_type in ['TEC15', 'TEC30', 'TEC45', 'TECTOW']:
 
-        # TEC Summary plots. Save them to a different folder.
-        valid_categories = [5, 7, 9, 11]
-        for count in valid_categories:
-            for constellation in constellations:
+                # Create a summary plot per constellation.
+                for satellites in [GPS_satellites, GLONASS_satellites, GALILEO_satellites]:
+                    # Set parameters.
+                    parameters.PRNs_to_plot = satellites
+                    parameters.graph_type = graph_type
+                    parameters.label_prns = True
 
-                normalize = [0, 1]
-                for i in normalize:
-                    if i == 0:
-                        # Summary plots.
-                        graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['0'],
-                                      ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], ['0'], ['0'],
-                                      [graphormat], ['12', '12'], receiver_location)
+                    # Normal.
+                    run_graphing(parameters, output_dir)
 
-                        # Run the graphing.py file.
-                        os.system("py Graphing.py no_menu " + str(count))
-                    elif i == 1:
-                        vertical_tec = [0, 1]
-                        for j in vertical_tec:
-                            # Summary plots.
-                            graphsettings(["RED", "TEC"], elevation_threshold, [constellation], ["T"], [1, 0], ['1'],
-                                          ['0', '0', '0'], ['0', '0', '0'], ['1'], ['0'], ['0', '0'], [str(j)], ['0'],
-                                          [graphormat], ['12', '12'], receiver_location)
+                    # Normalized (night subtraction).
+                    parameters.night_subtraction = True
+                    run_graphing(parameters, output_dir)
 
-                            # Run the graphing.py file.
-                            os.system("py Graphing.py no_menu " + str(count))
+                    # Vertical TEC.
+                    parameters.night_subtraction = False
+                    parameters.vertical_TEC = True
+                    run_graphing(parameters, output_dir)
 
-        # Make a zip file of the graphs folder for that date. Save it to the graphs folder in EISA_OUTPUT
-        # (include the receiver name in the zip file name).
-        collected_data_date = datetime.today() - timedelta(days_before)
-        year = str(collected_data_date.year)
-        month = str(collected_data_date.month)
-        day = str(collected_data_date.day)
-        if len(month) != 2:
-            month = "0" + str(month)
-        if len(day) != 2:
-            day = "0" + str(day)
-        zipfile_name = year + month + day + "_" + receiver
-        dir_name = cwd + filesep + os.pardir + filesep + "EISA_OUTPUT" + filesep + receiver + filesep + "GRAPHS" + filesep + year + month + day
-        shutil.make_archive(dir_name + filesep + os.pardir + filesep + zipfile_name, 'zip', dir_name)
+                    # Normalized AND vertical TEC.
+                    parameters.night_subtraction = True
+                    run_graphing(parameters, output_dir)
 
-    # If the csv files for that day don't exist, print a message.
-    else:
-        print("CSVfiles for the following date do not exist: ", str(yesterday.year), str(month), str(day),
-              " - Receiver:", receiver)
+            # Make a zip file of the graphs folder for that receiver and date. Save it to the graphs folder in
+            # EISA_OUTPUT (include the receiver name in the zip file name).
+            zip_file_name = date + "_" + receiver_name
+            dir_name = cwd + filesep + os.pardir + filesep + "EISA_OUTPUT"
+            dir_name += filesep + receiver_name + filesep + "GRAPHS" + filesep + date
+            shutil.make_archive(dir_name + filesep + os.pardir + filesep + zip_file_name, 'zip', dir_name)
+
+        # If the csv files for that day don't exist, print a message.
+        else:
+            print("CSV files for the following date do not exist: {}. Receiver: {}.".format(date, receiver_name))
 
 
 # ----- Part 3: Upload ----- #
@@ -213,6 +236,7 @@ def run_EISA(parameters='EISA_parameters.csv'):
     receivers = [str(i) for i in DF[8] if str(i) != 'nan']
     threshold = int(DF[10][0])
     location = str(DF[12][0])
+    constellations = [str(i) for i in DF[14] if str(i) != 'nan']
 
     # Print a message with the current time and date.
     print("\nCurrent local date/time: ", now)
@@ -262,7 +286,8 @@ def run_EISA(parameters='EISA_parameters.csv'):
         # the code again tomorrow. Note: even if the user does not select the 'run now' option, EISA will run
         # immediately if the selected date is before yesterday.
         if days_before > 1:
-            parse(days_before, receivers)
+            # parse(days_before, receivers, constellations)
+            graph(days_before, receivers, constellations, threshold, location)
             days_before -= 1
         else:
             # Print a message showing the user at what time the code will run again.
@@ -273,4 +298,5 @@ def run_EISA(parameters='EISA_parameters.csv'):
             time.sleep(secs)
 
             # Parse (after the timer ends).
-            parse(days_before, receivers)
+            # parse(days_before, receivers, constellations)
+            graph(days_before, receivers, constellations, threshold, location)

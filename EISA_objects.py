@@ -38,7 +38,6 @@ class GraphSettings:
         # Date (Today as default)
         today = datetime.datetime.now()
         self.date = [today.year, today.month, today.day]
-        self.date = [2020, 8, 22]
 
         # Select the PRNs to plot.
         self.PRNs_to_plot = []

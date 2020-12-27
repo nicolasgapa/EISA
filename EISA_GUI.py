@@ -180,6 +180,26 @@ class EISAParameters(wx.Panel):
         self.hbox1.Add(self.location_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
         self.sizer_2.Add(self.hbox1, 0, wx.ALL | wx.CENTER, 5)
 
+        # Constellations.
+        text = wx.StaticText(self, label='Select the constellations that you want to parse and plot: \n'
+                                         '\t   G: GPS, R: GLONASS, E: GALILEO')
+        self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.GPS_check = wx.CheckBox(self, label="G")
+        self.GLONASS_check = wx.CheckBox(self, label="R")
+        self.GALILEO_check = wx.CheckBox(self, label="E")
+        self.local_sizer.Add(self.GPS_check, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GLONASS_check, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.GALILEO_check, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+        default_constellations = ','.join([str(i) for i in self.DF[14] if str(i) != 'nan'])
+        if "G" in default_constellations:
+            self.GPS_check.SetValue(True)
+        if "R" in default_constellations:
+            self.GLONASS_check.SetValue(True)
+        if "E" in default_constellations:
+            self.GALILEO_check.SetValue(True)
+
         """
         Container and layout.
         """
@@ -240,6 +260,16 @@ class EISAParameters(wx.Panel):
         receivers = self.receivers_names_text.GetLineText(0).split(',')
         receivers = receivers + [''] * (3 - len(receivers))
 
+        # Constellations.
+        constellations = []
+        if self.GPS_check.IsChecked():
+            constellations.append('G')
+        if self.GLONASS_check.IsChecked():
+            constellations.append('R')
+        if self.GALILEO_check.IsChecked():
+            constellations.append('E')
+        constellations = constellations + [''] * (3 - len(constellations))
+
         # Update CSV file with selected default values.
         parameters = np.array([['Start today (Yes: 1, No: 0):', '', ''],
                                ['1' if self.start_today_check.IsChecked() else '0', '', ''],
@@ -255,7 +285,9 @@ class EISAParameters(wx.Panel):
                                ['Elevation threshold:', '', ''],
                                [str(self.threshold_slider.GetValue()), '', ''],
                                ['Location:', '', ''],
-                               [self.location_text.GetLineText(0), '', '']])
+                               [self.location_text.GetLineText(0), '', ''],
+                               ['Constellations (G, R, and/or E):', '', ''],
+                               constellations[:3]])
         pd.DataFrame(parameters).to_csv(self.parameters, header=False, index=False)
 
     def save_and_run(self, _):
@@ -720,10 +752,10 @@ class Graphing(wx.Panel):
 
             # Set the directories.
             self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
-            self.settings.output_dir = self.output_dir_btn.GetPath()
+            output_dir = self.output_dir_btn.GetPath() + filesep + self.settings.get_date_str()
 
             # Run Graphing.
-            run_graphing(self.settings)
+            run_graphing(self.settings, output_dir)
 
 
 # Parsing panel.
