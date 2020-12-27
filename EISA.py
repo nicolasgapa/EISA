@@ -244,9 +244,9 @@ def run_EISA(parameters='EISA_parameters.csv'):
 
     # Set the time at which the code will run (the time given by the user).
     if run_now:
-        # Add two seconds to give the code time to run before starting to parse.
-        time_plus_2 = now + timedelta(seconds=2)
-        hour, minute, second = time_plus_2.hour, time_plus_2.minute, time_plus_2.second
+        # Add one second to give the code time to run before starting to parse.
+        time_plus_1 = now + timedelta(seconds=1)
+        hour, minute, second = time_plus_1.hour, time_plus_1.minute, time_plus_1.second
     else:
         hour, minute, second = start_time[0], start_time[1], 0
     time_to_run = now.replace(day=now.day, hour=hour, minute=minute, second=second, microsecond=0)
@@ -286,7 +286,7 @@ def run_EISA(parameters='EISA_parameters.csv'):
         # the code again tomorrow. Note: even if the user does not select the 'run now' option, EISA will run
         # immediately if the selected date is before yesterday.
         if days_before > 1:
-            # parse(days_before, receivers, constellations)
+            parse(days_before, receivers, constellations)
             graph(days_before, receivers, constellations, threshold, location)
             days_before -= 1
         else:
@@ -298,5 +298,5 @@ def run_EISA(parameters='EISA_parameters.csv'):
             time.sleep(secs)
 
             # Parse (after the timer ends).
-            # parse(days_before, receivers, constellations)
+            parse(days_before, receivers, constellations)
             graph(days_before, receivers, constellations, threshold, location)

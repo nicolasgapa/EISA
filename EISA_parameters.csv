@@ -5,7 +5,7 @@
 "Run now (Yes: 1, No: 0):",,
 1,,
 "Time (if run now = 0) - hour, minute:",,
-20,16,
+21,6,
 "Receiver names (1 per cell, 3 maximum):",,
 RX1,RX2,
 Elevation threshold:,,
