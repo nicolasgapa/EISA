@@ -230,7 +230,7 @@ def run_graphing(model, output_dir):
         print("Summary plot - Constellations: {}.".format(', '.join(constellations)))
     print('Date (year, month, day): {}, {}, {}'.format(model.date[0], model.date[1], model.date[2]))
 
-    # Add the date folder to the output directory.
+    # Set the output directory.
     model.output_dir = output_dir
 
     # Generate plots for the given date and PRNs.
