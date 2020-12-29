@@ -89,7 +89,7 @@ def plot_prn(model, prn, shift=0):
     else:
         filtered_DF = DF[DF[model.elevation_column_name] >= model.threshold]
 
-    # Obtain the following colums: Time, elevation, signal type, and graph type (i.e. what you want to plot).
+    # Obtain the following columns: Time, elevation, signal type, and graph type (i.e. what you want to plot).
     # For RAW files, discard the elevation column, since the values were already filtered for the threshold in
     # the previous step. Moreover, if the user wants to plot the elevation, only save the elevation column
     # once under the 'graph_type' column.
@@ -135,8 +135,8 @@ def plot_prn(model, prn, shift=0):
             """
             
             Subsection: Other features
-            Purpose: Post-data processing, including TEC detrending, night-subtraction (normalization) and TEC 
-            slant-to-vertical conversion. 
+            Purpose: Post-data processing, including TEC detrending, night-subtraction (normalization), TEC 
+            slant-to-vertical conversion, and ionospheric event detection using machine learning.
             
             CREDITS: The Butterworth filter used for TEC detrending was based on a Matlab function written by 
             Dr. Kshitija Deshpande, Professor of Engineering Physics at Embry-Riddle Aeronautical University.

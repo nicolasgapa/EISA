@@ -1,13 +1,15 @@
-# 2019
-# Embry-Riddle Aeronautical University
-# Department of Physics and Life Sciences
-#
-# Code developer: Nicolas Gachancipa
-#
-# Embry-Riddle Ionospheric Algorithm (EISA) 2.0
-# Ionospheric and TEC data collector
-#
-# Last time updated: Spring 2020.
+"""
+2019
+Embry-Riddle Aeronautical University
+Department of Physics and Life Sciences
+
+Code developer: Nicolas Gachancipa
+
+Embry-Riddle Ionospheric Algorithm (EISA) 2.0
+Ionospheric and TEC data collector
+
+Last time updated: Spring 2020.
+"""
 
 # Imports.
 from datetime import datetime, timedelta
@@ -16,11 +18,25 @@ from Graphing.Graphing import run_graphing
 import os
 import pandas as pd
 from Parsing.Parsing import run_parsing
+from ML.RNN import run_ML
 import shutil
 import time
 
 cwd = os.getcwd()  # Current working directory.
 filesep = os.sep  # File separator (Changes between windows, linux and other OS).
+
+
+# Functions.
+def days_before_to_date(days_before):
+    # Run the graphing tool only if the csvfiles exist.
+    date = datetime.today() - timedelta(days_before)
+    year, month, day = str(date.year), str(date.month), str(date.day)
+    if len(month) == 1:
+        month = "0" + month
+    if len(day) == 1:
+        day = "0" + day
+    date = year + month + day
+    return date
 
 
 # ----- Part 1: Parse ----- #
@@ -65,14 +81,9 @@ def graph(days_before, receivers, constellations, threshold, location):
     # Run iteratively for every receiver.
     for receiver_name in receivers:
 
-        # Run the graphing tool only if the csvfiles exist.
-        date = datetime.today() - timedelta(days_before)
-        year, month, day = str(date.year), str(date.month), str(date.day)
-        if len(month) == 1:
-            month = "0" + month
-        if len(day) == 1:
-            day = "0" + day
-        date = year + month + day
+        # Determine the date.
+        date = days_before_to_date(days_before)
+        year, month, day = date[:2], date[2:4], date[4:]
 
         # Set graphing parameters.
         parameters = GraphSettings()
@@ -216,7 +227,47 @@ def graph(days_before, receivers, constellations, threshold, location):
             print("CSV files for the following date do not exist: {}. Receiver: {}.".format(date, receiver_name))
 
 
-# ----- Part 3: Upload ----- #
+# ----- Part 3: ML ----- #
+def ML_event_detection(days_before, receivers, constellations, threshold, location):
+    print("\n---------------------------------------------------------------------")
+    # Run iteratively for every receiver.
+    for receiver_name in receivers:
+
+        # Determine the date and CSV dir.
+        date = days_before_to_date(days_before)
+        CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
+            receiver_name)
+
+        # Define PRNs.
+        PRNs_to_process = []
+        if 'G' in constellations:
+            PRNs_to_process.extend(['G' + str(i) for i in range(1, 33)])
+        if 'R' in constellations:
+            PRNs_to_process.extend(['R' + str(i) for i in range(1, 25)])
+        if 'E' in constellations:
+            PRNs_to_process.extend(['E' + str(i) for i in range(1, 31)])
+
+        # Continue only if the path containing the csv files of the corresponding date exists.
+        if os.path.exists(CSV_dir + filesep + date):
+
+            # Create RNN model.
+            weights = r'ML' + filesep + 'scintillation_weights.h5'
+
+            # Ionospheric scintillation detection.
+            for prn in PRNs_to_process:
+                # Files.
+                input_file = CSV_dir + filesep + date + 'REDOBS_{}_{}.csv'.format(prn, date)
+                output_file = CSV_dir + filesep + date + r'\ML_Detection\REDOBS_{}_{}_ML_Detection'.format(prn, date)
+
+                # ML Detection.
+                run_ML(input_file, output_file, weights)
+
+        # If the csv files for that day don't exist, print a message.
+        else:
+            print("CSV files for the following date do not exist: {}. Receiver: {}.".format(date, receiver_name))
+
+
+# ----- Part 4: Upload ----- #
 
 
 # ----- run_EISA function ------ #
@@ -282,7 +333,7 @@ def run_EISA(parameters='EISA_parameters.csv'):
         # Compute the time left for the next iteration to occur (in seconds).
         secs = (next_run - now).seconds + 1
 
-        # Parse and plot.
+        # Parse, plot, process, and upload.
         parse(days_before, receivers, constellations)
         graph(days_before, receivers, constellations, threshold, location)
 
