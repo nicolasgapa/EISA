@@ -33,9 +33,9 @@ class RNNModel:
 
         # Neural network.
         self.network = k.models.Sequential([k.layers.Dense(units=20, activation='relu', input_shape=(None, 4)),
-                                            k.layers.LSTM(64, return_sequences=True),
-                                            k.layers.LSTM(64, return_sequences=True),
-                                            k.layers.Dense(30, activation="relu"),
+                                            # k.layers.LSTM(64, return_sequences=True),
+                                            # k.layers.LSTM(64, return_sequences=True),
+                                            # k.layers.Dense(30, activation="relu"),
                                             k.layers.Dense(10, activation="relu"),
                                             k.layers.Dense(units=5, activation='softmax')])
 
@@ -106,7 +106,6 @@ def run_ML(input_file, output_file, weights, prn, date, plot=False, threshold=0,
         # Process one period at a time.
         start_times, end_times = time_ranges(input_file, threshold=threshold, elev_col_name='Elevation',
                                              times_col_name='GPS TOW')
-        print('here', start_times, end_times)
         for e, (start_time, end_time) in enumerate(zip(start_times, end_times), 1):
             # Filter data frame.
             X = DF1[DF1['GPS TOW'] >= start_time]
@@ -116,16 +115,27 @@ def run_ML(input_file, output_file, weights, prn, date, plot=False, threshold=0,
             GPS_TOW = X['GPS TOW']
             X = X[['Elevation', 'CNo', 'S4', 'S4 Cor']]
 
+            # Normalize.
+            X['Elevation'] = X['Elevation'].div(90)
+            X['CNo'] = X['CNo'].div(60)
+
             # Create RNN model.
             ML_model = RNNModel(weights, load_weights=True)
 
             # Detect scintillation.
-            y = ML_model.detect(np.expand_dims(X, axis=0))
-            y = [list(i).index(max(i)) for i in y]
+            y = []
+            for row in np.asarray(X).astype('float32'):
+                instance = np.expand_dims(row, axis=0)
+                output = ML_model.detect(instance)
+                y.append(output.index(max(output)))
 
             # Add GPS TOW and y to the data frame.
             X['GPS TOW'] = GPS_TOW
             X['y'] = y
+
+            # De-normalize the values.
+            X['Elevation'] = X['Elevation'].div(1/90)
+            X['CNo'] = X['CNo'].div(1/60)
 
             # Create the output directory if it doesn't exist.
             output_dir = os.path.dirname(output_file)
