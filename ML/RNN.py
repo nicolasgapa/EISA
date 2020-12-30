@@ -11,11 +11,14 @@ Recurrent Neural Networks (RNNs)
 
 """
 # Imports
+from Graphing.support_graphing_functions import time_ranges
+from keras.callbacks import ModelCheckpoint
 from keras.utils import np_utils
 import numpy as np
 import os
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
+from ML.support_ML_functions import plot_scintillation_detections
 import tensorflow.keras as k
 
 filesep = os.sep  # File separator (Changes between windows, linux and other OS).
@@ -34,7 +37,7 @@ class RNNModel:
                                             k.layers.LSTM(64, return_sequences=True),
                                             k.layers.Dense(30, activation="relu"),
                                             k.layers.Dense(10, activation="relu"),
-                                            k.layers.Dense(units=4, activation='softmax')])
+                                            k.layers.Dense(units=5, activation='softmax')])
 
         # Load weights (if applicable).
         if load_weights:
@@ -61,12 +64,18 @@ class RNNModel:
         y = np_utils.to_categorical(encoded_Y)
         y = np.expand_dims(y, axis=0)
 
+        # Checkpoint.
+        weights_file = os.path.dirname(self.weights) + '\\checkpoint' + os.path.basename(self.weights)
+        checkpoint = ModelCheckpoint(weights_file, verbose=1, monitor='loss',
+                                     save_best_only=True, mode='auto')
+
         # Compile and fit.
         if load_weights:
             self.network.load_weights(self.weights)
         self.network.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
-        self.network.fit(X, y, epochs=epochs, batch_size=batch_size)
-        self.weights = 'output_' + self.weights
+        self.network.fit(X, y, epochs=epochs, batch_size=batch_size, callbacks=[checkpoint])
+
+        # Save weights (overrides the original weights).
         self.network.save_weights(self.weights)
 
     def detect(self, instance):
@@ -75,27 +84,63 @@ class RNNModel:
 
 
 # Run ML.
-def run_ML(input_file, output_file, weights):
+def run_ML(input_file, output_file, weights, prn, date, plot=False, threshold=0, location=''):
     # Read data.
-    X = pd.read_csv(input_file)
+    DF = pd.read_csv(input_file)
 
-    # Extract columns.
-    GPS_TOW = X['GPS TOW']
-    X = X[['Elevation', 'CNo', 'S4', 'S4 Cor']]
+    # Define signal types.
+    signal_type_names = {"G": {"1": "L1CA", "4": "L2Y", "5": "L2C", "6": "L2P", "7": "L5Q"},
+                         "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"},
+                         "E": {"1": "E1", "2": "E5A", "3": "E5B", "4": "AltBOC"}}
 
-    # Create RNN model.
-    ML_model = RNNModel(weights, load_weights=True)
+    # Process one signal type at a time.
+    signal_types = set(list(DF['SigType']))
+    for signal_type in signal_types:
 
-    # Detect scintillation.
-    y = ML_model.detect(X)
+        # Obtain signal type name.
+        signal_type_name = signal_type_names[prn[0]][str(signal_type)]
 
-    # Add GPS TOW and y to the data frame.
-    X['GPS TOW'] = GPS_TOW
-    X['y'] = y
+        # Filter data set for that signal type.
+        DF1 = DF[DF['SigType'] == signal_type]
 
-    # Obtain the times when a scintillation event was identified.
-    df = X[X['y'] > 0]
+        # Process one period at a time.
+        start_times, end_times = time_ranges(input_file, threshold=threshold, elev_col_name='Elevation',
+                                             times_col_name='GPS TOW')
+        print('here', start_times, end_times)
+        for e, (start_time, end_time) in enumerate(zip(start_times, end_times), 1):
+            # Filter data frame.
+            X = DF1[DF1['GPS TOW'] >= start_time]
+            X = X[X['GPS TOW'] < end_time]
 
-    # Save scintillation events to a new file (Only if an event was detected).
-    if len(df) > 0:
-        df.to_csv(output_file)
+            # Extract columns.
+            GPS_TOW = X['GPS TOW']
+            X = X[['Elevation', 'CNo', 'S4', 'S4 Cor']]
+
+            # Create RNN model.
+            ML_model = RNNModel(weights, load_weights=True)
+
+            # Detect scintillation.
+            y = ML_model.detect(np.expand_dims(X, axis=0))
+            y = [list(i).index(max(i)) for i in y]
+
+            # Add GPS TOW and y to the data frame.
+            X['GPS TOW'] = GPS_TOW
+            X['y'] = y
+
+            # Create the output directory if it doesn't exist.
+            output_dir = os.path.dirname(output_file)
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            # Save scintillation events to a new file.
+            new_file = output_file[:-4] + '_{}_{}.csv'.format(signal_type_name, e)
+            X.to_csv(new_file, index=False)
+
+            # Plot.
+            if plot:
+                # Plot.
+                plt = plot_scintillation_detections(new_file, 'S4', prn, threshold, location, signal_type_name, date,
+                                                    time_period=e)
+
+                # Show plot.
+                plt.show()

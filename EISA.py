@@ -228,7 +228,7 @@ def graph(days_before, receivers, constellations, threshold, location):
 
 
 # ----- Part 3: ML ----- #
-def ML_event_detection(days_before, receivers, constellations, threshold, location):
+def ML_event_detection(days_before, receivers, constellations):
     print("\n---------------------------------------------------------------------")
     # Run iteratively for every receiver.
     for receiver_name in receivers:
@@ -336,6 +336,7 @@ def run_EISA(parameters='EISA_parameters.csv'):
         # Parse, plot, process, and upload.
         parse(days_before, receivers, constellations)
         graph(days_before, receivers, constellations, threshold, location)
+        ML_event_detection(days_before, receivers, constellations)
 
         # If days_before is larger than 1, process the next day immediately. Otherwise, start a timer to run
         # the code again tomorrow. Note: even if the user does not select the 'run now' option, EISA will run

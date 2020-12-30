@@ -20,7 +20,17 @@ import pandas as pd
 filesep = os.sep
 
 
-def time_ranges(file, threshold=0, header=0, elev_col_name=' Elev', times_col_name='GPS TOW'):
+def get_date_str(date):
+    year, month, day = [str(i) for i in date]
+    if len(month) == 1:
+        month = '0' + str(month)
+    if len(day) == 1:
+        day = '0' + str(day)
+    return year + month + day
+
+
+def time_ranges(file, threshold=0, header=0, elev_col_name='Elevation', times_col_name='GPS TOW',
+                signal_type_col_name='SigType'):
     """
     This function is used to identify the different periods of time in which a satellite is over the given threshold.
     For example, if a satellite is above a given 30 degree threshold between 6-9 AM and 3-5PM, the function returns
@@ -32,53 +42,62 @@ def time_ranges(file, threshold=0, header=0, elev_col_name=' Elev', times_col_na
     :param header (int): Number of header rows in the CSV file (using Python indexing).
     :param elev_col_name (string): Name of the column that contains the elevation data.
     :param times_col_name (string): Name of the column that contains the timesteps.
+    :param signal_type_col_name (string): Name of the column that contains the signal tipe.
     :return: start_times (list) and end_times (list): List of times when the satellite crosses the given threshold.
     """
 
-    # Open the CSV file, and filter the data using the given elevation threshold.
+    # Open the CSV file.
     DF = pd.read_csv(file, header=header)
+
+    # Only process one signal type (the first one).
+    DF = DF[DF[signal_type_col_name] == DF[signal_type_col_name][0]]
+
+    # Filter the data using the given elevation threshold.
     filtered_DF = DF[DF[elev_col_name] >= threshold]
     filtered_DF = filtered_DF[[times_col_name, elev_col_name]]
 
     # Find the difference between one row and another.
-    filtered_DF['Index difference'] = [2] + [x - y for x, y in zip(filtered_DF.index[1:], filtered_DF.index)]
+    filtered_DF['difference'] = [600] + [x - y for x, y in zip(filtered_DF[times_col_name][1:],
+                                                               filtered_DF[times_col_name])]
 
-    # Start rows (All those rows that have an index difference greater than 1 with respect to the previous row).
-    # The difference > 1 indicates that the data was collected at a different time of the day, and the satellite
-    # crossed the elevation theshold multiple times throughout the day.
-    start_rows = filtered_DF[filtered_DF['Index difference'] > 1]
+    # Start rows (All those rows that have an index difference greater than 600 with respect to the previous row).
+    # The difference > 600 indicates that the data was collected at a different time of the day (at least 600 seconds
+    # or 10 minutes later), and the satellite crossed the elevation theshold multiple times throughout the day.
+    start_rows = filtered_DF[filtered_DF['difference'] >= 600]
     start_rows = start_rows.dropna()
     start_times = list(start_rows[times_col_name])
 
-    # End rows.
-    end_times = []
-    for index, row in start_rows.iloc[1:].iterrows():
-        end_row = filtered_DF.loc[int(index - row['Index difference']), :]
-        end_times.append(int(end_row[times_col_name]))
+    # Identiy the end times.
+    filtered_DF['end difference'] = list(filtered_DF['difference'][1:]) + [600]
+    end_rows = filtered_DF[filtered_DF['end difference'] >= 600]
+    end_rows = end_rows.dropna()
+    end_times = list(end_rows[times_col_name])
 
-    # Append the last end time (Only if the start_times array is not empty).
-    if start_times:
-        end_times.append(int(filtered_DF.iloc[-1, :][times_col_name]))
+    # Remove outliers in the data (i.e. when the start and end times are equal).
+    idx_to_remove = sorted([e for e, (x, y) in enumerate(zip(start_times, end_times)) if x - y == 0])[::-1]
+    for i in idx_to_remove:
+        del start_times[i]
+        del end_times[i]
 
     # Return.
     return start_times, end_times
 
 
-def naming(model, prn, signal_type, time_period=1):
+def naming(prn, signal_type, date, time_period=1, file_type='REDTEC', graph_type='Azimuth', summary_plot=False,
+           night_subtraction=False, vertical_TEC=False, threshold=30, location=''):
     """
     Fuction to obtain the file name, title, and subtitle of a plot.
 
-    :param model: GraphSettings model.
     :param prn (str): e.g. G1 for GPS 1, or R4 for GLONASS 4
     :param signal_type (str): Name of the signal type, e.g. 'L1CA' (Only valid for individual plots, can be set to
                               None for summary plots).
+    :param date (list): Date: [year, month, day]
     :param time_period (int): An integer indicating the time period of the plot. E.g. if the satellite is over the
                               elevation threshold during two time periods in a single day (e.g. 6-9AM and 3-5PM),
                               the plot showing time period "1" (6-9AM) must have time_period == 1, while the plot for
                               time period 2 (3-5PM), must have time_period == 2. Default: 1.
     :return: plot_name (str), title (str), subttitle (str)
     """
-
     # Define the month names.
     month_names = {'01': 'January', '02': 'February', '03': 'March', '04': 'April', '05': 'May', '06': 'June',
                    '07': 'July', '08': 'August', '09': 'September', '10': 'October', '11': 'November', '12': 'December'}
@@ -94,42 +113,42 @@ def naming(model, prn, signal_type, time_period=1):
     period = time_period_vars[time_period]
 
     # Define the plot name.
-    plot_name = model.get_date_str() + '_' + model.file_type
+    plot_name = get_date_str(date) + '_' + file_type
 
     # Summary Plot.
-    if model.summary_plot:
-        plot_name += '_SummaryPlot_' + constellations[prn[0]] + '_' + model.graph_type
+    if summary_plot:
+        plot_name += '_SummaryPlot_' + constellations[prn[0]] + '_' + graph_type
 
     # Individual Plot.
     else:
-        plot_name += '_' + model.graph_type + '_' + prn + "_Signal" + '-' + str(signal_type) + '_' + period
+        plot_name += '_' + graph_type + '_' + prn + "_Signal" + '-' + str(signal_type) + '_' + period
 
     # Normalization (night subtraction) and Vertical TEC.
-    if model.graph_type in model.TEC_types:
-        if model.night_subtraction:
+    if graph_type in ['TEC15', 'TEC30', 'TEC45', 'TECTOW', 'TEC']:
+        if night_subtraction:
             plot_name += "_Normalized"
-        if model.vertical_TEC:
+        if vertical_TEC:
             plot_name += "_verticalTEC"
 
     # Set the title  and subtitle of the plot.
-    month, day = model.get_date_str()[4:6], model.get_date_str()[6:8]
-    title = month_names[month] + " " + day + " - " + "Time (UTC) vs. " + model.graph_type
-    subtitle = "Elevation threshold: " + str(model.threshold) + '°'
+    month, day = get_date_str(date)[4:6], get_date_str(date)[6:8]
+    title = month_names[month] + " " + day + " - " + "Time (UTC) vs. " + graph_type
+    subtitle = "Elevation threshold: " + str(threshold) + '°'
 
     # Summary plot title
-    if model.summary_plot:
+    if summary_plot:
         title += " - Summary Plot - " + constellations[prn[0]]
-        subtitle += " - Loc: " + model.location
+        subtitle += " - Loc: " + location
 
     # Individual plot title and subtitle.
     else:
         title += " - " + constellations[prn[0]] + " " + prn[1:] + " (" + period + ")"
-        subtitle += " - Signal type: " + str(signal_type) + " - Loc: " + model.location
+        subtitle += " - Signal type: " + str(signal_type) + " - Loc: " + location
 
     # Subtitle edits: Normalization (night subtraction) and Vertical TEC.
-    if model.night_subtraction:
+    if night_subtraction:
         subtitle += " - Normalized"
-    if model.vertical_TEC:
+    if vertical_TEC:
         subtitle += " - Vertical TEC"
 
     # Return the plot's file name, title, and subtitle.
@@ -193,7 +212,10 @@ def slant_to_vertical_tec(y_values, elevations):
     return new_y_values
 
 
-def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
+def plot(x_values, y_values, prn, graph_name, title, subtitle, output_dir, summary_plot=False, legend=False,
+         label_prns=False, file_type='REDTEC', graph_type='Azimuth', title_font_size=12, subtitle_font_size=12,
+         format_type='png', set_x_axis_range=False, set_y_axis_range=False, x_axis_start_value=0, x_axis_final_value=1,
+         y_axis_start_value=0, y_axis_final_value=1, vertical_line=False, x_value_vertical_line=0, units=None):
     """
     Function used to plot, and to determine the directory where such plot will be saved.
 
@@ -212,56 +234,56 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, model):
     # Plot.
     # If the user wants a legend, add the labels. Otherwise, plot without labels. For summary plots, reduce the
     # line width to 0.4.
-    if model.summary_plot:
-        if model.legend:
+    if summary_plot:
+        if legend:
             plt.plot(x_values, y_values, label=prn, linewidth=0.4)
         else:
             plt.plot(x_values, y_values, linewidth=0.4)
     else:
-        if model.legend:
+        if legend:
             plt.plot(x_values, y_values, label=prn)
         else:
             plt.plot(x_values, y_values)
 
     # Add the X and Y-axis labels.
-    if model.units[model.graph_type] is None:
-        plt.ylabel(model.graph_type)
+    if units is None:
+        plt.ylabel(graph_type)
     else:
-        plt.ylabel(model.graph_type + ' ({})'.format(model.units[model.graph_type]))
+        plt.ylabel(graph_type + ' ({})'.format(units))
     plt.xlabel('Time (UTC)')
 
     # Change the limits of the axes (if applicable).
-    if model.set_x_axis_range:
-        plt.xlim(model.x_axis_start_value, model.x_axis_final_value)
-    if model.set_y_axis_range:
-        plt.ylim(model.y_axis_start_value, model.y_axis_final_value)
+    if set_x_axis_range:
+        plt.xlim(x_axis_start_value, x_axis_final_value)
+    if set_y_axis_range:
+        plt.ylim(y_axis_start_value, y_axis_final_value)
 
     # If the user wants to print a vertical line, use the axvline function - Line 29 of the GRAPHSETTINGS.csv file.
-    if model.vertical_line:
-        plt.axvline(x=model.x_value_vertical_line, color='K', linewidth=0.5)
+    if vertical_line:
+        plt.axvline(x=x_value_vertical_line, color='K', linewidth=0.5)
 
     # Label the plot lines (in-plot legends) - Line 25 of the GRAPHSETTINGS.csv file.
-    if model.label_prns:
+    if label_prns:
         xdatapoint, ydatapoint = x_values[int(len(x_values) / 2)], y_values[int(len(y_values) / 2)]
         plt.text(xdatapoint, ydatapoint, prn)
 
     # Print the title and subtitle in the plot.
-    plt.suptitle(title, fontsize=model.title_font_size)
-    plt.title(subtitle, fontsize=model.subtitle_font_size)
+    plt.suptitle(title, fontsize=title_font_size)
+    plt.title(subtitle, fontsize=subtitle_font_size, y=0)
 
     # Set the directory, and create it if it does not exist.
-    directory = model.output_dir
-    if model.summary_plot:
-        ftype = "TEC" if model.file_type in ["REDTEC", 'RAWTEC'] else "OBS"
+    directory = output_dir
+    if summary_plot:
+        ftype = "TEC" if file_type in ["REDTEC", 'RAWTEC'] else "OBS"
         directory += filesep + "Summary_Plots" + filesep + ftype
     else:
-        directory = directory + filesep + model.graph_type
+        directory = directory + filesep + graph_type
     if not os.path.exists(directory):
         os.makedirs(directory)
-    directory += filesep + graph_name + '.' + model.format_type
+    directory += filesep + graph_name + '.' + format_type
 
     # Print the legend on the plot if legend == True.
-    if model.legend:
+    if legend:
         plt.legend()
 
     # Return the plot.

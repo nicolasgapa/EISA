@@ -16,6 +16,7 @@ import datetime
 from EISA import run_EISA
 from EISA_objects import GraphSettings, ParseSettings
 from Graphing.Graphing import run_graphing
+from ML.RNN import run_ML
 import numpy as np
 import os
 import pandas as pd
@@ -564,7 +565,7 @@ class Graphing(wx.Panel):
         """
 
         # Run EISA using the selected parameters.
-        run_btn = wx.Button(self, label='Run EISA')
+        run_btn = wx.Button(self, label='Run')
         run_btn.Bind(wx.EVT_BUTTON, self.run)
 
         # Return to main menu.
@@ -923,10 +924,10 @@ class Parsing(wx.Panel):
         self.time_end_value.Bind(wx.EVT_TEXT, self.set_time_end_value)
 
         """
-        Other parsing options.
+        Buttons.
         """
         # Run EISA using the selected parameters.
-        run_btn = wx.Button(self, label='Run EISA')
+        run_btn = wx.Button(self, label='Run')
         run_btn.Bind(wx.EVT_BUTTON, self.run)
 
         # Return to main menu.
@@ -1120,13 +1121,189 @@ class Parsing(wx.Panel):
             run_parsing(self.settings, exe_dir)
 
 
+# ML pane.
+class ML(wx.Panel):
+
+    def __init__(self, parent, settings='ML//ML_GUI_parameters.npy'):
+        # Create panel and object.
+        wx.Panel.__init__(self, parent, size=(0, 0))
+        self.container = wx.BoxSizer(wx.VERTICAL)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Get the directory to this object's file (i.e. the directory to EISA_GUI.py).
+        self.this_file_dir = str(Path(__file__).resolve().parent)
+
+        # Open file containing the previously selected GUI parameters.
+        parameters = np.load(settings)
+
+        # Title.
+        title = wx.StaticText(self, label="Ionospheric event detection using Machine Learning")
+        title_font = wx.Font(13, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+        title.SetFont(title_font)
+        self.sizer.Add(title, 0, wx.ALL | wx.CENTER, 5)
+
+        # Obtain the input CSV file.
+        text = wx.StaticText(self, label='Select the CSV file that you want to process:')
+        self.input_file = wx.FilePickerCtrl(self, wx.ID_ANY, parameters[0], u"Select a file:", size=(1000, 20))
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.input_file, 0, wx.ALL | wx.CENTER, 5)
+
+        # Obtain the output CSV file.
+        text = wx.StaticText(self, label='Indicate the desired directory and name of the output file:')
+        self.output_file = wx.FilePickerCtrl(self, wx.ID_ANY, parameters[1], u"", size=(1000, 20))
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.output_file, 0, wx.ALL | wx.CENTER, 5)
+
+        # Scintillation type (S4 or Sigma Phi).
+        text = wx.StaticText(self, label='Scintillation type:')
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.S4_scintillation = wx.CheckBox(self, label="Amplitude (S4)")
+        self.sigma_scintillation = wx.CheckBox(self, label="Phase (Sigma Phi)")
+        self.S4_scintillation.SetValue(str(parameters[2]) == 'True')
+        self.sigma_scintillation.SetValue(str(parameters[3]) == 'True')
+        self.local_sizer.Add(self.S4_scintillation, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.sigma_scintillation, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+
+        # Scintillation type (S4 or Sigma Phi).
+        self.plot = wx.CheckBox(self, label="Plot")
+        self.plot.SetValue(str(parameters[4]) == 'True')
+        self.sizer.Add(self.plot, 0, wx.ALL | wx.CENTER, 5)
+
+        """
+        Other Options
+        """
+        # Sizer 2.
+        self.sizer_2 = wx.BoxSizer(wx.VERTICAL)
+        title = wx.StaticText(self, label="Plot options")
+        title_font = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+        title.SetFont(title_font)
+        self.sizer_2.Add(title, 0, wx.ALL | wx.CENTER, 5)
+
+        # Location.
+        self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='Location:')
+        self.location_text = wx.TextCtrl(self, value=str(parameters[5]), size=(150, 20))
+        self.location_text.SetFocus()
+        self.hbox1.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox1.Add(self.location_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+        self.sizer_2.Add(self.hbox1, 0, wx.ALL | wx.CENTER, 5)
+
+        # PRN.
+        self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
+        text = wx.StaticText(self, label='PRN name:')
+        self.prn_text = wx.TextCtrl(self, value=str(parameters[6]), size=(150, 20))
+        self.prn_text.SetFocus()
+        self.hbox1.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.hbox1.Add(self.prn_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+        self.sizer_2.Add(self.hbox1, 0, wx.ALL | wx.CENTER, 5)
+
+        # Threshold.
+        text = wx.StaticText(self, label='Select the elevation threshold:')
+        self.threshold_slider = wx.Slider(self, value=int(parameters[7]), minValue=0, maxValue=90, style=wx.SL_LABELS)
+        self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.threshold_slider, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
+
+        # Date.
+        text = wx.StaticText(self, label='Date:')
+        self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        today = datetime.datetime.now()
+        self.year = wx.ComboBox(self, choices=[str(today.year - i) for i in range(0, today.year - 2014)],
+                                value=str(parameters[8]))
+        self.month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)], value=str(parameters[9]))
+        self.day = wx.ComboBox(self, choices=[str(i) for i in range(1, 32)], value=str(parameters[10]))
+        self.local_sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.year, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.month, 0, wx.ALL | wx.CENTER, 5)
+        self.local_sizer.Add(self.day, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer_2.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
+
+        """
+        Buttons.
+        """
+        # Run EISA using the selected parameters.
+        run_btn = wx.Button(self, label='Run')
+        run_btn.Bind(wx.EVT_BUTTON, self.run)
+
+        # Return to main menu.
+        return_btn = wx.Button(self, label='Return')
+        return_btn.Bind(wx.EVT_BUTTON, parent.return_to_menu)
+
+        # Place everything into the container.
+        self.options = wx.BoxSizer(wx.HORIZONTAL)
+        self.options.Add(self.sizer, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.options.Add(wx.StaticLine(self, -1, size=(3, 200), style=wx.LI_VERTICAL), 0,
+                         wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.options.Add(self.sizer_2, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.container.Add(self.options, 0, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+        self.container.Add(run_btn, 0, wx.ALL | wx.CENTER, 5)
+        self.container.Add(return_btn, 0, wx.ALL | wx.CENTER, 5)
+
+        # Show panel.
+        self.SetSizerAndFit(self.container)
+        self.Layout()
+
+    def run(self, _):
+        # Check that the input file exist.
+        input_file = self.input_file.GetPath()
+        if not os.path.exists(input_file):
+            wx.MessageDialog(self, 'The input file does not exist: {}.'.format(input_file)).ShowModal()
+        else:
+            # If none of the scintillation options are selected, print an error.
+            if not self.S4_scintillation.IsChecked() and not self.sigma_scintillation.IsChecked():
+                wx.MessageDialog(self, 'Error: Please select the scintillation type (S4 or Sigma Phi).').ShowModal()
+            else:
+
+                # Obtain inputs.
+                location = str(self.location_text.GetLineText(0))
+                prn = str(self.prn_text.GetLineText(0))
+                threshold = int(self.threshold_slider.GetValue())
+                output_file = self.output_file.GetPath()
+
+                # If one part of the date is not set, it must be defined by the code itself (default = today's date).
+                today = datetime.datetime.now()
+                if self.year.GetStringSelection() == "":
+                    self.year.SetStringSelection(str(today.year))
+                if self.month.GetStringSelection() == "":
+                    self.month.SetStringSelection(str(today.month))
+                if self.day.GetStringSelection() == "":
+                    self.day.SetStringSelection(str(today.day))
+
+                # Obtain date.
+                date = [self.year.GetStringSelection(), self.month.GetStringSelection(), self.day.GetStringSelection()]
+
+                # Save selections to an npy file (so that the next time the user opens the program, the old
+                # selections pop up).
+                memory_npy = np.array([input_file, output_file, self.S4_scintillation.IsChecked(),
+                                       self.sigma_scintillation.IsChecked(), self.plot.IsChecked(),
+                                       location, prn, threshold, self.year.GetStringSelection(),
+                                       self.month.GetStringSelection(), self.day.GetStringSelection()])
+                np.save(self.this_file_dir + filesep + 'ML' + filesep + 'ML_GUI_parameters.npy', memory_npy,
+                        allow_pickle=True)
+
+                # S4 Scintillation.
+                if self.S4_scintillation.IsChecked():
+                    # Process.
+                    s4_output_file = output_file[:-4] + '_S4.csv'
+                    run_ML(input_file, s4_output_file, 'ML' + filesep + 's4_scintillation.h5', prn, date,
+                           plot=self.plot, threshold=threshold, location=location)
+
+                # Sigma Scintillation.
+                if self.sigma_scintillation.IsChecked():
+                    # Process.
+                    sigma_output_file = output_file[:-4] + '_sigma.csv'
+                    run_ML(input_file, sigma_output_file, 'ML' + filesep + 'sigma_scintillation.h5', prn, date,
+                           plot=self.plot, threshold=threshold, location=location)
+
+
 # Main window frame.
 class TopFrame(wx.Frame):
 
     # Initializer.
     def __init__(self, graph_settings, parse_settings):
         super().__init__(parent=None, title='Embry-Riddle Ionospheric Scintillation Algorithm (EISA) v2.0',
-                         size=(600, 175))
+                         size=(600, 210))
 
         # Create panel.
         self.graph_settings = graph_settings
@@ -1153,6 +1330,11 @@ class TopFrame(wx.Frame):
         my_btn_4 = wx.Button(self.panel, label='Graphing')
         self.my_sizer.Add(my_btn_4, 0, wx.ALL | wx.CENTER, 5)
         my_btn_4.Bind(wx.EVT_BUTTON, self.graph)
+
+        # Event detection using ML.
+        my_btn_5 = wx.Button(self.panel, label='Event detection - EISA ML')
+        self.my_sizer.Add(my_btn_5, 0, wx.ALL | wx.CENTER, 5)
+        my_btn_5.Bind(wx.EVT_BUTTON, self.ML)
 
         # Show panel.
         self.panel.SetSizer(self.my_sizer)
@@ -1199,7 +1381,19 @@ class TopFrame(wx.Frame):
         self.SetSizerAndFit(self.my_sizer)
         self.Center()
 
-    # Retunr to main menu.
+    # Machine Learning Module (Event detection).
+    # Hide the main panel and display the parsing panel.
+    def ML(self, _):
+        self.panel.Hide()
+        self.panel = ML(self)
+        self.my_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.my_sizer.Add(self.panel, 1, wx.ALL | wx.EXPAND | wx.CENTER, 5)
+
+        # Fit to window's size.
+        self.SetSizerAndFit(self.my_sizer)
+        self.Center()
+
+    # Return to main menu.
     def return_to_menu(self, _):
         self.Hide()
         self.__init__(self.graph_settings, self.parse_settings)

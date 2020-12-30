@@ -190,11 +190,27 @@ def plot_prn(model, prn, shift=0):
             signal_type_name = model.signal_types[prn[0]][str(signal_type)]
 
             # Name the plot.
-            graph_name, title, subtitle = naming(model, prn, signal_type_name, time_period=i)
+            graph_name, title, subtitle = naming(prn, signal_type_name, model.date, time_period=i,
+                                                 file_type=model.file_type, graph_type=model.graph_type,
+                                                 summary_plot=model.summary_plot,
+                                                 night_subtraction=model.night_subtraction,
+                                                 vertical_TEC=model.vertical_TEC, threshold=model.threshold,
+                                                 location=model.location)
 
             # Plot and save the figure. Plot only if the dataframe is not empty.
             x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
-            prn_plot, directory = plot(x_values, y_values, prn, graph_name, title, subtitle, model)
+            prn_plot, directory = plot(x_values, y_values, prn, graph_name, title, subtitle, model.output_dir,
+                                       summary_plot=model.summary_plot, legend=model.legend,
+                                       label_prns=model.label_prns, file_type=model.file_type,
+                                       graph_type=model.graph_type, title_font_size=model.title_font_size,
+                                       subtitle_font_size=model.subtitle_font_size, format_type=model.format_type,
+                                       set_x_axis_range=model.set_x_axis_range, set_y_axis_range=model.set_y_axis_range,
+                                       x_axis_start_value=model.x_axis_start_value,
+                                       x_axis_final_value=model.x_axis_final_value,
+                                       y_axis_start_value=model.y_axis_start_value,
+                                       y_axis_final_value=model.y_axis_final_value, vertical_line=model.vertical_line,
+                                       x_value_vertical_line=model.x_value_vertical_line,
+                                       units=model.units[model.graph_type])
 
             # Print the directory in the command window.
             print('Saving plot: {}. PRN: {}.'.format(directory, prn))
@@ -266,7 +282,11 @@ def run_graphing(model, output_dir):
                     print(error_msg)
 
         # Save the plot.
-        graph_name, _, _ = naming(model, model.PRNs_to_plot[0], None)
+        graph_name, _, _ = naming(model.PRNs_to_plot[0], None, model.date, file_type=model.file_type,
+                                  graph_type=model.graph_type, summary_plot=model.summary_plot,
+                                  night_subtraction=model.night_subtraction, vertical_TEC=model.vertical_TEC,
+                                  threshold=model.threshold, location=model.location)
+
         ftype = "TEC" if model.file_type in ["REDTEC", 'RAWTEC'] else "OBS"
         directory = model.output_dir + filesep + "Summary_Plots" + filesep + ftype
         if not os.path.exists(directory):
