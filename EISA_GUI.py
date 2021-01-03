@@ -16,7 +16,7 @@ import datetime
 from EISA import run_EISA
 from EISA_objects import GraphSettings, ParseSettings
 from Graphing.Graphing import run_graphing
-from ML.RNN import run_ML
+from ML.neural_network import run_ML
 import numpy as np
 import os
 import pandas as pd

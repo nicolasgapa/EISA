@@ -18,7 +18,7 @@ from Graphing.Graphing import run_graphing
 import os
 import pandas as pd
 from Parsing.Parsing import run_parsing
-from ML.RNN import run_ML
+from ML.neural_network import run_ML
 import shutil
 import time
 
@@ -228,7 +228,7 @@ def graph(days_before, receivers, constellations, threshold, location):
 
 
 # ----- Part 3: ML ----- #
-def ML_event_detection(days_before, receivers, constellations):
+def ML_event_detection(days_before, receivers, constellations, threshold, location):
     print("\n---------------------------------------------------------------------")
     # Run iteratively for every receiver.
     for receiver_name in receivers:
@@ -250,9 +250,6 @@ def ML_event_detection(days_before, receivers, constellations):
         # Continue only if the path containing the csv files of the corresponding date exists.
         if os.path.exists(CSV_dir + filesep + date):
 
-            # Create RNN model.
-            weights = r'ML' + filesep + 'scintillation_weights.h5'
-
             # Ionospheric scintillation detection.
             for prn in PRNs_to_process:
                 # Files.
@@ -260,7 +257,8 @@ def ML_event_detection(days_before, receivers, constellations):
                 output_file = CSV_dir + filesep + date + r'\ML_Detection\REDOBS_{}_{}_ML_Detection'.format(prn, date)
 
                 # ML Detection.
-                run_ML(input_file, output_file, weights)
+                run_ML(input_file, output_file, 'ML' + filesep + 's4_scintillation.h5', prn, date, plot=False,
+                       threshold=threshold, location=location)
 
         # If the csv files for that day don't exist, print a message.
         else:
@@ -336,7 +334,7 @@ def run_EISA(parameters='EISA_parameters.csv'):
         # Parse, plot, process, and upload.
         parse(days_before, receivers, constellations)
         graph(days_before, receivers, constellations, threshold, location)
-        ML_event_detection(days_before, receivers, constellations)
+        ML_event_detection(days_before, receivers, constellations, threshold, location)
 
         # If days_before is larger than 1, process the next day immediately. Otherwise, start a timer to run
         # the code again tomorrow. Note: even if the user does not select the 'run now' option, EISA will run

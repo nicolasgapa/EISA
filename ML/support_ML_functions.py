@@ -47,7 +47,7 @@ def plot_scintillation_detections(file, graph_type, prn, threshold, location, si
                            bottom(np.linspace(0, 1, 32))))
     newcmp = ListedColormap(newcolors, name='OrangeBlue')
 
-    # Add RNN detections to the plot.
+    # Add NN detections to the plot.
     ax = plt.gca()
     new_array = [np.array([abs(i-3)] * 2) if i <= 3 else np.array([i] * 2) for i in detections]
     new_array = np.stack(new_array, axis=0).T

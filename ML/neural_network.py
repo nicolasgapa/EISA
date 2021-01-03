@@ -7,7 +7,7 @@ Code developer: Nicolas Gachancipa
 
 Embry-Riddle Ionospheric Algorithm (EISA) 2.0
 Machine Learning (ML) for atmospheric data analysis
-Recurrent Neural Networks (RNNs)
+Neural Networks (NNs)
 
 """
 # Imports
@@ -25,31 +25,32 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 
 
 # Class.
-class RNNModel:
+class NNModel:
 
-    def __init__(self, weights, load_weights=False):
-        # Set weights.
-        self.weights = weights
-
+    def __init__(self):
         # Neural network.
-        self.network = k.models.Sequential([k.layers.Dense(units=20, activation='relu', input_shape=(None, 4)),
-                                            # k.layers.LSTM(64, return_sequences=True),
-                                            # k.layers.LSTM(64, return_sequences=True),
-                                            # k.layers.Dense(30, activation="relu"),
+        self.network = k.models.Sequential([k.layers.Dense(units=120, activation='relu', input_shape=(None, 4)),
+                                            k.layers.Dense(60, activation="relu"),
+                                            k.layers.Dense(40, activation="relu"),
+                                            k.layers.Dense(20, activation="relu"),
                                             k.layers.Dense(10, activation="relu"),
                                             k.layers.Dense(units=5, activation='softmax')])
 
-        # Load weights (if applicable).
-        if load_weights:
-            self.network.load_weights(self.weights)
-
-    def train(self, training_file, load_weights=False, optimizer='adam', loss='categorical_crossentropy', epochs=100,
+    def train(self, training_file, output_weights, load_weights=False, input_weights='',
+              optimizer='adam', loss='categorical_crossentropy', epochs=100,
               batch_size=100):
         # Print status.
         print('Training using: {}.'.format(training_file))
 
         # Get training data.
         df = pd.read_csv(training_file)
+
+        # Normalization.
+        df['Elevation'] = df['Elevation'].div(90)
+        df['CNo'] = df['CNo'] - 20
+        df['CNo'] = df['CNo'].div(40)
+
+        # Formatting.
         X = df.drop("y", axis=1)
         X = np.asarray(X).astype('float32')
         X = np.expand_dims(X, axis=0)
@@ -65,22 +66,25 @@ class RNNModel:
         y = np.expand_dims(y, axis=0)
 
         # Checkpoint.
-        weights_file = os.path.dirname(self.weights) + '\\checkpoint' + os.path.basename(self.weights)
-        checkpoint = ModelCheckpoint(weights_file, verbose=1, monitor='loss',
+        checkpoint = ModelCheckpoint(output_weights, verbose=1, monitor='loss',
                                      save_best_only=True, mode='auto')
 
         # Compile and fit.
         if load_weights:
-            self.network.load_weights(self.weights)
+            self.network.load_weights(input_weights)
         self.network.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
         self.network.fit(X, y, epochs=epochs, batch_size=batch_size, callbacks=[checkpoint])
 
-        # Save weights (overrides the original weights).
-        self.network.save_weights(self.weights)
+        # Load best weights into network.
+        self.load_weights(output_weights)
 
     def detect(self, instance):
         # Event detection.
         return list(self.network.predict(instance)[0])
+
+    def load_weights(self, weights):
+        # Load weights.
+        self.network.load_weights(weights)
 
 
 # Run ML.
@@ -117,25 +121,24 @@ def run_ML(input_file, output_file, weights, prn, date, plot=False, threshold=0,
 
             # Normalize.
             X['Elevation'] = X['Elevation'].div(90)
-            X['CNo'] = X['CNo'].div(60)
+            X['CNo'] = X['CNo'] - 20
+            X['CNo'] = X['CNo'].div(40)
 
-            # Create RNN model.
-            ML_model = RNNModel(weights, load_weights=True)
+            # Create neural network model.
+            ML_model = NNModel()
+            ML_model.load_weights(weights)
 
             # Detect scintillation.
-            y = []
-            for row in np.asarray(X).astype('float32'):
-                instance = np.expand_dims(row, axis=0)
-                output = ML_model.detect(instance)
-                y.append(output.index(max(output)))
+            output = ML_model.detect(np.expand_dims(np.asarray(X).astype('float32'), axis=0))
+            y = [list(o).index(max(list(o))) for o in output]
 
             # Add GPS TOW and y to the data frame.
             X['GPS TOW'] = GPS_TOW
             X['y'] = y
 
             # De-normalize the values.
-            X['Elevation'] = X['Elevation'].div(1/90)
-            X['CNo'] = X['CNo'].div(1/60)
+            X['Elevation'] = X['Elevation'].div(1 / 90)
+            X['CNo'] = X['CNo'].div(1 / 60)
 
             # Create the output directory if it doesn't exist.
             output_dir = os.path.dirname(output_file)
