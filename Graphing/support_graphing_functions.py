@@ -49,6 +49,10 @@ def time_ranges(file, threshold=0, header=0, elev_col_name='Elevation', times_co
     # Open the CSV file.
     DF = pd.read_csv(file, header=header)
 
+    # If the dataset is empty, return two empty lists.
+    if len(DF) == 0:
+        return [], []
+
     # Only process one signal type (the first one).
     DF = DF[DF[signal_type_col_name] == DF[signal_type_col_name][0]]
 
@@ -212,9 +216,9 @@ def slant_to_vertical_tec(y_values, elevations):
     return new_y_values
 
 
-def plot(x_values, y_values, prn, graph_name, title, subtitle, output_dir, summary_plot=False, legend=False,
-         label_prns=False, file_type='REDTEC', graph_type='Azimuth', title_font_size=12, subtitle_font_size=12,
-         format_type='png', set_x_axis_range=False, set_y_axis_range=False, x_axis_start_value=0, x_axis_final_value=1,
+def plot(x_values, y_values, prn, title, subtitle, summary_plot=False, legend=False,
+         label_prns=False, graph_type='Azimuth', title_font_size=12, subtitle_font_size=12,
+         set_x_axis_range=False, set_y_axis_range=False, x_axis_start_value=0, x_axis_final_value=1,
          y_axis_start_value=0, y_axis_final_value=1, vertical_line=False, x_value_vertical_line=0, units=None):
     """
     Function used to plot, and to determine the directory where such plot will be saved.
@@ -229,7 +233,6 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, output_dir, summa
         model (GraphSettings): A GraphSettings model including all the plot settings.
     Output:
         plt: Resulting plot.
-        str: Directory to the new plot.
     """
     # Plot.
     # If the user wants a legend, add the labels. Otherwise, plot without labels. For summary plots, reduce the
@@ -269,25 +272,14 @@ def plot(x_values, y_values, prn, graph_name, title, subtitle, output_dir, summa
 
     # Print the title and subtitle in the plot.
     plt.suptitle(title, fontsize=title_font_size)
-    plt.title(subtitle, fontsize=subtitle_font_size, y=0)
-
-    # Set the directory, and create it if it does not exist.
-    directory = output_dir
-    if summary_plot:
-        ftype = "TEC" if file_type in ["REDTEC", 'RAWTEC'] else "OBS"
-        directory += filesep + "Summary_Plots" + filesep + ftype
-    else:
-        directory = directory + filesep + graph_type
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    directory += filesep + graph_name + '.' + format_type
+    plt.title(subtitle, fontsize=subtitle_font_size)
 
     # Print the legend on the plot if legend == True.
     if legend:
         plt.legend()
 
     # Return the plot.
-    return plt, directory
+    return plt
 
 
 def times_to_filter_df(df, start_times, end_times):

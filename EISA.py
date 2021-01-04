@@ -233,9 +233,11 @@ def ML_event_detection(days_before, receivers, constellations, threshold, locati
     # Run iteratively for every receiver.
     for receiver_name in receivers:
 
-        # Determine the date and CSV dir.
+        # Determine the date, CSV dir, and GRAPHS dir.
         date = days_before_to_date(days_before)
         CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
+            receiver_name)
+        graphs_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
             receiver_name)
 
         # Define PRNs.
@@ -256,9 +258,17 @@ def ML_event_detection(days_before, receivers, constellations, threshold, locati
                 input_file = CSV_dir + filesep + date + 'REDOBS_{}_{}.csv'.format(prn, date)
                 output_file = CSV_dir + filesep + date + r'\ML_Detection\REDOBS_{}_{}_ML_Detection'.format(prn, date)
 
-                # ML Detection.
-                run_ML(input_file, output_file, 'ML' + filesep + 's4_scintillation.h5', prn, date, plot=False,
+                # ML Detection: S4 scintillation.
+                run_ML(input_file, output_file, 'ML' + filesep + 's4_scintillation.h5', prn, date,
+                       scintillation_type='S4', save_plot=True,
+                       save_plot_dir=graphs_dir + filesep + 'ML' + filesep + 'Amplitude',
                        threshold=threshold, location=location)
+
+                # ML Detection: sigma scintillation.
+                run_ML(input_file, output_file, 'ML' + filesep + 'sigma_scintillation.h5', prn, date,
+                       scintillation_type='sigma', save_plot=True,
+                       save_plot_dir=graphs_dir + filesep + 'ML' + filesep + 'Phase', threshold=threshold,
+                       location=location)
 
         # If the csv files for that day don't exist, print a message.
         else:

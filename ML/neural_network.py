@@ -26,15 +26,43 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 
 # Class.
 class NNModel:
+    """
+    Neural Network model.
+    """
 
-    def __init__(self):
+    def __init__(self, scintillation_type):
+        """
+        :param scintillation_type: 'S4' or 'sigma'
+        """
+
+        # Define input length and number of output categories.
+        """
+        input_length (int): Length of the input to the neural network. For example, for a data instance containing
+                            4 parameters (eg. ['Elevation', 'S4', 'S4 Cor', 'CNo']), the input_length = 4.
+        output_categories (int): The number of output categories. E.g. 2 for binary, or 4 for multi-class classification
+                                 with 4 different labels.
+        """
+        self.scintillation_type = scintillation_type
+        if self.scintillation_type == 'S4':
+            # S4 scintillation has 4 inputs ('Elevation', 'S4', 'S4 Cor', 'CNo'), and 5 outputs indicating the type
+            # of scintillation: {0: 'No Scintillation', 1: 'Low', 2: 'Medium', 3: 'High', 4: 'Multi-Path'}
+            input_length, output_categories = 4, 5
+        elif self.scintillation_type == 'sigma':
+            # Sigma scintillation has 5 inputs ('Elevation', '1SecSigma', '30SecSigma', '60SecSigma', 'CMC Std'), and
+            # 6 outputs indicating the type of scintillation: {0: 'No Scintillation', 1: 'Low', 2: 'Medium', 3: 'High',
+            # 4: 'Extreme', 5: 'Multi-Path'}
+            input_length, output_categories = 7, 6
+        else:
+            raise Exception("scintillation type must be 'S4' or 'sigma'.")
+
         # Neural network.
-        self.network = k.models.Sequential([k.layers.Dense(units=120, activation='relu', input_shape=(None, 4)),
+        self.network = k.models.Sequential([k.layers.Dense(units=120, activation='relu',
+                                                           input_shape=(None, input_length)),
                                             k.layers.Dense(60, activation="relu"),
                                             k.layers.Dense(40, activation="relu"),
                                             k.layers.Dense(20, activation="relu"),
                                             k.layers.Dense(10, activation="relu"),
-                                            k.layers.Dense(units=5, activation='softmax')])
+                                            k.layers.Dense(units=output_categories, activation='softmax')])
 
     def train(self, training_file, output_weights, load_weights=False, input_weights='',
               optimizer='adam', loss='categorical_crossentropy', epochs=100,
@@ -47,8 +75,9 @@ class NNModel:
 
         # Normalization.
         df['Elevation'] = df['Elevation'].div(90)
-        df['CNo'] = df['CNo'] - 20
-        df['CNo'] = df['CNo'].div(40)
+        if self.scintillation_type == 'S4':
+            df['CNo'] = df['CNo'] - 20
+            df['CNo'] = df['CNo'].div(40)
 
         # Formatting.
         X = df.drop("y", axis=1)
@@ -88,7 +117,38 @@ class NNModel:
 
 
 # Run ML.
-def run_ML(input_file, output_file, weights, prn, date, plot=False, threshold=0, location=''):
+def run_ML(input_file, output_file, weights, prn, date, scintillation_type='S4', threshold=0, location='',
+           show_plot=False, save_plot=False, save_plot_dir=''):
+    """
+    Run the machine learning module.
+
+    :param input_file (str): Input csv file containing the data. For S4 scintillation, the file must contain the
+                             following columns: ['Elevation', 'CNo', 'S4', 'S4 Cor']. For sigma scintillation, the file
+                             must contain the following columns: ['Elevation', '1SecSigma', '3SecSigma', '10SecSigma',
+                             '30SecSigma', '60SecSigma', 'CMC Avg']. The files may contain more columns, which will be
+                             dicarded.
+    :param output_file (str): The name of the output file (including the directory if applicable).
+    :param weights (str): The file containing the neural network weights (h5 file).
+    :param prn (str): The satellite number. E.g. 'G1' for GPS 1 or 'R5' for GLONASS 5.
+    :param date (str): Date in the format yyyymmdd. E.g. '20210205' for February 5th, 2021.
+    :param scintillation_type (str): Either 'S4' (for amplitude) or 'sigma' (for phase) scintillation.
+    :param plot (bool): True if you want to display the plot after running the ML module.
+    :param save_plot (bool): Saves the plot (if True) in the specified save_plot_dir.
+    :param save_plot_dir (str): Directory to save the plot (Only works if save_plot == True).
+    :param threshold (float): The elevation threshold.
+    :param location (str): The location of the receiver. E.g. 'Daytona Beach, FL'
+    :return: Creates the output csv file and plots, identifying scintillation events.
+    """
+    # Validation.
+    if scintillation_type not in ['S4', 'sigma']:
+        raise Exception("The scintillation_type must be either 'S4' or 'Sigma'.")
+
+    # Create neural network model.
+    ML_model = NNModel(scintillation_type)
+
+    # Load weights.
+    ML_model.load_weights(weights)
+
     # Read data.
     DF = pd.read_csv(input_file)
 
@@ -104,56 +164,89 @@ def run_ML(input_file, output_file, weights, prn, date, plot=False, threshold=0,
         # Obtain signal type name.
         signal_type_name = signal_type_names[prn[0]][str(signal_type)]
 
-        # Filter data set for that signal type.
+        # Filter data set for that signal type. Save the filtered dataset into a new variable (DF1), since the original
+        # DF will be used in the following run of the loop.
         DF1 = DF[DF['SigType'] == signal_type]
 
         # Process one period at a time.
+        """
+        When a satellite passes over the receiver more than once during the same day, each range of times at which 
+        the satellite locked to the receiver is a time period. For example, let us say that satellite G1 passes over 
+        the receiver twice in a day; First, between 6AM and 8AM, and then between 8PM and 10PM. The period between 
+        6AM and 8AM is therefore time_period == 1, while the 8PM-10PM corresponds to time_period == 2.
+        """
         start_times, end_times = time_ranges(input_file, threshold=threshold, elev_col_name='Elevation',
                                              times_col_name='GPS TOW')
-        for e, (start_time, end_time) in enumerate(zip(start_times, end_times), 1):
-            # Filter data frame.
+        for time_period, (start_time, end_time) in enumerate(zip(start_times, end_times), 1):
+            # Filter data frame. Save filtered df into a new variable (X).
             X = DF1[DF1['GPS TOW'] >= start_time]
             X = X[X['GPS TOW'] < end_time]
 
-            # Extract columns.
+            # Filter 60 sec sigma errors (values above the normal range are usually related to receiver/computer
+            # errors or multipath). The values must be removed, otherwise, the plots will be useless (since some
+            # erroneous values sometimes are above 1e6).
+            if scintillation_type == 'sigma':
+                X = X[X['60SecSigma'] <= 5]
+
+            # Extract columns (corresponding to the scintillation type).
             GPS_TOW = X['GPS TOW']
-            X = X[['Elevation', 'CNo', 'S4', 'S4 Cor']]
+            if scintillation_type == 'S4':
+                X = X[['Elevation', 'CNo', 'S4', 'S4 Cor']]
+            elif scintillation_type == 'sigma':
+                X = X[['Elevation', '1SecSigma', '3SecSigma', '10SecSigma', '30SecSigma', '60SecSigma', 'CMC Std']]
 
-            # Normalize.
+            # Normalize elevation.
             X['Elevation'] = X['Elevation'].div(90)
-            X['CNo'] = X['CNo'] - 20
-            X['CNo'] = X['CNo'].div(40)
 
-            # Create neural network model.
-            ML_model = NNModel()
-            ML_model.load_weights(weights)
+            # Normalize carrier to noise ratio (for s4 scintillation only).
+            if scintillation_type == 'S4':
+                X['CNo'] = X['CNo'] - 20
+                X['CNo'] = X['CNo'].div(40)
 
-            # Detect scintillation.
-            output = ML_model.detect(np.expand_dims(np.asarray(X).astype('float32'), axis=0))
-            y = [list(o).index(max(list(o))) for o in output]
+            # Detect scintillation (Continue if the data frame is empty or only contains a few data instances <= 10).
+            if len(X) > 10:
+                input_array = np.expand_dims(np.asarray(X).astype('float32'), axis=0)
+                output = ML_model.detect(input_array)
+                y = [list(o).index(max(list(o))) for o in output]
+            else:
+                continue
 
-            # Add GPS TOW and y to the data frame.
-            X['GPS TOW'] = GPS_TOW
-            X['y'] = y
+            # Create a output data frame and add GPS TOW and y to it.
+            DF_out = X.copy()
+            DF_out['GPS TOW'] = GPS_TOW
+            DF_out['y'] = y
 
             # De-normalize the values.
-            X['Elevation'] = X['Elevation'].div(1 / 90)
-            X['CNo'] = X['CNo'].div(1 / 60)
+            DF_out['Elevation'] = DF_out['Elevation'].div(1 / 90)
+            if scintillation_type == 'S4':
+                DF_out['CNo'] = DF_out['CNo'].div(1 / 60)
 
             # Create the output directory if it doesn't exist.
             output_dir = os.path.dirname(output_file)
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-            # Save scintillation events to a new file.
-            new_file = output_file[:-4] + '_{}_{}.csv'.format(signal_type_name, e)
-            X.to_csv(new_file, index=False)
+            # Save scintillation events data frame to a new csv file.
+            new_file = output_file[:-4] + '_{}_{}.csv'.format(signal_type_name, time_period)
+            print('Creating file:', new_file)
+            DF_out.to_csv(new_file, index=False)
 
             # Plot.
-            if plot:
+            if show_plot or save_plot:
                 # Plot.
-                plt = plot_scintillation_detections(new_file, 'S4', prn, threshold, location, signal_type_name, date,
-                                                    time_period=e)
+                graph_type = '60SecSigma' if scintillation_type == 'sigma' else 'S4'
+                sci_plt, graph_name = plot_scintillation_detections(new_file, graph_type, prn, threshold, location,
+                                                                    signal_type_name, date, time_period=time_period)
 
                 # Show plot.
-                plt.show()
+                if show_plot:
+                    sci_plt.show()
+
+                # Save the plot.
+                if save_plot:
+                    # Create the output directory if it does not exist.
+                    if not os.path.exists(save_plot_dir):
+                        os.makedirs(save_plot_dir)
+
+                    # Save the figure.
+                    sci_plt.savefig(save_plot_dir)

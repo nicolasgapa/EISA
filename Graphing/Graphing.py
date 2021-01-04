@@ -80,7 +80,7 @@ def plot_prn(model, prn, shift=0):
     if not os.path.isfile(csv_file):
         return "The following directory does not exist: {}.".format(csv_file)
 
-    # Filter the dataset.
+    # Open the CSV file.
     DF = pd.read_csv(csv_file)
 
     # Apply the elevation threshold.
@@ -199,41 +199,46 @@ def plot_prn(model, prn, shift=0):
 
             # Plot and save the figure. Plot only if the dataframe is not empty.
             x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
-            prn_plot, directory = plot(x_values, y_values, prn, graph_name, title, subtitle, model.output_dir,
-                                       summary_plot=model.summary_plot, legend=model.legend,
-                                       label_prns=model.label_prns, file_type=model.file_type,
-                                       graph_type=model.graph_type, title_font_size=model.title_font_size,
-                                       subtitle_font_size=model.subtitle_font_size, format_type=model.format_type,
-                                       set_x_axis_range=model.set_x_axis_range, set_y_axis_range=model.set_y_axis_range,
-                                       x_axis_start_value=model.x_axis_start_value,
-                                       x_axis_final_value=model.x_axis_final_value,
-                                       y_axis_start_value=model.y_axis_start_value,
-                                       y_axis_final_value=model.y_axis_final_value, vertical_line=model.vertical_line,
-                                       x_value_vertical_line=model.x_value_vertical_line,
-                                       units=model.units[model.graph_type])
-
-            # Print the directory in the command window.
-            print('Saving plot: {}. PRN: {}.'.format(directory, prn))
+            prn_plot = plot(x_values, y_values, prn, title, subtitle, summary_plot=model.summary_plot,
+                            legend=model.legend, label_prns=model.label_prns,
+                            graph_type=model.graph_type, title_font_size=model.title_font_size,
+                            subtitle_font_size=model.subtitle_font_size,
+                            set_x_axis_range=model.set_x_axis_range, set_y_axis_range=model.set_y_axis_range,
+                            x_axis_start_value=model.x_axis_start_value,
+                            x_axis_final_value=model.x_axis_final_value,
+                            y_axis_start_value=model.y_axis_start_value,
+                            y_axis_final_value=model.y_axis_final_value, vertical_line=model.vertical_line,
+                            x_value_vertical_line=model.x_value_vertical_line,
+                            units=model.units[model.graph_type])
 
             # If the summary plot option is NOT selected, save, show and clear the graph.
             if not model.summary_plot:
 
+                # Set the output directory, and create it if it does not exist.
+                directory = model.output_dir + filesep + model.graph_type
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                directory += filesep + graph_name + '.' + model.format_type
+
+                # Print the directory in the command window.
+                print('Saving plot: {}. PRN: {}.'.format(directory, prn))
+
                 # Save the figure.
-                plt.savefig(directory)
+                prn_plot.savefig(directory)
 
                 # Show the plot before clearing (if applicable).
                 if model.show_plots:
-                    plt.show()
+                    prn_plot.show()
 
                 # Clear the plot.
-                plt.clf()
+                prn_plot.clf()
 
         # Break out of the loop if the user chose to plot only one signal per PRN.
         if model.one_plot_per_prn:
             break
 
     # Return Success.
-    return True, 'The plots for PRN {} have been processed.'
+    return True, 'The plots for PRN {} have been processed.'.format(prn)
 
 
 # ----------- GRAPHING ------------ #
@@ -243,7 +248,7 @@ def run_graphing(model, output_dir):
     if model.summary_plot:
         constellation_names = {'G': 'GPS', 'R': 'GLONASS', 'E': 'GALILEO'}
         constellations = [constellation_names[c] for c in list(set([prn[0] for prn in model.PRNs_to_plot]))]
-        print("Summary plot - Constellations: {}.".format(', '.join(constellations)))
+        print("Creating summary plot - Constellations: {}.".format(', '.join(constellations)))
     print('Date (year, month, day): {}, {}, {}'.format(model.date[0], model.date[1], model.date[2]))
 
     # Set the output directory.
@@ -281,12 +286,13 @@ def run_graphing(model, output_dir):
                 if not success:
                     print(error_msg)
 
-        # Save the plot.
+        # Obtain the name of the plot.
         graph_name, _, _ = naming(model.PRNs_to_plot[0], None, model.date, file_type=model.file_type,
                                   graph_type=model.graph_type, summary_plot=model.summary_plot,
                                   night_subtraction=model.night_subtraction, vertical_TEC=model.vertical_TEC,
                                   threshold=model.threshold, location=model.location)
 
+        # Save the plot. Create the output directory if it doesn't exist.
         ftype = "TEC" if model.file_type in ["REDTEC", 'RAWTEC'] else "OBS"
         directory = model.output_dir + filesep + "Summary_Plots" + filesep + ftype
         if not os.path.exists(directory):

@@ -748,9 +748,6 @@ class Graphing(wx.Panel):
         if len(self.settings.PRNs_to_plot) == 0:
             wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
         else:
-            # Set working directory to this file's (EISA) directory. Then, change dir to the Graphing folder.
-            os.chdir(self.this_file_dir + filesep + 'Graphing')
-
             # Set the directories.
             self.settings.CSV_dir = self.CSV_dir_btn.GetPath()
             output_dir = self.output_dir_btn.GetPath() + filesep + self.settings.get_date_str()
@@ -1134,7 +1131,7 @@ class ML(wx.Panel):
         self.this_file_dir = str(Path(__file__).resolve().parent)
 
         # Open file containing the previously selected GUI parameters.
-        parameters = np.load(settings)
+        self.parameters = np.load(settings)
 
         # Title.
         title = wx.StaticText(self, label="Ionospheric event detection using Machine Learning")
@@ -1144,13 +1141,13 @@ class ML(wx.Panel):
 
         # Obtain the input CSV file.
         text = wx.StaticText(self, label='Select the CSV file that you want to process:')
-        self.input_file = wx.FilePickerCtrl(self, wx.ID_ANY, parameters[0], u"Select a file:", size=(1000, 20))
+        self.input_file = wx.FilePickerCtrl(self, wx.ID_ANY, self.parameters[0], u"Select a file:", size=(1000, 20))
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer.Add(self.input_file, 0, wx.ALL | wx.CENTER, 5)
 
         # Obtain the output CSV file.
         text = wx.StaticText(self, label='Indicate the desired directory and name of the output file:')
-        self.output_file = wx.FilePickerCtrl(self, wx.ID_ANY, parameters[1], u"", size=(1000, 20))
+        self.output_file = wx.FilePickerCtrl(self, wx.ID_ANY, self.parameters[1], u"", size=(1000, 20))
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer.Add(self.output_file, 0, wx.ALL | wx.CENTER, 5)
 
@@ -1160,15 +1157,15 @@ class ML(wx.Panel):
         self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.S4_scintillation = wx.CheckBox(self, label="Amplitude (S4)")
         self.sigma_scintillation = wx.CheckBox(self, label="Phase (Sigma Phi)")
-        self.S4_scintillation.SetValue(str(parameters[2]) == 'True')
-        self.sigma_scintillation.SetValue(str(parameters[3]) == 'True')
+        self.S4_scintillation.SetValue(str(self.parameters[2]) == 'True')
+        self.sigma_scintillation.SetValue(str(self.parameters[3]) == 'True')
         self.local_sizer.Add(self.S4_scintillation, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.sigma_scintillation, 0, wx.ALL | wx.CENTER, 5)
         self.sizer.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
 
         # Scintillation type (S4 or Sigma Phi).
         self.plot = wx.CheckBox(self, label="Plot")
-        self.plot.SetValue(str(parameters[4]) == 'True')
+        self.plot.SetValue(str(self.parameters[4]) == 'True')
         self.sizer.Add(self.plot, 0, wx.ALL | wx.CENTER, 5)
 
         """
@@ -1184,7 +1181,7 @@ class ML(wx.Panel):
         # Location.
         self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
         text = wx.StaticText(self, label='Location:')
-        self.location_text = wx.TextCtrl(self, value=str(parameters[5]), size=(150, 20))
+        self.location_text = wx.TextCtrl(self, value=str(self.parameters[5]), size=(150, 20))
         self.location_text.SetFocus()
         self.hbox1.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.hbox1.Add(self.location_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
@@ -1193,7 +1190,7 @@ class ML(wx.Panel):
         # PRN.
         self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
         text = wx.StaticText(self, label='PRN name:')
-        self.prn_text = wx.TextCtrl(self, value=str(parameters[6]), size=(150, 20))
+        self.prn_text = wx.TextCtrl(self, value=str(self.parameters[6]), size=(150, 20))
         self.prn_text.SetFocus()
         self.hbox1.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.hbox1.Add(self.prn_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
@@ -1201,7 +1198,8 @@ class ML(wx.Panel):
 
         # Threshold.
         text = wx.StaticText(self, label='Select the elevation threshold:')
-        self.threshold_slider = wx.Slider(self, value=int(parameters[7]), minValue=0, maxValue=90, style=wx.SL_LABELS)
+        self.threshold_slider = wx.Slider(self, value=int(self.parameters[7]), minValue=0, maxValue=90,
+                                          style=wx.SL_LABELS)
         self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer_2.Add(self.threshold_slider, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
 
@@ -1210,9 +1208,9 @@ class ML(wx.Panel):
         self.local_sizer = wx.BoxSizer(wx.HORIZONTAL)
         today = datetime.datetime.now()
         self.year = wx.ComboBox(self, choices=[str(today.year - i) for i in range(0, today.year - 2014)],
-                                value=str(parameters[8]))
-        self.month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)], value=str(parameters[9]))
-        self.day = wx.ComboBox(self, choices=[str(i) for i in range(1, 32)], value=str(parameters[10]))
+                                value=str(self.parameters[8]))
+        self.month = wx.ComboBox(self, choices=[str(13 - i) for i in range(1, 13)], value=str(self.parameters[9]))
+        self.day = wx.ComboBox(self, choices=[str(i) for i in range(1, 32)], value=str(self.parameters[10]))
         self.local_sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.year, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.month, 0, wx.ALL | wx.CENTER, 5)
@@ -1262,13 +1260,12 @@ class ML(wx.Panel):
                 output_file = self.output_file.GetPath()
 
                 # If one part of the date is not set, it must be defined by the code itself (default = today's date).
-                today = datetime.datetime.now()
                 if self.year.GetStringSelection() == "":
-                    self.year.SetStringSelection(str(today.year))
+                    self.year.SetStringSelection(str(self.parameters[8]))
                 if self.month.GetStringSelection() == "":
-                    self.month.SetStringSelection(str(today.month))
+                    self.month.SetStringSelection(str(self.parameters[9]))
                 if self.day.GetStringSelection() == "":
-                    self.day.SetStringSelection(str(today.day))
+                    self.day.SetStringSelection(str(self.parameters[10]))
 
                 # Obtain date.
                 date = [self.year.GetStringSelection(), self.month.GetStringSelection(), self.day.GetStringSelection()]
@@ -1287,14 +1284,16 @@ class ML(wx.Panel):
                     # Process.
                     s4_output_file = output_file[:-4] + '_S4.csv'
                     run_ML(input_file, s4_output_file, 'ML' + filesep + 's4_scintillation.h5', prn, date,
-                           plot=self.plot, threshold=threshold, location=location)
+                           scintillation_type='S4', show_plot=self.plot.IsChecked(), threshold=threshold,
+                           location=location)
 
                 # Sigma Scintillation.
                 if self.sigma_scintillation.IsChecked():
                     # Process.
                     sigma_output_file = output_file[:-4] + '_sigma.csv'
                     run_ML(input_file, sigma_output_file, 'ML' + filesep + 'sigma_scintillation.h5', prn, date,
-                           plot=self.plot, threshold=threshold, location=location)
+                           scintillation_type='sigma', show_plot=self.plot.IsChecked(), threshold=threshold,
+                           location=location)
 
 
 # Main window frame.
