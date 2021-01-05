@@ -243,6 +243,12 @@ def plot_prn(model, prn, shift=0):
 
 # ----------- GRAPHING ------------ #
 def run_graphing(model, output_dir):
+    """
+    Run graphing.
+
+    :param model (GraphSettings): Graph settings model.
+    :param output_dir (str): Output directory.
+    """
     # Print start message to terminal.
     print("\n\n# --- " + model.file_type + ": Plotting Time vs. " + model.graph_type + " --- #")
     if model.summary_plot:
