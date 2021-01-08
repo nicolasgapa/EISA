@@ -5,7 +5,7 @@ Department of Physics and Life Sciences
 
 Code developer: Nicolas Gachancipa
 
-Embry-Riddle Ionospheric Algorithm (EISA) 2.0
+Embry-Riddle Ionospheric Scintillation Algorithm (EISA) 2.0
 Ionospheric and TEC data collector
 
 Last time updated: Spring 2020.
@@ -14,12 +14,14 @@ Last time updated: Spring 2020.
 # Imports.
 from datetime import datetime, timedelta
 from EISA_objects import GraphSettings, ParseSettings
+from gnsscal import date2gpswd
 from Graphing.Graphing import run_graphing
 import os
 import pandas as pd
 from Parsing.Parsing import run_parsing
-from ML.neural_network import run_ML
+from ML.neural_network import run_ML, NNModel
 import shutil
+import textwrap
 import time
 
 cwd = os.getcwd()  # Current working directory.
@@ -41,12 +43,10 @@ def days_before_to_date(days_before):
 
 # ----- Part 1: Parse ----- #
 def parse(days_before, receivers, constellations):
-    print("\n---------------------------------------------------------------------")
     # Run iteratively for every receiver.
     for receiver_name in receivers:
         # Print a message.
-        date = datetime.today() - timedelta(days_before)
-        print("Receiver: ", receiver_name, "  Date: ({}, {}, {})".format(date.year, date.month, date.day))
+        date = (datetime.today() - timedelta(days_before)).date()
 
         # Define PRNs.
         PRNs_to_parse = []
@@ -71,19 +71,32 @@ def parse(days_before, receivers, constellations):
         parameters.PRNs_to_parse = PRNs_to_parse
         parameters.set_time_range = False
 
-        # Parse.
-        run_parsing(parameters, cwd + filesep + "Parsing")
+        # Binary dir and file.
+        binary_file = str(date2gpswd(date)[0]) + '_' + str(date2gpswd(date)[1]) + '_00_' + receiver_name + '.GPS'
+        binary_dir = parameters.binary_dir + filesep + str(date2gpswd(date)[0]) + filesep + binary_file
+
+        # If the binary file exists, parse.
+        if os.path.exists(binary_dir):
+            # Print status to command window.
+            print("\n---------------------------------------------------------------------")
+            print("PART 1: EISA PARSING. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, date.year,
+                                                                                    date.month, date.day))
+
+            # Parse.
+            run_parsing(parameters, cwd + filesep + "Parsing")
+        else:
+            print("The binary file for the following date does not exist: {}. Receiver: {}.".format(binary_dir,
+                                                                                                    receiver_name))
 
 
 # ----- Part 2: Graph ----- #
 def graph(days_before, receivers, constellations, threshold, location):
-    print("\n---------------------------------------------------------------------")
     # Run iteratively for every receiver.
     for receiver_name in receivers:
 
         # Determine the date.
         date = days_before_to_date(days_before)
-        year, month, day = date[:2], date[2:4], date[4:]
+        year, month, day = date[:4], date[4:6], date[6:]
 
         # Set graphing parameters.
         parameters = GraphSettings()
@@ -129,6 +142,10 @@ def graph(days_before, receivers, constellations, threshold, location):
 
         # Continue only if the files of the corresponding date exist.
         if os.path.exists(parameters.CSV_dir + filesep + date):
+
+            # Print status to command window.
+            print("\n---------------------------------------------------------------------")
+            print("PART 2: EISA GRAPHING. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, year, month, day))
 
             # REDUCED SCINTILLATION (REDOBS): Individual plots.
             parameters.file_type = 'REDOBS'
@@ -229,12 +246,13 @@ def graph(days_before, receivers, constellations, threshold, location):
 
 # ----- Part 3: ML ----- #
 def ML_event_detection(days_before, receivers, constellations, threshold, location):
-    print("\n---------------------------------------------------------------------")
     # Run iteratively for every receiver.
     for receiver_name in receivers:
 
         # Determine the date, CSV dir, and GRAPHS dir.
         date = days_before_to_date(days_before)
+        year, month, day = date[:4], date[4:6], date[6:]
+
         CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
             receiver_name)
         graphs_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
@@ -252,27 +270,40 @@ def ML_event_detection(days_before, receivers, constellations, threshold, locati
         # Continue only if the path containing the csv files of the corresponding date exists.
         if os.path.exists(CSV_dir + filesep + date):
 
+            # Print status to command window.
+            print("\n---------------------------------------------------------------------")
+            print("PART 3: EISA ML MODULE. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, year, month, day))
+
+            # Create S4 Neural Network, and load the weights.
+            S4_model = NNModel('S4')
+            S4_model.load_weights('ML' + filesep + 's4_scintillation.h5')
+
+            # Create sigma Neural Network, and load the weights.
+            sigma_model = NNModel('sigma')
+            sigma_model.load_weights('ML' + filesep + 'sigma_scintillation.h5')
+
             # Ionospheric scintillation detection.
             for prn in PRNs_to_process:
                 # Files.
-                input_file = CSV_dir + filesep + date + 'REDOBS_{}_{}.csv'.format(prn, date)
-                output_file = CSV_dir + filesep + date + r'\ML_Detection\REDOBS_{}_{}_ML_Detection'.format(prn, date)
+                input_file = CSV_dir + filesep + date + filesep + 'REDOBS_{}_{}.csv'.format(prn, date)
+                output_file = CSV_dir + filesep + date + filesep + r'\ML_Detection\REDOBS_{}_{}_ML_Detection'.format(
+                    prn, date)
+
+                # Convert date to list format (which is the input format for the run_ML function).
+                date_list = [date[:4], date[4:6], date[6:]]
+
+                # Directory to the new (ML) plots.
+                graphs_output_dir = graphs_dir + filesep + date + filesep + 'ML'
 
                 # ML Detection: S4 scintillation.
-                run_ML(input_file, output_file, 'ML' + filesep + 's4_scintillation.h5', prn, date,
-                       scintillation_type='S4', save_plot=True,
-                       save_plot_dir=graphs_dir + filesep + 'ML' + filesep + 'Amplitude',
-                       threshold=threshold, location=location)
+                run_ML(input_file, output_file, S4_model, prn, date_list, scintillation_type='S4', save_plot=True,
+                       save_plot_dir=graphs_output_dir + filesep + 'Amplitude', threshold=threshold, location=location,
+                       save_events_only=True)
 
                 # ML Detection: sigma scintillation.
-                run_ML(input_file, output_file, 'ML' + filesep + 'sigma_scintillation.h5', prn, date,
-                       scintillation_type='sigma', save_plot=True,
-                       save_plot_dir=graphs_dir + filesep + 'ML' + filesep + 'Phase', threshold=threshold,
-                       location=location)
-
-        # If the csv files for that day don't exist, print a message.
-        else:
-            print("CSV files for the following date do not exist: {}. Receiver: {}.".format(date, receiver_name))
+                run_ML(input_file, output_file, sigma_model, prn, date_list, scintillation_type='sigma',
+                       save_plot=True, save_plot_dir=graphs_output_dir + filesep + 'Phase', threshold=threshold,
+                       location=location, save_events_only=True)
 
 
 # ----- Part 4: Upload ----- #
@@ -283,6 +314,19 @@ def run_EISA(parameters='EISA_parameters.csv'):
     # Get times.
     now = datetime.today()  # Today's date and time.
     utc_time = datetime.utcnow()  # UTC time.
+
+    # Print command window header.
+    print(textwrap.dedent("""\n
+                          ----------------------------------
+                          EMBRY-RIDDLE AERONAUTICAL UNIVERSITY
+                          Department of Physical Sciences
+                          Space Physics Research Laboratory (SPRL)
+                          Embry-Riddle Ionospheric Scintillation Algorithm (EISA)
+                          Version 2.0
+                          Current local date/time: {}
+                          Current UTC date/time: {}.
+                          ----------------------------------\n
+                          """.format(now, utc_time)))
 
     # Open the settings file.
     DF = pd.read_csv(parameters).values
@@ -296,10 +340,6 @@ def run_EISA(parameters='EISA_parameters.csv'):
     threshold = int(DF[10][0])
     location = str(DF[12][0])
     constellations = [str(i) for i in DF[14] if str(i) != 'nan']
-
-    # Print a message with the current time and date.
-    print("\nCurrent local date/time: ", now)
-    print("Current UTC date/time: {}.".format(utc_time))
 
     # Set the time at which the code will run (the time given by the user).
     if run_now:

@@ -27,8 +27,8 @@ def plot_scintillation_detections(file, graph_type, prn, threshold, location, si
     :param prn (str): The satellite number. E.g. 'G1' for GPS 1 or 'R5' for GLONASS 5.
     :param threshold (float): The elevation threshold.
     :param location (str): The location of the receiver. E.g. 'Daytona Beach, FL'
-    :param signal_type_name:
-    :param date:
+    :param signal_type_name (str): Signal type name. E.g. L1CA, L2Y, L5Q, etc.
+    :param date (list): [year, month, day]
     :param time_period (int): When a satellite passes over the receiver more than once during the same day, each range
                               of times at which the satellite was locked to the receiver is a time period. For example,
                               let us say that satellite G1 passes over the receiver twice in a day. First, between
