@@ -85,8 +85,7 @@ def parse(days_before, receivers, constellations):
             # Parse.
             run_parsing(parameters, cwd + filesep + "Parsing")
         else:
-            print("The binary file for the following date does not exist: {}. Receiver: {}.".format(binary_dir,
-                                                                                                    receiver_name))
+            print("The following binary file does not exist: {}. Receiver: {}.".format(binary_dir, receiver_name))
 
 
 # ----- Part 2: Graph ----- #
@@ -380,6 +379,9 @@ def run_EISA(parameters='EISA_parameters.csv'):
 
         # Compute the time left for the next iteration to occur (in seconds).
         secs = (next_run - now).seconds + 1
+
+        # Print date.
+        print("\n - Processing data for the following date: {}.".format(days_before_to_date(days_before)))
 
         # Parse, plot, process, and upload.
         parse(days_before, receivers, constellations)

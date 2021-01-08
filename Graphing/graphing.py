@@ -254,7 +254,10 @@ def run_graphing(model, output_dir):
     if model.summary_plot:
         constellation_names = {'G': 'GPS', 'R': 'GLONASS', 'E': 'GALILEO'}
         constellations = [constellation_names[c] for c in list(set([prn[0] for prn in model.PRNs_to_plot]))]
+        print("\n\n# --- " + model.file_type + " - Summary plot: Plotting Time vs. " + model.graph_type + " --- #")
         print("Creating summary plot - Constellations: {}.".format(', '.join(constellations)))
+    else:
+        print("\n\n# --- " + model.file_type + ": Plotting Time vs. " + model.graph_type + " --- #")
     print('Date (year, month, day): {}, {}, {}'.format(model.date[0], model.date[1], model.date[2]))
 
     # Set the output directory.
