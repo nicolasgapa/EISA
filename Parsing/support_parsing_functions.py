@@ -21,22 +21,22 @@ import subprocess
 filesep = os.sep
 
 
-def parse_file(binary_dir, output_dir, exe_dir, PRNs_to_parse, week_number, week_day_number, reduced_or_raw='reduced',
+def parse_file(binary_dir, output_dir, exe_dir, prns_to_parse, week_number, week_day_number, reduced_or_raw='reduced',
                time_range=False, start_time=0, end_time=24):
     """
     Function to parse a binary file and obtain CSV files.
 
-    :param binary_dir (str): Input (binary) file, including directory.
-    :param output_dir (str): Output directory, where the CSV files will be saved.
-    :param exe_dir (str): Directory to where the C++ and .exe parsing files are located (not including the name of the
+    :param binary_dir: (str) Input (binary) file, including directory.
+    :param output_dir: (str) Output directory, where the CSV files will be saved.
+    :param exe_dir: (str) Directory to where the C++ and .exe parsing files are located (not including the name of the
                           files).
-    :param PRNs_to_parse (list): List of satellites to parse. For example: [G1, G10, R2, R5, E7, E14].
-    :param week_number (int): GPS Week.
-    :param week_day_number (int): Day of the week (i.e. 0: Monday, 1: Tuesday, ..., 6: Sunday).
-    :param reduced_or_raw (str): Either 'reduced' or 'raw'. Default: 'reduced'.
-    :param time_range (boolean): Parse a specific time range. Default: False.
-    :param start_time (float): If time_range is True, the start time of the time range to parse (in hours). Default: 0.
-    :param end_time (float): If time_range is True, the end time of the time range to parse (in hours). Default: 24.
+    :param prns_to_parse: (list) List of satellites to parse. For example: [G1, G10, R2, R5, E7, E14].
+    :param week_number: (int) GPS Week.
+    :param week_day_number: (int) Day of the week (i.e. 0: Monday, 1: Tuesday, ..., 6: Sunday).
+    :param reduced_or_raw: (str) Either 'reduced' or 'raw'. Default: 'reduced'.
+    :param time_range: (boolean) Parse a specific time range. Default: False.
+    :param start_time: (float) If time_range is True, the start time of the time range to parse (in hours). Default: 0.
+    :param end_time: (float) If time_range is True, the end time of the time range to parse (in hours). Default: 24.
 
     :return: boolean, str: Fist value indicates if the function ran properly (True) or not (False). Second value is
              a msg (string). If the first value is False, the error message indicates what went wrong.
@@ -82,7 +82,7 @@ def parse_file(binary_dir, output_dir, exe_dir, PRNs_to_parse, week_number, week
 
     # Parse the binary file for each of the selected satellites (PRNs). Keep track of the PRNs that are parsed.
     parsed_PRNs = []
-    for satellite in PRNs_to_parse:
+    for satellite in prns_to_parse:
 
         # Obtain the command to run in the exe.
         CSV_name = binary_file + "_" + satellite + ".csv"

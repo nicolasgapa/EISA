@@ -63,7 +63,6 @@ def time_ranges(file, threshold=0, header=0, elev_col_name='Elevation', times_co
     # Find the difference between one row and another.
     filtered_DF['difference'] = [600] + [x - y for x, y in zip(filtered_DF[times_col_name][1:],
                                                                filtered_DF[times_col_name])]
-
     # Start rows (All those rows that have an index difference greater than 600 with respect to the previous row).
     # The difference > 600 indicates that the data was collected at a different time of the day (at least 600 seconds
     # or 10 minutes later), and the satellite crossed the elevation theshold multiple times throughout the day.

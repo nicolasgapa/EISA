@@ -15,21 +15,103 @@ from Graphing.support_graphing_functions import plot, naming
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
 import numpy as np
+import os
 import pandas as pd
+import subprocess
+
+filesep = os.sep
+
+
+def time_ranges_scintillation(file, threshold=1, header=0, scintillation_col_name='y', times_col_name='GPS TOW'):
+    """
+    This function is used to identify the different periods of time in which a satellite's signal is experiencing
+    scintillation. For example, if the signal is experiencing scintillation between 6-9 AM and 3-5PM, the function
+    returns the following arrays: start_times = [6AM, 3PM] and end_times = [9AM, 5PM]. EISA creates one plot per
+    period of time using the arrays returned by this function.
+
+    :param file: (string) Directory to the CSV file (including file name).
+    :param threshold: (float) Threshold. The scintillation column must contain labels specifying if there is a
+                              scintillation event happening. EISA's default labels are: 0 for no scintillation,
+                              1 (or more) for scintillation.
+    :param header: (int) Number of header rows in the CSV file (using Python indexing).
+    :param scintillation_col_name: (string) Name of the column that contains the scintillation labels.
+    :param times_col_name: (string) Name of the column that contains the time steps.
+    :return: start_times (list) and end_times (list): List of times when the satellite crosses the given threshold.
+    """
+
+    # Open the CSV file.
+    DF = pd.read_csv(file, header=header)
+
+    # If the dataset is empty, return two empty lists.
+    if len(DF) == 0:
+        return [], []
+
+    # Filter the data using the given scintillation threshold.
+    filtered_DF = DF[DF[scintillation_col_name] >= threshold]
+    filtered_DF = filtered_DF[[times_col_name, scintillation_col_name]]
+
+    # Find the difference between one row and another.
+    filtered_DF['difference'] = [120] + [x - y for x, y in zip(filtered_DF[times_col_name][1:],
+                                                               filtered_DF[times_col_name])]
+
+    # Start rows (All those rows that have an index difference greater than 600 with respect to the previous row).
+    # The difference > 600 indicates that the data was collected at a different time of the day (at least 600 seconds
+    # or 10 minutes later), and the satellite crossed the elevation theshold multiple times throughout the day.
+    start_rows = filtered_DF[filtered_DF['difference'] > 60]
+    start_rows = start_rows.dropna()
+    start_times = list(start_rows[times_col_name])
+
+    # Identiy the end times.
+    filtered_DF['end difference'] = list(filtered_DF['difference'][1:]) + [120]
+    end_rows = filtered_DF[filtered_DF['end difference'] > 60]
+    end_rows = end_rows.dropna()
+    end_times = list(end_rows[times_col_name])
+
+    # Remove outliers in the data (i.e. when the start and end times are equal).
+    idx_to_remove = sorted([e for e, (x, y) in enumerate(zip(start_times, end_times)) if x - y == 0])[::-1]
+    for i in idx_to_remove:
+        del start_times[i]
+        del end_times[i]
+
+    # Return.
+    return start_times, end_times
+
+
+def high_rate_parsing(reduced_file, output_file, exe_file, binary_file, prn):
+    # Identify the time periods.
+    start_times, end_times = time_ranges_scintillation(reduced_file)
+    print(start_times, end_times)
+
+    # For each time period, parse the raw data.
+    for e, (start_time, end_time) in enumerate(zip(start_times, end_times), 1):
+        # Command.
+        exe_command = prn + " \"" + binary_file + "\" \"" + output_file + "\""
+
+        # Add the times to the command.
+        binary_file_name = os.path.basename(binary_file)
+        week_number, week_day_number = int(binary_file_name[:4]), int(binary_file_name[5])
+        start_time_GPS_TOW = week_day_number * 86400 + start_time
+        end_time_GPS_TOW = week_day_number * 86400 + end_time
+        exe_command = exe_command + " " + str(start_time_GPS_TOW) + " " + str(end_time_GPS_TOW) + " " + str(
+            week_number) + " " + str(week_number)
+
+        # Parse the file by running the command.
+        print(exe_file + ' ' + exe_command)
+        subprocess.call("\"{}\" {}".format(exe_file, exe_command))
 
 
 def plot_scintillation_detections(file, graph_type, prn, threshold, location, signal_type_name, date, time_period=1):
     """
     Function to create a plot with a colorbar indicating if there is a scintillation event present.
 
-    :param file (str): CSV file containing the scintillation data. i.e. it must contain a column 'y' with the labels.
-    :param graph_type (str): One of the following: ['S4', '60SecSigma']
-    :param prn (str): The satellite number. E.g. 'G1' for GPS 1 or 'R5' for GLONASS 5.
-    :param threshold (float): The elevation threshold.
-    :param location (str): The location of the receiver. E.g. 'Daytona Beach, FL'
-    :param signal_type_name (str): Signal type name. E.g. L1CA, L2Y, L5Q, etc.
-    :param date (list): [year, month, day]
-    :param time_period (int): When a satellite passes over the receiver more than once during the same day, each range
+    :param file: (str) CSV file containing the scintillation data. i.e. it must contain a column 'y' with the labels.
+    :param graph_type: (str) One of the following: ['S4', '60SecSigma']
+    :param prn: (str) The satellite number. E.g. 'G1' for GPS 1 or 'R5' for GLONASS 5.
+    :param threshold: (float) The elevation threshold.
+    :param location: (str) The location of the receiver. E.g. 'Daytona Beach, FL'
+    :param signal_type_name: (str) Signal type name. E.g. L1CA, L2Y, L5Q, etc.
+    :param date: (list) [year, month, day]
+    :param time_period: (int) When a satellite passes over the receiver more than once during the same day, each range
                               of times at which the satellite was locked to the receiver is a time period. For example,
                               let us say that satellite G1 passes over the receiver twice in a day. First, between
                               6AM and 8AM, and then between 8PM and 10PM. The period between 6AM and 8AM is therefore

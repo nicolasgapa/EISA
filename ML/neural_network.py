@@ -14,18 +14,18 @@ Neural Networks (NNs)
 from Graphing.support_graphing_functions import time_ranges
 from keras.callbacks import ModelCheckpoint
 from keras.utils import np_utils
+from ML.support_ML_functions import plot_scintillation_detections
 import numpy as np
 import os
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
-from ML.support_ML_functions import plot_scintillation_detections
 
 # Import TensorFlow ('TF_CPP_MIN_LOG_LEVEL' = '3' means no warnings/errors will be printed in the command window.)
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 import tensorflow.keras as k
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 filesep = os.sep  # File separator (Changes between windows, linux and other OS).
 
@@ -124,30 +124,28 @@ class NNModel:
 
 # Run ML.
 def run_ML(input_file, output_file, neural_network_model, prn, date, scintillation_type='S4', threshold=0, location='',
-           show_plot=False, save_plot=False, save_plot_dir='', save_events_only=False):
+           show_plot=False, save_plot=False, save_plot_dir=''):
     """
     Run the machine learning module.
 
-    :param input_file (str): Input csv file containing the data. For S4 scintillation, the file must contain the
+    :param input_file: (str) Input csv file containing the data. For S4 scintillation, the file must contain the
                              following columns: ['Elevation', 'CNo', 'S4', 'S4 Cor']. For sigma scintillation, the file
                              must contain the following columns: ['Elevation', '1SecSigma', '3SecSigma', '10SecSigma',
                              '30SecSigma', '60SecSigma', 'CMC Avg']. The files may contain more columns, which will be
-                             dicarded.
-    :param output_file (str): The name of the output file (including the directory if applicable).
-    :param neural_network_model (NNModel): Neural Network model with H5 weights loaded.
-    :param prn (str): The satellite number. E.g. 'G1' for GPS 1 or 'R5' for GLONASS 5.
-    :param date (str): Date in the format [year, month, day]. E.g. [2021, 2, 5] for February 5th, 2021.
+                             discarded.
+    :param output_file: (str) The name of the output file (including the directory if applicable).
+    :param neural_network_model: (NNModel) Neural Network model with H5 weights loaded.
+    :param prn: (str) The satellite number. E.g. 'G1' for GPS 1 or 'R5' for GLONASS 5.
+    :param date: (str) Date in the format [year, month, day]. E.g. [2021, 2, 5] for February 5th, 2021.
     :param scintillation_type (str): Either 'S4' (for amplitude) or 'sigma' (for phase) scintillation.
     :param plot (bool): True if you want to display the plot after running the ML module.
     :param save_plot (bool): Saves the plot (if True) in the specified save_plot_dir.
     :param save_plot_dir (str): Directory to save the plot (Only works if save_plot == True).
     :param threshold (float): The elevation threshold.
     :param location (str): The location of the receiver. E.g. 'Daytona Beach, FL'
-    :param save_events_only (bool): If True, only CSV files and plots where scintillation events have been detected
-                                    will be saved (regardless of the selection in other parameters). If False, csv
-                                    files and plots will be saved regardless of whether a scintillation event was
-                                    identified or not.
-    :return: Creates the output csv file and plots, identifying scintillation events.
+
+    :return: Creates the output csv file and plots, identifying scintillation events. The function returns a list of
+             all the scintillaiton files that were created.
     """
     # Validation.
     if scintillation_type not in ['S4', 'sigma']:
@@ -161,6 +159,9 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
                          "R": {"1": "L1CA", "3": "L2CA", "4": "L2P"},
                          "E": {"1": "E1", "2": "E5A", "3": "E5B", "4": "AltBOC"}}
     time_period_vars = {1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H', 9: 'I', 10: 'J'}
+
+    # Create a empty folder that will hold the names of the csv files that are created.
+    output_files = []
 
     # Process one signal type at a time.
     signal_types = set(list(DF['SigType']))
@@ -216,7 +217,7 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
             else:
                 continue
 
-            # Create a output data frame and add GPS TOW and y to it.
+            # Create a output data frame and add GPS TOW and scintillation labels (y) to it.
             DF_out = X.copy()
             DF_out['GPS TOW'] = GPS_TOW
             DF_out['y'] = y
@@ -233,10 +234,14 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
 
             # Save scintillation events data frame to a new csv file (Only if scintillation or multi-path events
             # have been identified).
-            if (save_events_only and any(x > 0 for x in map(int, list(set(y))))) or not save_events_only:
-                new_file = output_file[:-4] + '_{}_{}.csv'.format(signal_type_name, time_period_vars[time_period])
-                print('Creating file: {}.  PRN: {}.'.format(new_file, prn))
+            if any(x > 0 for x in map(int, list(set(y)))):
+
+                # Create CSV file. Add the scintillation type, signal type, and time period to the name.
+                new_file = output_file + '_{}_{}_{}.csv'.format(scintillation_type, signal_type_name,
+                                                                time_period_vars[time_period])
+                print('\nCreating file: {}.  PRN: {}.'.format(new_file, prn))
                 DF_out.to_csv(new_file, index=False)
+                output_files.append(new_file)
 
                 # Plot.
                 if show_plot or save_plot:
@@ -261,3 +266,6 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
 
                     # Reset matplotlib plt.
                     sci_plt.clf()
+
+    # Return the names of the created files.
+    return output_files

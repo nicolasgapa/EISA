@@ -26,11 +26,11 @@ filesep = os.sep
 # Functions.
 def plot_prn(model, prn, shift=0):
     """
-    Function to plot the data of a satellite (prn) with the settigs in a given GraphSettings model.
+    Function to plot the data of a satellite (prn) with the settings in a given GraphSettings model.
 
-    :param model (GraphSettings): A GraphSettings model. Refere to the EISA_objects file, GraphSettings class.
+    :param model (GraphSettings): A GraphSettings model. Refer to the EISA_objects file, GraphSettings class.
     :param prn (str): The satellite. E.g. G1 for GPS 1, or R5 for GLONASS 5.
-    :return: success (boolean): Whether the plot is created succesfully (True) or not (False).
+    :return: success (boolean): Whether the plot is created successfully (True) or not (False).
              error (str): Error message if success=False. None if success == True.
     """
 

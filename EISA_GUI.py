@@ -15,12 +15,12 @@ Author: Nicolas Gachancipa
 import datetime
 from EISA import run_EISA
 from EISA_objects import GraphSettings, ParseSettings
-from Graphing.Graphing import run_graphing
-from ML.neural_network import run_ML
+from Graphing.graphing import run_graphing
+from ML.neural_network import run_ML, NNModel
 import numpy as np
 import os
 import pandas as pd
-from Parsing.Parsing import run_parsing
+from Parsing.parsing import run_parsing
 from pathlib import Path
 import wx
 
@@ -1279,21 +1279,27 @@ class ML(wx.Panel):
                 np.save(self.this_file_dir + filesep + 'ML' + filesep + 'ML_GUI_parameters.npy', memory_npy,
                         allow_pickle=True)
 
+                # Create S4 Neural Network, and load the weights.
+                S4_model = NNModel('S4')
+                S4_model.load_weights('ML' + filesep + 's4_scintillation.h5')
+
+                # Create sigma Neural Network, and load the weights.
+                sigma_model = NNModel('sigma')
+                sigma_model.load_weights('ML' + filesep + 'sigma_scintillation.h5')
+
                 # S4 Scintillation.
                 if self.S4_scintillation.IsChecked():
                     # Process.
                     s4_output_file = output_file[:-4] + '_S4.csv'
-                    run_ML(input_file, s4_output_file, 'ML' + filesep + 's4_scintillation.h5', prn, date,
-                           scintillation_type='S4', show_plot=self.plot.IsChecked(), threshold=threshold,
-                           location=location)
+                    run_ML(input_file, s4_output_file, S4_model, prn, date, scintillation_type='S4',
+                           show_plot=self.plot.IsChecked(), threshold=threshold, location=location)
 
                 # Sigma Scintillation.
                 if self.sigma_scintillation.IsChecked():
                     # Process.
                     sigma_output_file = output_file[:-4] + '_sigma.csv'
-                    run_ML(input_file, sigma_output_file, 'ML' + filesep + 'sigma_scintillation.h5', prn, date,
-                           scintillation_type='sigma', show_plot=self.plot.IsChecked(), threshold=threshold,
-                           location=location)
+                    run_ML(input_file, sigma_output_file, sigma_model, prn, date, scintillation_type='sigma',
+                           show_plot=self.plot.IsChecked(), threshold=threshold, location=location)
 
 
 # Main window frame.

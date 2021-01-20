@@ -12,14 +12,15 @@ Last time updated: Spring 2020.
 """
 
 # Imports.
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date as date_type
 from EISA_objects import GraphSettings, ParseSettings
 from gnsscal import date2gpswd
-from Graphing.Graphing import run_graphing
+from Graphing.graphing import run_graphing
+from ML.neural_network import run_ML, NNModel
 import os
 import pandas as pd
-from Parsing.Parsing import run_parsing
-from ML.neural_network import run_ML, NNModel
+from Parsing.parsing import run_parsing
+from Parsing.support_parsing_functions import parse_file
 import shutil
 import textwrap
 import time
@@ -30,7 +31,6 @@ filesep = os.sep  # File separator (Changes between windows, linux and other OS)
 
 # Functions.
 def days_before_to_date(days_before):
-    # Run the graphing tool only if the csvfiles exist.
     date = datetime.today() - timedelta(days_before)
     year, month, day = str(date.year), str(date.month), str(date.day)
     if len(month) == 1:
@@ -42,267 +42,274 @@ def days_before_to_date(days_before):
 
 
 # ----- Part 1: Parse ----- #
-def parse(days_before, receivers, constellations):
-    # Run iteratively for every receiver.
-    for receiver_name in receivers:
-        # Print a message.
-        date = (datetime.today() - timedelta(days_before)).date()
+def parse(days_before, receiver_name, constellations):
+    # Print a message.
+    date = (datetime.today() - timedelta(days_before)).date()
 
-        # Define PRNs.
-        PRNs_to_parse = []
-        if 'G' in constellations:
-            PRNs_to_parse.extend(['G' + str(i) for i in range(1, 33)])
-        if 'R' in constellations:
-            PRNs_to_parse.extend(['R' + str(i) for i in range(1, 25)])
-        if 'E' in constellations:
-            PRNs_to_parse.extend(['E' + str(i) for i in range(1, 31)])
+    # Define PRNs.
+    PRNs_to_parse = []
+    if 'G' in constellations:
+        PRNs_to_parse.extend(['G' + str(i) for i in range(1, 33)])
+    if 'R' in constellations:
+        PRNs_to_parse.extend(['R' + str(i) for i in range(1, 25)])
+    if 'E' in constellations:
+        PRNs_to_parse.extend(['E' + str(i) for i in range(1, 31)])
 
-        # Define parsing parameters.
-        parameters = ParseSettings()
-        parameters.binary_dir = os.path.abspath(os.path.join(cwd, os.pardir)) + '\\' + receiver_name
-        parameters.CSV_dir = os.path.abspath(os.path.join(cwd, os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
-            receiver_name)
-        parameters.receiver_name = receiver_name
-        parameters.date_range = False
-        parameters.start_date = [date.year, date.month, date.day]
-        parameters.end_date = [date.year, date.month, date.day]
-        parameters.reduced = True
-        parameters.raw = False
-        parameters.PRNs_to_parse = PRNs_to_parse
-        parameters.set_time_range = False
+    # Define parsing parameters.
+    parameters = ParseSettings()
+    parameters.binary_dir = os.path.abspath(os.path.join(cwd, os.pardir)) + '\\' + receiver_name
+    parameters.CSV_dir = os.path.abspath(os.path.join(cwd, os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
+        receiver_name)
+    parameters.receiver_name = receiver_name
+    parameters.date_range = False
+    parameters.start_date = [date.year, date.month, date.day]
+    parameters.end_date = [date.year, date.month, date.day]
+    parameters.reduced = True
+    parameters.raw = False
+    parameters.PRNs_to_parse = PRNs_to_parse
+    parameters.set_time_range = False
 
-        # Binary dir and file.
-        binary_file = str(date2gpswd(date)[0]) + '_' + str(date2gpswd(date)[1]) + '_00_' + receiver_name + '.GPS'
-        binary_dir = parameters.binary_dir + filesep + str(date2gpswd(date)[0]) + filesep + binary_file
+    # Binary dir and file.
+    binary_file = str(date2gpswd(date)[0]) + '_' + str(date2gpswd(date)[1]) + '_00_' + receiver_name + '.GPS'
+    binary_dir = parameters.binary_dir + filesep + str(date2gpswd(date)[0]) + filesep + binary_file
 
-        # If the binary file exists, parse.
-        if os.path.exists(binary_dir):
-            # Print status to command window.
-            print("\n---------------------------------------------------------------------")
-            print("PART 1: EISA PARSING. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, date.year,
-                                                                                    date.month, date.day))
+    # If the binary file exists, parse.
+    if os.path.exists(binary_dir):
+        # Print status to command window.
+        print("\n---------------------------------------------------------------------")
+        print("PART 1: EISA PARSING. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, date.year,
+                                                                                date.month, date.day))
 
-            # Parse.
-            run_parsing(parameters, cwd + filesep + "Parsing")
-        else:
-            print("The following binary file does not exist: {}. Receiver: {}.".format(binary_dir, receiver_name))
+        # Parse.
+        run_parsing(parameters, cwd + filesep + "Parsing")
+    else:
+        print("The following binary file does not exist: {}. Receiver: {}.".format(binary_dir, receiver_name))
 
 
 # ----- Part 2: Graph ----- #
-def graph(days_before, receivers, constellations, threshold, location):
-    # Run iteratively for every receiver.
-    for receiver_name in receivers:
+def graph(days_before, receiver_name, constellations, threshold, location):
+    # Determine the date.
+    date = days_before_to_date(days_before)
+    year, month, day = date[:4], date[4:6], date[6:]
 
-        # Determine the date.
-        date = days_before_to_date(days_before)
-        year, month, day = date[:4], date[4:6], date[6:]
+    # Set graphing parameters.
+    parameters = GraphSettings()
+    parameters.CSV_dir = os.path.abspath(
+        os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(receiver_name)
+    parameters.date = [year, month, day]
+    parameters.threshold = threshold
 
-        # Set graphing parameters.
-        parameters = GraphSettings()
-        parameters.CSV_dir = os.path.abspath(
-            os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(receiver_name)
-        parameters.date = [year, month, day]
-        parameters.threshold = threshold
+    # Other plot options.
+    parameters.location = location
+    parameters.summary_plot = False
+    parameters.TEC_detrending = False
+    parameters.night_subtraction = False
+    parameters.vertical_TEC = False
+    parameters.one_plot_per_prn = True
 
-        # Other plot options.
-        parameters.location = location
-        parameters.summary_plot = False
-        parameters.TEC_detrending = False
-        parameters.night_subtraction = False
-        parameters.vertical_TEC = False
-        parameters.one_plot_per_prn = True
+    # Plot visual settings.
+    parameters.set_x_axis_range = False
+    parameters.set_y_axis_range = False
+    parameters.vertical_line = False
+    parameters.label_prns = False
+    parameters.legend = False
+    parameters.format_type = 'png'
+    parameters.show_plots = False
 
-        # Plot visual settings.
-        parameters.set_x_axis_range = False
-        parameters.set_y_axis_range = False
-        parameters.vertical_line = False
-        parameters.label_prns = False
-        parameters.legend = False
-        parameters.format_type = 'png'
-        parameters.show_plots = False
+    # Define output directory, with date.
+    output_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
+        receiver_name)
+    output_dir += filesep + parameters.get_date_str()
 
-        # Define output directory, with date.
-        output_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
-            receiver_name)
-        output_dir += filesep + parameters.get_date_str()
+    # Define PRNs.
+    PRNs_to_plot = []
+    if 'G' in constellations:
+        PRNs_to_plot.extend(['G' + str(i) for i in range(1, 33)])
+    if 'R' in constellations:
+        PRNs_to_plot.extend(['R' + str(i) for i in range(1, 25)])
+    if 'E' in constellations:
+        PRNs_to_plot.extend(['E' + str(i) for i in range(1, 31)])
+    GPS_satellites = [prn for prn in PRNs_to_plot if prn[0] == 'G']
+    GLONASS_satellites = [prn for prn in PRNs_to_plot if prn[0] == 'R']
+    GALILEO_satellites = [prn for prn in PRNs_to_plot if prn[0] == 'E']
+    parameters.PRNs_to_plot = PRNs_to_plot
 
-        # Define PRNs.
-        PRNs_to_plot = []
-        if 'G' in constellations:
-            PRNs_to_plot.extend(['G' + str(i) for i in range(1, 33)])
-        if 'R' in constellations:
-            PRNs_to_plot.extend(['R' + str(i) for i in range(1, 25)])
-        if 'E' in constellations:
-            PRNs_to_plot.extend(['E' + str(i) for i in range(1, 31)])
-        GPS_satellites = [prn for prn in PRNs_to_plot if prn[0] == 'G']
-        GLONASS_satellites = [prn for prn in PRNs_to_plot if prn[0] == 'R']
-        GALILEO_satellites = [prn for prn in PRNs_to_plot if prn[0] == 'E']
-        parameters.PRNs_to_plot = PRNs_to_plot
+    # Continue only if the files of the corresponding date exist.
+    if os.path.exists(parameters.CSV_dir + filesep + date):
 
-        # Continue only if the files of the corresponding date exist.
-        if os.path.exists(parameters.CSV_dir + filesep + date):
+        # Print status to command window.
+        print("\n---------------------------------------------------------------------")
+        print("PART 2: EISA GRAPHING. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, year, month, day))
 
-            # Print status to command window.
-            print("\n---------------------------------------------------------------------")
-            print("PART 2: EISA GRAPHING. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, year, month, day))
+        # REDUCED SCINTILLATION (REDOBS): Individual plots.
+        parameters.file_type = 'REDOBS'
+        for graph_type in parameters.graph_types_REDOBS:
 
-            # REDUCED SCINTILLATION (REDOBS): Individual plots.
-            parameters.file_type = 'REDOBS'
-            for graph_type in parameters.graph_types_REDOBS:
+            # Define the file type and parameters.
+            parameters.graph_type = graph_type
+            parameters.one_plot_per_prn = False
 
-                # Define the file type and parameters.
+            # Define the y axis range.
+            if graph_type in parameters.scintillation_types:
+                parameters.set_y_axis_range = True
+                parameters.y_axis_start_value = 0
+                parameters.y_axis_end_value = 0.8
+            else:
+                parameters.set_y_axis_range = False
+
+            # Plot.
+            run_graphing(parameters, output_dir)
+
+        # Scintillation summary plots. Save them to a different folder.
+        parameters.summary_plot = True
+        for graph_type in ['Elevation'] + parameters.scintillation_types:
+
+            # Create a summary plot per constellation.
+            for satellites in [GPS_satellites, GLONASS_satellites, GALILEO_satellites]:
+
+                # Define file type and parameters.
+                parameters.PRNs_to_plot = satellites
                 parameters.graph_type = graph_type
-                parameters.one_plot_per_prn = False
+                parameters.one_plot_per_prn = True
+                parameters.label_prns = True
 
                 # Define the y axis range.
                 if graph_type in parameters.scintillation_types:
                     parameters.set_y_axis_range = True
                     parameters.y_axis_start_value = 0
                     parameters.y_axis_end_value = 0.8
+                    parameters.label_prns = False
                 else:
                     parameters.set_y_axis_range = False
+                    parameters.label_prns = True
 
                 # Plot.
                 run_graphing(parameters, output_dir)
 
-            # Scintillation summary plots. Save them to a different folder.
-            parameters.summary_plot = True
-            for graph_type in ['Elevation'] + parameters.scintillation_types:
+        # REDUCED TOTAL ELECTRON CONTENT (REDTEC)
+        parameters.file_type = 'REDTEC'
+        parameters.summary_plot = False
+        for graph_type in parameters.graph_types_REDTEC[2:]:
+            # Set parameters.
+            parameters.graph_type = graph_type
+            parameters.set_y_axis_range = False
+            parameters.one_plot_per_prn = False
+            parameters.label_prns = False
 
-                # Create a summary plot per constellation.
-                for satellites in [GPS_satellites, GLONASS_satellites, GALILEO_satellites]:
+            # Plot.
+            run_graphing(parameters, output_dir)
 
-                    # Define file type and parameters.
-                    parameters.PRNs_to_plot = satellites
-                    parameters.graph_type = graph_type
-                    parameters.one_plot_per_prn = True
-                    parameters.label_prns = True
+        # TEC Summary plots. Save them to a different folder.
+        parameters.summary_plot = True
+        for graph_type in ['TEC15', 'TEC30', 'TEC45', 'TECTOW']:
 
-                    # Define the y axis range.
-                    if graph_type in parameters.scintillation_types:
-                        parameters.set_y_axis_range = True
-                        parameters.y_axis_start_value = 0
-                        parameters.y_axis_end_value = 0.8
-                        parameters.label_prns = False
-                    else:
-                        parameters.set_y_axis_range = False
-                        parameters.label_prns = True
-
-                    # Plot.
-                    run_graphing(parameters, output_dir)
-
-            # REDUCED TOTAL ELECTRON CONTENT (REDTEC)
-            parameters.file_type = 'REDTEC'
-            parameters.summary_plot = False
-            for graph_type in parameters.graph_types_REDTEC[2:]:
+            # Create a summary plot per constellation.
+            for satellites in [GPS_satellites, GLONASS_satellites, GALILEO_satellites]:
                 # Set parameters.
+                parameters.PRNs_to_plot = satellites
                 parameters.graph_type = graph_type
-                parameters.set_y_axis_range = False
-                parameters.one_plot_per_prn = False
-                parameters.label_prns = False
+                parameters.label_prns = True
 
-                # Plot.
+                # Normal.
                 run_graphing(parameters, output_dir)
 
-            # TEC Summary plots. Save them to a different folder.
-            parameters.summary_plot = True
-            for graph_type in ['TEC15', 'TEC30', 'TEC45', 'TECTOW']:
+                # Normalized (night subtraction).
+                parameters.night_subtraction = True
+                run_graphing(parameters, output_dir)
 
-                # Create a summary plot per constellation.
-                for satellites in [GPS_satellites, GLONASS_satellites, GALILEO_satellites]:
-                    # Set parameters.
-                    parameters.PRNs_to_plot = satellites
-                    parameters.graph_type = graph_type
-                    parameters.label_prns = True
+                # Vertical TEC.
+                parameters.night_subtraction = False
+                parameters.vertical_TEC = True
+                run_graphing(parameters, output_dir)
 
-                    # Normal.
-                    run_graphing(parameters, output_dir)
+                # Normalized AND vertical TEC.
+                parameters.night_subtraction = True
+                run_graphing(parameters, output_dir)
 
-                    # Normalized (night subtraction).
-                    parameters.night_subtraction = True
-                    run_graphing(parameters, output_dir)
+        # Make a zip file of the graphs folder for that receiver and date. Save it to the graphs folder in
+        # EISA_OUTPUT (include the receiver name in the zip file name).
+        zip_file_name = date + "_" + receiver_name
+        dir_name = cwd + filesep + os.pardir + filesep + "EISA_OUTPUT"
+        dir_name += filesep + receiver_name + filesep + "GRAPHS" + filesep + date
+        shutil.make_archive(dir_name + filesep + os.pardir + filesep + zip_file_name, 'zip', dir_name)
 
-                    # Vertical TEC.
-                    parameters.night_subtraction = False
-                    parameters.vertical_TEC = True
-                    run_graphing(parameters, output_dir)
-
-                    # Normalized AND vertical TEC.
-                    parameters.night_subtraction = True
-                    run_graphing(parameters, output_dir)
-
-            # Make a zip file of the graphs folder for that receiver and date. Save it to the graphs folder in
-            # EISA_OUTPUT (include the receiver name in the zip file name).
-            zip_file_name = date + "_" + receiver_name
-            dir_name = cwd + filesep + os.pardir + filesep + "EISA_OUTPUT"
-            dir_name += filesep + receiver_name + filesep + "GRAPHS" + filesep + date
-            shutil.make_archive(dir_name + filesep + os.pardir + filesep + zip_file_name, 'zip', dir_name)
-
-        # If the csv files for that day don't exist, print a message.
-        else:
-            print("CSV files for the following date do not exist: {}. Receiver: {}.".format(date, receiver_name))
+    # If the csv files for that day don't exist, print a message.
+    else:
+        print("CSV files for the following date do not exist: {}. Receiver: {}.".format(date, receiver_name))
 
 
 # ----- Part 3: ML ----- #
-def ML_event_detection(days_before, receivers, constellations, threshold, location):
-    # Run iteratively for every receiver.
-    for receiver_name in receivers:
+def ML_event_detection(days_before, receiver_name, constellations, threshold, location):
+    # Determine the date, CSV dir, and GRAPHS dir.
+    date = days_before_to_date(days_before)
+    year, month, day = date[:4], date[4:6], date[6:]
 
-        # Determine the date, CSV dir, and GRAPHS dir.
-        date = days_before_to_date(days_before)
-        year, month, day = date[:4], date[4:6], date[6:]
+    binary_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\{}'.format(receiver_name)
+    CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
+        receiver_name)
+    graphs_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
+        receiver_name)
 
-        CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
-            receiver_name)
-        graphs_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
-            receiver_name)
+    # Define PRNs.
+    PRNs_to_process = []
+    if 'G' in constellations:
+        PRNs_to_process.extend(['G' + str(i) for i in range(1, 33)])
+    if 'R' in constellations:
+        PRNs_to_process.extend(['R' + str(i) for i in range(1, 25)])
+    if 'E' in constellations:
+        PRNs_to_process.extend(['E' + str(i) for i in range(1, 31)])
 
-        # Define PRNs.
-        PRNs_to_process = []
-        if 'G' in constellations:
-            PRNs_to_process.extend(['G' + str(i) for i in range(1, 33)])
-        if 'R' in constellations:
-            PRNs_to_process.extend(['R' + str(i) for i in range(1, 25)])
-        if 'E' in constellations:
-            PRNs_to_process.extend(['E' + str(i) for i in range(1, 31)])
+    # Continue only if the path containing the csv files of the corresponding date exists.
+    if os.path.exists(CSV_dir + filesep + date):
 
-        # Continue only if the path containing the csv files of the corresponding date exists.
-        if os.path.exists(CSV_dir + filesep + date):
+        # Print status to command window.
+        print("\n---------------------------------------------------------------------")
+        print("PART 3: EISA ML MODULE. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, year, month, day))
 
-            # Print status to command window.
-            print("\n---------------------------------------------------------------------")
-            print("PART 3: EISA ML MODULE. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, year, month, day))
+        # Create S4 Neural Network, and load the weights.
+        S4_model = NNModel('S4')
+        S4_model.load_weights('ML' + filesep + 's4_scintillation.h5')
 
-            # Create S4 Neural Network, and load the weights.
-            S4_model = NNModel('S4')
-            S4_model.load_weights('ML' + filesep + 's4_scintillation.h5')
+        # Create sigma Neural Network, and load the weights.
+        sigma_model = NNModel('sigma')
+        sigma_model.load_weights('ML' + filesep + 'sigma_scintillation.h5')
 
-            # Create sigma Neural Network, and load the weights.
-            sigma_model = NNModel('sigma')
-            sigma_model.load_weights('ML' + filesep + 'sigma_scintillation.h5')
+        # Identify binary file name.
+        day = date_type(int(year), int(month), int(day))
+        week_number, week_day_number = int(date2gpswd(day)[0]), int(date2gpswd(day)[1])
+        binary_file_name = "{}_{}_00_{}.GPS".format(str(week_number), str(week_day_number), receiver_name)
+        binary_file = binary_dir + filesep + str(week_number) + filesep + binary_file_name
 
-            # Ionospheric scintillation detection.
-            for prn in PRNs_to_process:
-                # Files.
-                input_file = CSV_dir + filesep + date + filesep + 'REDOBS_{}_{}.csv'.format(prn, date)
-                output_file = CSV_dir + filesep + date + filesep + r'\ML_Detection\REDOBS_{}_{}_ML_Detection'.format(
-                    prn, date)
+        # Ionospheric scintillation detection.
+        for prn in PRNs_to_process:
+            # Files.
+            input_file = CSV_dir + filesep + date + filesep + 'REDOBS_{}_{}.csv'.format(prn, date)
+            output_file = CSV_dir + filesep + date + filesep + r'\ML_Detection\REDOBS_{}_{}_ML'.format(
+                prn, date)
 
-                # Convert date to list format (which is the input format for the run_ML function).
-                date_list = [date[:4], date[4:6], date[6:]]
+            # Convert date to list format (which is the input format for the run_ML function).
+            date_list = [date[:4], date[4:6], date[6:]]
 
-                # Directory to the new (ML) plots.
-                graphs_output_dir = graphs_dir + filesep + date + filesep + 'ML'
+            # Directory to the new (ML) plots.
+            graphs_output_dir = graphs_dir + filesep + date + filesep + 'ML'
 
-                # ML Detection: S4 scintillation.
-                run_ML(input_file, output_file, S4_model, prn, date_list, scintillation_type='S4', save_plot=True,
-                       save_plot_dir=graphs_output_dir + filesep + 'Amplitude', threshold=threshold, location=location,
-                       save_events_only=True)
+            # ML Detection: S4 scintillation.
+            print('\n ----- Ionospheric Scintillation Event Detection (ML Module). Date: {} -----'.format(date))
+            output_files_s4 = run_ML(input_file, output_file, S4_model, prn, date_list, scintillation_type='S4',
+                                     save_plot=True, save_plot_dir=graphs_output_dir + filesep + 'Amplitude',
+                                     threshold=threshold, location=location)
 
-                # ML Detection: sigma scintillation.
-                run_ML(input_file, output_file, sigma_model, prn, date_list, scintillation_type='sigma',
-                       save_plot=True, save_plot_dir=graphs_output_dir + filesep + 'Phase', threshold=threshold,
-                       location=location, save_events_only=True)
+            # ML Detection: sigma scintillation.
+            output_files_sigma = run_ML(input_file, output_file, sigma_model, prn, date_list,
+                                        scintillation_type='sigma', save_plot=True,
+                                        save_plot_dir=graphs_output_dir + filesep + 'Phase', threshold=threshold,
+                                        location=location)
+
+            # Raw data period processing.
+            output_files = output_files_s4 + output_files_sigma
+            if output_files:
+                _, _ = parse_file(binary_file, CSV_dir, os.getcwd() + filesep + 'parsing', [prn],
+                                  week_number, week_day_number, reduced_or_raw='raw')
 
 
 # ----- Part 4: Upload ----- #
@@ -383,10 +390,15 @@ def run_EISA(parameters='EISA_parameters.csv'):
         # Print date.
         print("\n - Processing data for the following date: {}.".format(days_before_to_date(days_before)))
 
-        # Parse, plot, process, and upload.
-        parse(days_before, receivers, constellations)
-        graph(days_before, receivers, constellations, threshold, location)
-        ML_event_detection(days_before, receivers, constellations, threshold, location)
+        # Run iteratively for every receiver.
+        for receiver in receivers:
+            # Parse, plot, process, and upload.
+            # parse(days_before, receiver, constellations)
+            # graph(days_before, receiver, constellations, threshold, location)
+            ML_event_detection(days_before, receiver, constellations, threshold, location)
+            break
+
+        break
 
         # If days_before is larger than 1, process the next day immediately. Otherwise, start a timer to run
         # the code again tomorrow. Note: even if the user does not select the 'run now' option, EISA will run
