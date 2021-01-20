@@ -239,7 +239,7 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
                 # Create CSV file. Add the scintillation type, signal type, and time period to the name.
                 new_file = output_file + '_{}_{}_{}.csv'.format(scintillation_type, signal_type_name,
                                                                 time_period_vars[time_period])
-                print('\nCreating file: {}.  PRN: {}.'.format(new_file, prn))
+                print('Creating file: {}.  PRN: {}.'.format(new_file, prn))
                 DF_out.to_csv(new_file, index=False)
                 output_files.append(new_file)
 
@@ -249,7 +249,6 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
                     graph_type = '60SecSigma' if scintillation_type == 'sigma' else 'S4'
                     sci_plt, graph_name = plot_scintillation_detections(new_file, graph_type, prn, threshold, location,
                                                                         signal_type_name, date, time_period=time_period)
-                    print('Saving plot: {}.png'.format(graph_name))
 
                     # Show plot.
                     if show_plot:
@@ -262,6 +261,7 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
                             os.makedirs(save_plot_dir)
 
                         # Save the figure.
+                        print('Saving plot: {}.png'.format(save_plot_dir + filesep + graph_name + '.png'))
                         sci_plt.savefig(save_plot_dir + filesep + graph_name + '.png')
 
                     # Reset matplotlib plt.

@@ -22,7 +22,7 @@ filesep = os.sep
 
 
 def parse_file(binary_dir, output_dir, exe_dir, prns_to_parse, week_number, week_day_number, reduced_or_raw='reduced',
-               time_range=False, start_time=0, end_time=24):
+               time_range=False, start_time=0, end_time=24, print_header=True):
     """
     Function to parse a binary file and obtain CSV files.
 
@@ -75,10 +75,11 @@ def parse_file(binary_dir, output_dir, exe_dir, prns_to_parse, week_number, week
     date_str = str(year) + str(month) + str(day)
 
     # Print intro log.
-    if reduced_or_raw == 'reduced':
-        print('\n ----- GPStation-6 Reduced Observation Post-Processing Utility. Date: {} -----'.format(date))
-    elif reduced_or_raw == 'raw':
-        print('\n ----- GPStation-6 Raw Observation Post-Processing Utility. Date: {} -----'.format(date))
+    if print_header:
+        if reduced_or_raw == 'reduced':
+            print('\n ----- GPStation-6 Reduced Observation Post-Processing Utility. Date: {} -----'.format(date))
+        elif reduced_or_raw == 'raw':
+            print('\n ----- GPStation-6 Raw Observation Post-Processing Utility. Date: {} -----'.format(date))
 
     # Parse the binary file for each of the selected satellites (PRNs). Keep track of the PRNs that are parsed.
     parsed_PRNs = []

@@ -294,7 +294,9 @@ def ML_event_detection(days_before, receiver_name, constellations, threshold, lo
             graphs_output_dir = graphs_dir + filesep + date + filesep + 'ML'
 
             # ML Detection: S4 scintillation.
-            print('\n ----- Ionospheric Scintillation Event Detection (ML Module). Date: {} -----'.format(date))
+            print(
+                '\n ----- Ionospheric Scintillation Event Detection (ML Module). Date: {}. PRN: {}. -----'.format(date,
+                                                                                                                  prn))
             output_files_s4 = run_ML(input_file, output_file, S4_model, prn, date_list, scintillation_type='S4',
                                      save_plot=True, save_plot_dir=graphs_output_dir + filesep + 'Amplitude',
                                      threshold=threshold, location=location)
@@ -309,7 +311,7 @@ def ML_event_detection(days_before, receiver_name, constellations, threshold, lo
             output_files = output_files_s4 + output_files_sigma
             if output_files:
                 _, _ = parse_file(binary_file, CSV_dir, os.getcwd() + filesep + 'parsing', [prn],
-                                  week_number, week_day_number, reduced_or_raw='raw')
+                                  week_number, week_day_number, reduced_or_raw='raw', print_header=False)
 
 
 # ----- Part 4: Upload ----- #
@@ -388,17 +390,14 @@ def run_EISA(parameters='EISA_parameters.csv'):
         secs = (next_run - now).seconds + 1
 
         # Print date.
-        print("\n - Processing data for the following date: {}.".format(days_before_to_date(days_before)))
+        print("\n - Processing the data of the following date: {}.".format(days_before_to_date(days_before)))
 
         # Run iteratively for every receiver.
         for receiver in receivers:
             # Parse, plot, process, and upload.
-            # parse(days_before, receiver, constellations)
-            # graph(days_before, receiver, constellations, threshold, location)
+            parse(days_before, receiver, constellations)
+            graph(days_before, receiver, constellations, threshold, location)
             ML_event_detection(days_before, receiver, constellations, threshold, location)
-            break
-
-        break
 
         # If days_before is larger than 1, process the next day immediately. Otherwise, start a timer to run
         # the code again tomorrow. Note: even if the user does not select the 'run now' option, EISA will run
