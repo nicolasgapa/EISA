@@ -56,12 +56,12 @@ def time_ranges_scintillation(file, threshold=1, header=0, scintillation_col_nam
 
     # Start rows (All those rows that have an index difference greater than 600 with respect to the previous row).
     # The difference > 600 indicates that the data was collected at a different time of the day (at least 600 seconds
-    # or 10 minutes later), and the satellite crossed the elevation theshold multiple times throughout the day.
+    # or 10 minutes later), and the satellite crossed the elevation threshold multiple times throughout the day.
     start_rows = filtered_DF[filtered_DF['difference'] > 60]
     start_rows = start_rows.dropna()
     start_times = list(start_rows[times_col_name])
 
-    # Identiy the end times.
+    # Identify the end times.
     filtered_DF['end difference'] = list(filtered_DF['difference'][1:]) + [120]
     end_rows = filtered_DF[filtered_DF['end difference'] > 60]
     end_rows = end_rows.dropna()

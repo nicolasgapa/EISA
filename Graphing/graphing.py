@@ -197,8 +197,13 @@ def plot_prn(model, prn, shift=0):
                                                  vertical_TEC=model.vertical_TEC, threshold=model.threshold,
                                                  location=model.location)
 
-            # Plot and save the figure. Plot only if the dataframe is not empty.
+            # Plot and save the figure. Plot only if the dataframe is not empty. If the plot is a raw data plot, reduce
+            # the line width.
             x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
+            if model.file_type in ['RAWTEC', 'RAWOBS', 'DETOBS']:
+                reduce_line_width = True
+            else:
+                reduce_line_width = False
             prn_plot = plot(x_values, y_values, prn, title, subtitle, summary_plot=model.summary_plot,
                             legend=model.legend, label_prns=model.label_prns,
                             graph_type=model.graph_type, title_font_size=model.title_font_size,
@@ -209,7 +214,7 @@ def plot_prn(model, prn, shift=0):
                             y_axis_start_value=model.y_axis_start_value,
                             y_axis_final_value=model.y_axis_final_value, vertical_line=model.vertical_line,
                             x_value_vertical_line=model.x_value_vertical_line,
-                            units=model.units[model.graph_type])
+                            units=model.units[model.graph_type], reduce_line_width=reduce_line_width)
 
             # If the summary plot option is NOT selected, save, show and clear the graph.
             if not model.summary_plot:
@@ -246,11 +251,10 @@ def run_graphing(model, output_dir):
     """
     Run graphing.
 
-    :param model (GraphSettings): Graph settings model.
-    :param output_dir (str): Output directory.
+    :param model: (GraphSettings) Graph settings model.
+    :param output_dir: (str) Output directory.
     """
     # Print start message to terminal.
-    print("\n\n# --- " + model.file_type + ": Plotting Time vs. " + model.graph_type + " --- #")
     if model.summary_plot:
         constellation_names = {'G': 'GPS', 'R': 'GLONASS', 'E': 'GALILEO'}
         constellations = [constellation_names[c] for c in list(set([prn[0] for prn in model.PRNs_to_plot]))]

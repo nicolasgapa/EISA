@@ -1,5 +1,6 @@
 """
 
+2021
 Embry-Riddle Ionospheric Scintillation Algorithm (EISA)
 Version 2
 Support functions (Parsing)
@@ -37,6 +38,7 @@ def parse_file(binary_dir, output_dir, exe_dir, prns_to_parse, week_number, week
     :param time_range: (boolean) Parse a specific time range. Default: False.
     :param start_time: (float) If time_range is True, the start time of the time range to parse (in hours). Default: 0.
     :param end_time: (float) If time_range is True, the end time of the time range to parse (in hours). Default: 24.
+    :param print_header: (boolean) Print header of the parseraw and parsereduced data.
 
     :return: boolean, str: Fist value indicates if the function ran properly (True) or not (False). Second value is
              a msg (string). If the first value is False, the error message indicates what went wrong.
