@@ -28,8 +28,9 @@ def plot_prn(model, prn, shift=0):
     """
     Function to plot the data of a satellite (prn) with the settings in a given GraphSettings model.
 
-    :param model (GraphSettings): A GraphSettings model. Refer to the EISA_objects file, GraphSettings class.
-    :param prn (str): The satellite. E.g. G1 for GPS 1, or R5 for GLONASS 5.
+    :param model: (GraphSettings) A GraphSettings model. Refer to the EISA_objects file, GraphSettings class.
+    :param prn: (str) The satellite. E.g. G1 for GPS 1, or R5 for GLONASS 5.
+    :param shift: (int) Vertical shift (Useful for summary plots).
     :return: success (boolean): Whether the plot is created successfully (True) or not (False).
              error (str): Error message if success=False. None if success == True.
     """
@@ -73,7 +74,7 @@ def plot_prn(model, prn, shift=0):
 
     Section: Data pre-processing.
     Purpose: Filter the dataset to only include the corresponding columns: Time, elevation, signal type, and the 
-             graph type selected by the user (the paramater that will be plotted, e.g. Azimuth or TEC15). 
+             graph type selected by the user (the parameter that will be plotted, e.g. Azimuth or TEC15). 
 
     """
     # Import and read the csv (if it exists).
@@ -268,6 +269,7 @@ def run_graphing(model, output_dir):
     model.output_dir = output_dir
 
     # Generate plots for the given date and PRNs.
+    unsuccessful_prns = []
     for prn in model.PRNs_to_plot:
 
         # Plot.
@@ -275,7 +277,10 @@ def run_graphing(model, output_dir):
 
         # Show a message if there is an error.
         if not success:
-            print(error_msg)
+            if not model.summary_plot:
+                print(error_msg)
+            else:
+                unsuccessful_prns.append(prn)
 
     # Summary plot post-processing.
     if model.summary_plot:
@@ -290,6 +295,7 @@ def run_graphing(model, output_dir):
             plt.clf()
 
             # Repeat the process with a shift value: Generate plots for the given date and PRNs.
+            unsuccessful_prns = []
             for prn in model.PRNs_to_plot:
 
                 # Plot.
@@ -297,7 +303,14 @@ def run_graphing(model, output_dir):
 
                 # Show a message if there is an error.
                 if not success:
-                    print(error_msg)
+                    unsuccessful_prns.append(prn)
+
+        # Print summary.
+        if unsuccessful_prns:
+            print('The following PRNs were not included in the summary plot, because the CSV files were either '
+                  'empty or all the data was below the elevation threshold: \n {}.'.format(
+                  ','.join(unsuccessful_prns)))
+        print('The following summary plot was created: {}.'.format(model.graph_type))
 
         # Obtain the name of the plot.
         graph_name, _, _ = naming(model.PRNs_to_plot[0], None, model.date, file_type=model.file_type,
@@ -306,8 +319,8 @@ def run_graphing(model, output_dir):
                                   threshold=model.threshold, location=model.location)
 
         # Save the plot. Create the output directory if it doesn't exist.
-        ftype = "TEC" if model.file_type in ["REDTEC", 'RAWTEC'] else "OBS"
-        directory = model.output_dir + filesep + "Summary_Plots" + filesep + ftype
+        file_type = "TEC" if model.file_type in ["REDTEC", 'RAWTEC'] else "OBS"
+        directory = model.output_dir + filesep + "Summary_Plots" + filesep + file_type
         if not os.path.exists(directory):
             os.makedirs(directory)
         directory += filesep + graph_name + '.' + model.format_type

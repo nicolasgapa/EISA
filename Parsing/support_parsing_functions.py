@@ -115,7 +115,7 @@ def parse_file(binary_dir, output_dir, exe_dir, prns_to_parse, week_number, week
                 # If the DF is empty, print an error msg.
                 if len(DF) == 0:
                     print('The following file (corresponding to satellite {}) was discarded, because it was '
-                          'empty: {}. The file was deleted.'.format(satellite, CSV_name))
+                          'empty: {}. The file was deleted.'.format(satellite, csv_file))
 
                 # Identify the directory where the new csv file will be saved (given by the user).
                 new_csv_file_path = output_dir + filesep + date_str
