@@ -1,5 +1,5 @@
 """
-2021
+2019
 Embry-Riddle Aeronautical University
 Department of Physics and Life Sciences
 
@@ -43,7 +43,7 @@ def days_before_to_date(days_before):
 
 
 # ----- Part 1: Parse ----- #
-def parse(date, receiver_name, constellations):
+def parse(date, receiver_name, constellations, input_folder='', output_folder=''):
     # Print a message.
     date = date_type(int(date[:4]), int(date[4:6]), int(date[6:]))
 
@@ -57,10 +57,9 @@ def parse(date, receiver_name, constellations):
         PRNs_to_parse.extend(['E' + str(i) for i in range(1, 31)])
 
     # Define parsing parameters.
-    parameters = ParseSettings()
-    parameters.binary_dir = os.path.abspath(os.path.join(cwd, os.pardir)) + filesep + receiver_name
-    parameters.CSV_dir = os.path.abspath(
-        os.path.join(cwd, os.pardir)) + filesep + 'EISA_OUTPUT' + filesep + receiver_name + filesep + 'CSV_FILES'
+    parameters = ParseSettings(output_folder=output_folder)
+    parameters.binary_dir = input_folder + filesep + receiver_name
+    parameters.CSV_dir = output_folder + filesep + receiver_name + filesep + 'CSV_FILES'
     parameters.receiver_name = receiver_name
     parameters.date_range = False
     parameters.start_date = [date.year, date.month, date.day]
@@ -88,14 +87,13 @@ def parse(date, receiver_name, constellations):
 
 
 # ----- Part 2: Graph ----- #
-def graph(date, receiver_name, constellations, threshold, location):
+def graph(date, receiver_name, constellations, threshold, location, output_folder=''):
     # Process the date.
     year, month, day = date[:4], date[4:6], date[6:]
 
     # Set graphing parameters.
     parameters = GraphSettings()
-    parameters.CSV_dir = os.path.abspath(
-        os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(receiver_name)
+    parameters.CSV_dir = output_folder + filesep + receiver_name + filesep + 'CSV_FILES'
     parameters.date = [year, month, day]
     parameters.threshold = threshold
 
@@ -117,8 +115,7 @@ def graph(date, receiver_name, constellations, threshold, location):
     parameters.show_plots = False
 
     # Define output directory, with date.
-    output_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
-        receiver_name)
+    output_dir = output_folder + filesep + receiver_name + filesep + 'GRAPHS'
     output_dir += filesep + parameters.get_date_str()
 
     # Define PRNs.
@@ -227,10 +224,9 @@ def graph(date, receiver_name, constellations, threshold, location):
                 run_graphing(parameters, output_dir)
 
         # Make a zip file of the graphs folder for that receiver and date. Save it to the graphs folder in
-        # EISA_OUTPUT (include the receiver name in the zip file name).
+        # the output folder (include the receiver name in the zip file name).
         zip_file_name = date + "_" + receiver_name
-        dir_name = cwd + filesep + os.pardir + filesep + "EISA_OUTPUT"
-        dir_name += filesep + receiver_name + filesep + "GRAPHS" + filesep + date
+        dir_name = output_folder + filesep + receiver_name + filesep + "GRAPHS" + filesep + date
         shutil.make_archive(dir_name + filesep + os.pardir + filesep + zip_file_name, 'zip', dir_name)
 
     # If the csv files for that day don't exist, print a message.
@@ -239,15 +235,13 @@ def graph(date, receiver_name, constellations, threshold, location):
 
 
 # ----- Part 3: ML ----- #
-def ML_event_detection(date, receiver_name, constellations, threshold, location):
+def ML_event_detection(date, receiver_name, constellations, threshold, location, input_folder='', output_folder=''):
     # Determine the date, CSV dir, and GRAPHS dir.
     year, month, day = date[:4], date[4:6], date[6:]
 
-    binary_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\{}'.format(receiver_name)
-    CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
-        receiver_name)
-    graphs_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\GRAPHS'.format(
-        receiver_name)
+    binary_dir = input_folder + filesep + receiver_name
+    CSV_dir = output_folder + filesep + receiver_name + filesep + 'CSV_FILES'
+    graphs_dir = output_folder + filesep + receiver_name + filesep + 'GRAPHS'
 
     # Define PRNs.
     PRNs_to_process = []
@@ -292,61 +286,71 @@ def ML_event_detection(date, receiver_name, constellations, threshold, location)
             # Directory to the new (ML) plots.
             graphs_output_dir = graphs_dir + filesep + date + filesep + 'ML'
 
-            # ML Detection: S4 scintillation.
-            print(
-                '\n ----- Ionospheric Scintillation Event Detection (ML Module). Date: {}. PRN: {}. -----'.format(date,
-                                                                                                                  prn))
-            print('- S4 (Amplitude) scintillation:')
-            output_files_s4 = run_ML(input_file, output_file, S4_model, prn, date_list, scintillation_type='S4',
-                                     save_plot=True, save_plot_dir=graphs_output_dir + filesep + 'Amplitude',
-                                     threshold=threshold, location=location)
-            if not output_files_s4:
-                print('No S4 scintillation was detected in the data corresponding to prn {}.'.format(prn))
+            # Check that the input file exists.
+            if not os.path.isfile(input_file):
+                continue
 
-            # ML Detection: sigma scintillation.
-            print('- Sigma (Phase) scintillation:')
-            output_files_sigma = run_ML(input_file, output_file, sigma_model, prn, date_list,
-                                        scintillation_type='sigma', save_plot=True,
-                                        save_plot_dir=graphs_output_dir + filesep + 'Phase', threshold=threshold,
-                                        location=location)
-            if not output_files_sigma:
-                print('No sigma scintillation was detected in the data corresponding to prn {}.'.format(prn))
+            # ML Detection. Use try except, so that the code continues running even in the case of an error.
+            try:
 
-            # Raw data period processing.
-            output_files = output_files_s4 + output_files_sigma
-            if output_files:
-                print('- High-rate data processing:')
-                _, _ = parse_file(binary_file, CSV_dir, os.getcwd() + filesep + 'parsing', [prn],
-                                  week_number, week_day_number, reduced_or_raw='raw', print_header=False)
+                # ML Detection: S4 scintillation.
+                print(
+                    '\n ----- Ionospheric Scintillation Event Detection (ML Module). Date: {}. PRN: {}. -----'.format(
+                        date, prn))
+                output_files_s4 = run_ML(input_file, output_file, S4_model, prn, date_list, scintillation_type='S4',
+                                         save_plot=True, save_plot_dir=graphs_output_dir + filesep + 'Amplitude',
+                                         threshold=threshold, location=location)
+
+                # ML Detection: sigma scintillation.
+                output_files_sigma = run_ML(input_file, output_file, sigma_model, prn, date_list,
+                                            scintillation_type='sigma', save_plot=True,
+                                            save_plot_dir=graphs_output_dir + filesep + 'Phase', threshold=threshold,
+                                            location=location)
+
+                # Raw data period processing.
+                output_files = output_files_s4 + output_files_sigma
+                if output_files:
+                    success, msg = parse_file(binary_file, CSV_dir, os.getcwd() + filesep + 'parsing', [prn],
+                                              week_number, week_day_number, reduced_or_raw='raw', print_header=False)
+                    if not success:
+                        print(msg)
+                # If no output files were generated, print a message.
+                else:
+                    print('No scintillation event was found for prn {}.'.format(prn))
+
+            # Print exception if an error is raised.
+            except Exception as e:
+                print('Could not process prn {}. The following exception occurred: {}.'.format(prn, e.message))
 
 
 # ----- Part 4: Upload ----- #
-def upload(date, receiver_name):
+def upload(date, receiver_name, output_folder=''):
     """
     This function copies the summary plots that were generated by the 'graph' function to the 'upload' folder. All the
     files inside the 'upload' folder can be then uploaded to the server (when needed) by just copying them to dbwebcat.
 
-    :param date: (str) Date in the yyyymmdd format.
+    :param date: How many days before today.
     :param receiver_name: Receiver name (i.e. RX1).
     :return:
     """
-    # Identify the directory to the plots that will be uploaded.
-    source = cwd + filesep + os.pardir + filesep + "EISA_OUTPUT" + filesep + receiver_name + filesep + \
-             "GRAPHS" + filesep + date + filesep + "Summary_Plots"
+    # Determine the date.
+    year, month, day = date[:4], date[4:6], date[6:]
 
-    # Copy the plots to the UPLOAD folder (located inside EISA_OUTPUT). The folders and files inside 'UPLOAD' are to be
-    # copied to the dbwebcat server so that they can be accessed from the website.
-    destination = cwd + filesep + os.pardir + filesep + "EISA_OUTPUT" + filesep + "UPLOAD" + filesep + date[:4] + \
-                  filesep + date[:6] + filesep + date
-    if os.path.isdir(source):
-        copy_tree(source, destination)
+    # Identify the directory to the plots that will be uploaded.
+    summary_plots_dir = output_folder + filesep + receiver_name + filesep + 'GRAPHS' + filesep + date + filesep + \
+                        "Summary_Plots"
+
+    # COntinue only if the summary plots of that day exist.
+    if os.path.exists(summary_plots_dir):
+        # Print status to command window.
         print("\n---------------------------------------------------------------------")
-        print("PART 4 : EISA UPLOAD. Receiver: {}. Date: ({})\n".format(receiver_name, date))
-        print('The summary plots corresponding to date {} were moved to the upload folder '
-              '{}.'.format(date, destination))
-    else:
-        print('Error: Could not find the summary plots of the following date and receiver: '
-              '{}, {}.'.format(date, receiver_name))
+        print("PART 4: EISA UPLOAD MODULE. Receiver: {}. Date: ({}, {}, {})\n".format(receiver_name, year, month, day))
+
+        # Copy the plots to the UPLOAD folder (located inside the output folder).
+        upload_dir = output_folder + filesep + "UPLOAD" + filesep + year + filesep + date[:6] + filesep + date
+        copy_tree(summary_plots_dir, upload_dir)
+        print('Created the directory: {}.'.format(upload_dir))
+        print('Plots will need to be uploaded manually to the website server.')
 
 
 # ----- run_EISA function ------ #
@@ -380,6 +384,8 @@ def run_EISA(parameters='EISA_parameters.csv'):
     threshold = int(DF[10][0])
     location = str(DF[12][0])
     constellations = [str(i) for i in DF[14] if str(i) != 'nan']
+    input_folder = str(DF[16][0])
+    output_folder = str(DF[18][0])
 
     # Set the time at which the code will run (the time given by the user).
     if run_now:
@@ -428,10 +434,14 @@ def run_EISA(parameters='EISA_parameters.csv'):
         date = days_before_to_date(days_before)
         for receiver in receivers:
             # Parse, plot, process, and upload.
-            # parse(date, receiver, constellations)
-            # graph(date, receiver, constellations, threshold, location)
-            ML_event_detection(date, receiver, constellations, threshold, location)
-            upload(date, receiver)
+            parse(date, receiver, constellations, input_folder=input_folder, output_folder=output_folder)
+            graph(date, receiver, constellations, threshold, location, output_folder=output_folder)
+            ML_event_detection(date, receiver, constellations, threshold, location, input_folder=input_folder,
+                               output_folder=output_folder)
+
+            # Only upload data of the DAB receiver (RX1).
+            if receiver == 'RX1':
+                upload(date, receiver, output_folder=output_folder)
 
         # If days_before is larger than 1, process the next day immediately. Otherwise, start a timer to run
         # the code again tomorrow. Note: even if the user does not select the 'run now' option, EISA will run

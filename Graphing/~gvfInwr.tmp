@@ -28,8 +28,8 @@ def plot_prn(model, prn, shift=0):
     """
     Function to plot the data of a satellite (prn) with the settings in a given GraphSettings model.
 
-    :param model: [GraphSettings] A GraphSettings model. Refer to the EISA_objects file, GraphSettings class.
-    :param prn: [str] The satellite. E.g. G1 for GPS 1, or R5 for GLONASS 5.
+    :param model (GraphSettings): A GraphSettings model. Refer to the EISA_objects file, GraphSettings class.
+    :param prn (str): The satellite. E.g. G1 for GPS 1, or R5 for GLONASS 5.
     :return: success (boolean): Whether the plot is created successfully (True) or not (False).
              error (str): Error message if success=False. None if success == True.
     """
@@ -246,10 +246,11 @@ def run_graphing(model, output_dir):
     """
     Run graphing.
 
-    :param model: [GraphSettings] Graph settings model.
-    :param output_dir: [str] Output directory.
+    :param model (GraphSettings): Graph settings model.
+    :param output_dir (str): Output directory.
     """
     # Print start message to terminal.
+    print("\n\n# --- " + model.file_type + ": Plotting Time vs. " + model.graph_type + " --- #")
     if model.summary_plot:
         constellation_names = {'G': 'GPS', 'R': 'GLONASS', 'E': 'GALILEO'}
         constellations = [constellation_names[c] for c in list(set([prn[0] for prn in model.PRNs_to_plot]))]
@@ -276,7 +277,7 @@ def run_graphing(model, output_dir):
     if model.summary_plot:
 
         # Update y-values for night-subtraction (if selected).
-        if model.night_subtraction and len(plt.gca().get_lines()) > 0:
+        if model.night_subtraction:
 
             # Find the minimum value in the plot.
             min_value = min([min(line.get_ydata()) for line in plt.gca().get_lines()])

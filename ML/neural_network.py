@@ -10,6 +10,11 @@ Machine Learning (ML) for atmospheric data analysis
 Neural Networks (NNs)
 
 """
+# Import TensorFlow ('TF_CPP_MIN_LOG_LEVEL' = '3' means no warnings/errors will be printed in the command window.)
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import tensorflow as tf
+import tensorflow.keras as k
+
 # Imports
 from Graphing.support_graphing_functions import time_ranges
 from keras.callbacks import ModelCheckpoint
@@ -19,11 +24,6 @@ import numpy as np
 import os
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
-
-# Import TensorFlow ('TF_CPP_MIN_LOG_LEVEL' = '3' means no warnings/errors will be printed in the command window.)
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-import tensorflow as tf
-import tensorflow.keras as k
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -137,15 +137,15 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
     :param neural_network_model: (NNModel) Neural Network model with H5 weights loaded.
     :param prn: (str) The satellite number. E.g. 'G1' for GPS 1 or 'R5' for GLONASS 5.
     :param date: (str) Date in the format [year, month, day]. E.g. [2021, 2, 5] for February 5th, 2021.
-    :param scintillation_type: (str) Either 'S4' (for amplitude) or 'sigma' (for phase) scintillation.
-    :param show_plot: (bool) True if you want to display the plot after running the ML module.
-    :param save_plot: (bool) Saves the plot (if True) in the specified save_plot_dir.
-    :param save_plot_dir: (str) Directory to save the plot (Only works if save_plot == True).
-    :param threshold: (float) The elevation threshold.
-    :param location: (str) The location of the receiver. E.g. 'Daytona Beach, FL'
+    :param scintillation_type (str): Either 'S4' (for amplitude) or 'sigma' (for phase) scintillation.
+    :param plot (bool): True if you want to display the plot after running the ML module.
+    :param save_plot (bool): Saves the plot (if True) in the specified save_plot_dir.
+    :param save_plot_dir (str): Directory to save the plot (Only works if save_plot == True).
+    :param threshold (float): The elevation threshold.
+    :param location (str): The location of the receiver. E.g. 'Daytona Beach, FL'
 
     :return: Creates the output csv file and plots, identifying scintillation events. The function returns a list of
-             all the scintillation files that were created.
+             all the scintillaiton files that were created.
     """
     # Validation.
     if scintillation_type not in ['S4', 'sigma']:
@@ -189,7 +189,7 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
             X = X[X['GPS TOW'] < end_time]
 
             # Filter 60 sec sigma errors (values above the normal range are usually related to receiver/computer
-            # errors or multi-path). The values must be removed, otherwise, the plots will be useless (since some
+            # errors or multipath). The values must be removed, otherwise, the plots will be useless (since some
             # erroneous values sometimes are above 1e6).
             if scintillation_type == 'sigma':
                 X = X[X['60SecSigma'] <= 5]
@@ -233,7 +233,7 @@ def run_ML(input_file, output_file, neural_network_model, prn, date, scintillati
                 os.makedirs(output_dir)
 
             # Save scintillation events data frame to a new csv file (Only if scintillation or multi-path events
-            # have been identified).
+            # have been identified). Otherwise print a message.
             if any(x > 0 for x in map(int, list(set(y)))):
 
                 # Create CSV file. Add the scintillation type, signal type, and time period to the name.

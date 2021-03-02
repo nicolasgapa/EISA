@@ -65,12 +65,12 @@ def time_ranges(file, threshold=0, header=0, elev_col_name='Elevation', times_co
                                                                filtered_DF[times_col_name])]
     # Start rows (All those rows that have an index difference greater than 600 with respect to the previous row).
     # The difference > 600 indicates that the data was collected at a different time of the day (at least 600 seconds
-    # or 10 minutes later), and the satellite crossed the elevation threshold multiple times throughout the day.
+    # or 10 minutes later), and the satellite crossed the elevation theshold multiple times throughout the day.
     start_rows = filtered_DF[filtered_DF['difference'] >= 600]
     start_rows = start_rows.dropna()
     start_times = list(start_rows[times_col_name])
 
-    # Identify the end times.
+    # Identiy the end times.
     filtered_DF['end difference'] = list(filtered_DF['difference'][1:]) + [600]
     end_rows = filtered_DF[filtered_DF['end difference'] >= 600]
     end_rows = end_rows.dropna()
@@ -218,8 +218,7 @@ def slant_to_vertical_tec(y_values, elevations):
 def plot(x_values, y_values, prn, title, subtitle, summary_plot=False, legend=False,
          label_prns=False, graph_type='Azimuth', title_font_size=12, subtitle_font_size=12,
          set_x_axis_range=False, set_y_axis_range=False, x_axis_start_value=0, x_axis_final_value=1,
-         y_axis_start_value=0, y_axis_final_value=1, vertical_line=False, x_value_vertical_line=0, units=None,
-         reduce_line_width=False):
+         y_axis_start_value=0, y_axis_final_value=1, vertical_line=False, x_value_vertical_line=0, units=None):
     """
     Function used to plot, and to determine the directory where such plot will be saved.
 
@@ -237,7 +236,7 @@ def plot(x_values, y_values, prn, title, subtitle, summary_plot=False, legend=Fa
     # Plot.
     # If the user wants a legend, add the labels. Otherwise, plot without labels. For summary plots, reduce the
     # line width to 0.4.
-    if summary_plot or reduce_line_width:
+    if summary_plot:
         if legend:
             plt.plot(x_values, y_values, label=prn, linewidth=0.4)
         else:

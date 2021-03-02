@@ -1,16 +1,20 @@
 "Start today (Yes: 1, No: 0):",,
 0,,
 "Start date (if start today = 0) - year, month, day:",,
-2020,8,22
+2020,6,4
 "Run now (Yes: 1, No: 0):",,
 1,,
 "Time (if run now = 0) - hour, minute:",,
-14,50,
+13,21,
 "Receiver names (1 per cell, 3 maximum):",,
-RX1,RX2,
+RX1,,
 Elevation threshold:,,
 30,,
 Location:,,
 "Daytona Beach, FL",,
 "Constellations (G, R, and/or E):",,
 G,R,E
+Path to data:,,
+Z:\SPRL,,
+Output folder:,,
+Z:\SPRL\EISA_OUTPUT,,

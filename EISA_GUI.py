@@ -1,6 +1,5 @@
 """
 
-2021
 Embry-Riddle Ionospheric Scintillation Algorithm (EISA)
 Version 2
 Graphical User Interface
@@ -59,6 +58,20 @@ class EISAParameters(wx.Panel):
         title_font = wx.Font(13, wx.DEFAULT, wx.NORMAL, wx.BOLD)
         title.SetFont(title_font)
         self.sizer.Add(title, 0, wx.ALL | wx.CENTER, 5)
+
+        # Obtain directory to data.
+        text = wx.StaticText(self, label='Select the directory where the binary files are located:')
+        self.binary_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.DF[16][0], u"Select a folder",
+                                               wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.binary_dir_btn, 0, wx.ALL | wx.CENTER, 5)
+
+        # Obtain path to the input CSV files.
+        text = wx.StaticText(self, label='Select the directory where you want to save the output:')
+        self.output_folder_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.DF[18][0], u"Select a folder",
+                                               wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
+        self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
+        self.sizer.Add(self.output_folder_dir_btn, 0, wx.ALL | wx.CENTER, 5)
 
         # Start from today.
         self.start_today_check = wx.CheckBox(self,
@@ -289,7 +302,11 @@ class EISAParameters(wx.Panel):
                                ['Location:', '', ''],
                                [self.location_text.GetLineText(0), '', ''],
                                ['Constellations (G, R, and/or E):', '', ''],
-                               constellations[:3]])
+                               constellations[:3],
+                               ['Path to data:', '', ''],
+                               [self.binary_dir_btn.GetPath(), '', ''],
+                               ['Output folder:', '', ''],
+                               [self.output_folder_dir_btn.GetPath(), '', '']])
         pd.DataFrame(parameters).to_csv(self.parameters, header=False, index=False)
 
     def save_and_run(self, _):
@@ -771,7 +788,7 @@ class Parsing(wx.Panel):
         # Get the directory to this object's file (i.e. the directory to EISA_GUI.py).
         self.this_file_dir = str(Path(__file__).resolve().parent)
 
-        # Obtain directory where the output plots are going to be saved.
+        # Obtain directory to data.
         text = wx.StaticText(self, label='Select the directory where the binary files are located:')
         self.binary_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.settings.binary_dir, u"Select a folder",
                                                wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)

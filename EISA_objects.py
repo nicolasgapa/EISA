@@ -16,20 +16,22 @@ import datetime
 import os
 import pandas as pd
 
+filesep = os.sep
+
 
 # EISA
 
 
 # Graph settings (This object contains all the settings used to create plots).
 class GraphSettings:
-    def __init__(self, predefined_settings='Graphing/graph_settings_default.csv'):
+    def __init__(self, predefined_settings='Graphing/graph_settings_default.csv', output_folder=''):
 
         # Open the settings CSV file.
         DF = pd.read_csv(predefined_settings)
 
         # Directories.
-        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\CSV_FILES'
-        self.output_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\RX1\GRAPHS'
+        self.CSV_dir = output_folder + filesep + 'RX1' + filesep + 'CSV_FILES'
+        self.output_dir = output_folder + filesep + 'RX1' + filesep + 'GRAPHS'
 
         # File and graph type (REDTEC and Azimuth as default)
         self.file_type = 'REDTEC'
@@ -102,7 +104,7 @@ class GraphSettings:
 
 # Parse settings (This object contains all the settings to parse binary files and create CSVs).
 class ParseSettings:
-    def __init__(self, predefined_settings='Parsing/parse_settings_default.csv'):
+    def __init__(self, predefined_settings='Parsing/parse_settings_default.csv', input_folder='', output_folder=''):
         # Open the settings CSV file.
         DF = pd.read_csv(predefined_settings)
 
@@ -110,9 +112,8 @@ class ParseSettings:
         self.receiver_name = DF.iloc[0][0]
 
         # Directories.
-        self.binary_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + '\\' + self.receiver_name
-        self.CSV_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir)) + r'\EISA_OUTPUT\{}\CSV_FILES'.format(
-            self.receiver_name)
+        self.binary_dir = input_folder + filesep + self.receiver_name
+        self.CSV_dir = output_folder + filesep + self.receiver_name + filesep + 'CSV_FILES'
 
         # Dates.
         today = datetime.datetime.today()
