@@ -69,7 +69,7 @@ class EISAParameters(wx.Panel):
         # Obtain path to the input CSV files.
         text = wx.StaticText(self, label='Select the directory where you want to save the output:')
         self.output_folder_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.DF[18][0], u"Select a folder",
-                                               wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
+                                                      wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer.Add(self.output_folder_dir_btn, 0, wx.ALL | wx.CENTER, 5)
 
@@ -1127,6 +1127,12 @@ class Parsing(wx.Panel):
         else:
             # Parsing exe files are within the Parsing folder.
             exe_dir = self.this_file_dir + filesep + 'Parsing'
+
+            # If individual date is selected, end date and start date must be the same.
+            if self.individual_check.IsChecked():
+                self.settings.end_date = [int(self.start_year.GetStringSelection()),
+                                          int(self.start_month.GetStringSelection()),
+                                          int(self.start_day.GetStringSelection())]
 
             # Update directories.
             self.settings.binary_dir = self.binary_dir_btn.GetPath()
