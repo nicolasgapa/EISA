@@ -35,7 +35,6 @@ def parse_binary_file(binary_file, exe_dir, model):
 def run_parsing(model, exe_dir):
     # Process the dates. Obtain the names of the binary files.
     start_year, start_month, start_day = model.start_date
-    print('End date', model.end_date)
     end_year, end_month, end_day = model.end_date
     number_of_days = (date(end_year, end_month, end_day) - date(start_year, start_month, start_day)).days
     if number_of_days < 0:
