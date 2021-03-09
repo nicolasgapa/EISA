@@ -24,14 +24,14 @@ filesep = os.sep
 
 # Graph settings (This object contains all the settings used to create plots).
 class GraphSettings:
-    def __init__(self, predefined_settings='Graphing/graph_settings_default.csv', output_folder=''):
+    def __init__(self, predefined_settings='Graphing/graph_settings_default.csv'):
 
         # Open the settings CSV file.
         DF = pd.read_csv(predefined_settings)
 
         # Directories.
-        self.CSV_dir = output_folder + filesep + 'RX1' + filesep + 'CSV_FILES'
-        self.output_dir = output_folder + filesep + 'RX1' + filesep + 'GRAPHS'
+        self.CSV_dir = DF.iloc[29][0]
+        self.output_dir = DF.iloc[31][0]
 
         # File and graph type (REDTEC and Azimuth as default)
         self.file_type = 'REDTEC'
@@ -50,7 +50,7 @@ class GraphSettings:
         # Other plot options.
         self.location = DF.iloc[23][0]
         self.summary_plot = False if int(DF.iloc[2][0]) == 0 else True
-        self.TEC_detrending = False if int(DF.iloc[9][0]) == 0 else True
+        self.detrend = False if int(DF.iloc[9][0]) == 0 else True
         self.night_subtraction = False if int(DF.iloc[4][0]) == 0 else True
         self.vertical_TEC = False if int(DF.iloc[17][0]) == 0 else True
         self.one_plot_per_prn = False if int(DF.iloc[27][0]) == 0 else True
@@ -78,8 +78,9 @@ class GraphSettings:
                                    "1SecSigma", "3SecSigma", "10SecSigma", "30SecSigma", "60SecSigma"]
         self.graph_types_RAWTEC = ['TEC', 'TECdot']
         self.graph_types_RAWOBS = ['ADR', 'Power']
-        self.scintillation_types = ["S4", "S4 Cor", "1SecSigma", "3SecSigma", "10SecSigma", "30SecSigma", "60SecSigma"]
-        self.TEC_types = ['TEC15', 'TEC30', 'TEC45', 'TECTOW', 'TEC']
+        self.scintillation_types = ["S4", "S4 Cor", "1SecSigma", "3SecSigma", "10SecSigma", "30SecSigma", "60SecSigma",
+                                    "ADR", "Power"]
+        self.TEC_types = ['TEC15', 'TEC30', 'TEC45', 'TECTOW', 'TEC', 'TECdot']
         self.elevation_column_name = 'Elevation'
         self.times_column_name = 'GPS TOW'
         self.signal_column_name = 'SigType'
@@ -112,8 +113,8 @@ class ParseSettings:
         self.receiver_name = DF.iloc[0][0]
 
         # Directories.
-        self.binary_dir = input_folder + filesep + self.receiver_name
-        self.CSV_dir = output_folder + filesep + self.receiver_name + filesep + 'CSV_FILES'
+        self.binary_dir = DF.iloc[10][0]
+        self.CSV_dir = DF.iloc[12][0]
 
         # Dates.
         today = datetime.datetime.today()

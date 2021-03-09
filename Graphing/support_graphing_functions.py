@@ -158,9 +158,10 @@ def naming(prn, signal_type, date, time_period=1, file_type='REDTEC', graph_type
     return plot_name, title, subtitle
 
 
-def tec_detrending(x_values, y_values, poly_degree=3, cutoff=0.1, order=6):
+def detrend(x_values, y_values, poly_degree=3, cutoff=0.1, order=6):
     """"
-    Fuction: Detrend the TEC data using a butterworth filter.
+    Fuction: Detrend TEC or phase scintillation data using a butterworth filter.
+    To detrend power scintillation data, use the power_detrend function.
 
     Inputs:
         x_values (list): time values.
@@ -169,7 +170,7 @@ def tec_detrending(x_values, y_values, poly_degree=3, cutoff=0.1, order=6):
         cutoff (float): Desired cut off frequency [Hz]
         order (int): Order of the butterworth filter.
     Output:
-        This function returns the detrended TEC (y-axis) values only.
+        This function returns the detrended TEC or phase sinctillation (y-axis) values only.
     """
 
     # Convert all values to float.
@@ -199,6 +200,26 @@ def tec_detrending(x_values, y_values, poly_degree=3, cutoff=0.1, order=6):
     return Detrended_TEC
 
 
+def power_detrend(x_values, y_values, cutoff=0.1, order=6):
+    """"
+    Fuction: Detrend power scintillation data using a butterworth filter.
+    To detrend phase scintillation data or TEC, use the detrend function.
+
+    Inputs:
+        x_values (list): time values.
+        y_values (list): TEC values.
+        cutoff (float): Desired cut off frequency [Hz]
+        order (int): Order of the butterworth filter.
+    Output:
+        This function returns the detrended power (y-axis) values only.
+    """
+    data_rate = 1. / np.mean(np.diff(x_values))
+    b, a = signal.butter(order, cutoff / (0.5 * data_rate))
+    y = signal.filtfilt(b, a, y_values)
+    power_detrend = 10 * np.log10(y_values / y)
+    return power_detrend
+
+
 def slant_to_vertical_tec(y_values, elevations):
     """
     This function converts slant TEC values to vertical TEC (considering Earth's geometry).
@@ -215,7 +236,7 @@ def slant_to_vertical_tec(y_values, elevations):
     return new_y_values
 
 
-def plot(x_values, y_values, prn, title, subtitle, summary_plot=False, legend=False,
+def plot(x_values, y_values, prn, title, subtitle, line_width=1, legend=False,
          label_prns=False, graph_type='Azimuth', title_font_size=12, subtitle_font_size=12,
          set_x_axis_range=False, set_y_axis_range=False, x_axis_start_value=0, x_axis_final_value=1,
          y_axis_start_value=0, y_axis_final_value=1, vertical_line=False, x_value_vertical_line=0, units=None):
@@ -226,9 +247,9 @@ def plot(x_values, y_values, prn, title, subtitle, summary_plot=False, legend=Fa
         x_values (list): values in the x-axis (usually time).
         y_values (list): values in the y-axis.
         prn (str): Satellite constellation and number. E.g. G1 for GPS 1.
-        graph_name (str): Graph name (under which the plot will be saved), not inluding the extension.
+        graph_name (str): Graph name (under which the plot will be saved), not including the extension.
         title (str): Plot title (to print).
-        subttile (str): Plot subtitle (to print).
+        subtitle (str): Plot subtitle (to print).
         model (GraphSettings): A GraphSettings model including all the plot settings.
     Output:
         plt: Resulting plot.
@@ -236,16 +257,10 @@ def plot(x_values, y_values, prn, title, subtitle, summary_plot=False, legend=Fa
     # Plot.
     # If the user wants a legend, add the labels. Otherwise, plot without labels. For summary plots, reduce the
     # line width to 0.4.
-    if summary_plot:
-        if legend:
-            plt.plot(x_values, y_values, label=prn, linewidth=0.4)
-        else:
-            plt.plot(x_values, y_values, linewidth=0.4)
+    if legend:
+        plt.plot(x_values, y_values, label=prn, linewidth=line_width)
     else:
-        if legend:
-            plt.plot(x_values, y_values, label=prn)
-        else:
-            plt.plot(x_values, y_values)
+        plt.plot(x_values, y_values, linewidth=line_width)
 
     # Add the X and Y-axis labels.
     if units is None:

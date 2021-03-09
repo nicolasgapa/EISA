@@ -11,13 +11,14 @@ Author: Nicolas Gachancipa
 
 """
 # External imports.
+import math
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
 
 # Internal imports.
-from Graphing.support_graphing_functions import (time_ranges, tec_detrending, slant_to_vertical_tec, naming, plot,
-                                                 times_to_filter_df)
+from Graphing.support_graphing_functions import (time_ranges, slant_to_vertical_tec, naming, plot, times_to_filter_df,
+                                                 detrend, power_detrend)
 
 # Set the file separator to work in both Linux and Windows.
 filesep = os.sep
@@ -135,10 +136,10 @@ def plot_prn(model, prn, shift=0):
             """
             
             Subsection: Other features
-            Purpose: Post-data processing, including TEC detrending, night-subtraction (normalization), TEC 
+            Purpose: Post-data processing, including detrending, night-subtraction (normalization), TEC 
             slant-to-vertical conversion, and ionospheric event detection using machine learning.
             
-            CREDITS: The Butterworth filter used for TEC detrending was based on a Matlab function written by 
+            CREDITS: The Butterworth filter used for detrending was based on a Matlab function written by 
             Dr. Kshitija Deshpande, Professor of Engineering Physics at Embry-Riddle Aeronautical University.
             
             """
@@ -146,16 +147,35 @@ def plot_prn(model, prn, shift=0):
             # For low-rate scintillation data, get rid of non-sense values (e.g. values above a value of 5).
             # These values may come from errors in the receiver/computer or signal interference and are not
             # representative of S4/sigma scintillation values.
-            if model.graph_type in model.scintillation_types:
+            if (model.file_type not in ['RAWOBS', 'DETOBS']) and (model.graph_type in model.scintillation_types):
                 data = data[data[model.graph_type] <= 5]
 
             # High-rate TEC processing:
             if (model.file_type == 'RAWTEC') and (model.graph_type in model.TEC_types):
 
-                # TEC detrending (High-rate TEC data).
-                if model.TEC_detrending:
+                # Detrending (High-rate TEC data).
+                if model.detrend:
                     x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
-                    data[model.graph_type] = tec_detrending(x_values, y_values)
+                    data[model.graph_type] = detrend(x_values, y_values)
+
+            # High-rate Scintillation processing:
+            if (model.file_type == 'RAWOBS') and (model.graph_type in model.scintillation_types):
+
+                # ADR to phase.
+                if model.graph_type == 'ADR':
+                    data[model.graph_type] = data[model.graph_type] * 2*math.pi
+
+                # Detrending high-rate data.
+                if model.detrend:
+                    x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
+
+                    # Power.
+                    if model.graph_type == "Power":
+                        data[model.graph_type] = power_detrend(x_values, y_values)
+
+                    # Phase.
+                    if model.graph_type == "ADR":
+                        data[model.graph_type] = detrend(x_values, y_values)
 
             # Low-rate TEC processing.
             if (model.file_type == 'REDTEC') and (model.graph_type in model.TEC_types):
@@ -197,9 +217,13 @@ def plot_prn(model, prn, shift=0):
                                                  vertical_TEC=model.vertical_TEC, threshold=model.threshold,
                                                  location=model.location)
 
-            # Plot and save the figure. Plot only if the dataframe is not empty.
+            # Plot and save the figure. Plot only if the data frame is not empty.
             x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
-            prn_plot = plot(x_values, y_values, prn, title, subtitle, summary_plot=model.summary_plot,
+            if model.summary_plot or model.file_type in ['RAWTEC', 'RAWOBS', 'DETOBS']:
+                line_width = 0.4
+            else:
+                line_width = 1
+            prn_plot = plot(x_values, y_values, prn, title, subtitle, line_width=line_width,
                             legend=model.legend, label_prns=model.label_prns,
                             graph_type=model.graph_type, title_font_size=model.title_font_size,
                             subtitle_font_size=model.subtitle_font_size,

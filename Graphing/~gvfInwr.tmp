@@ -16,7 +16,7 @@ import pandas as pd
 import os
 
 # Internal imports.
-from Graphing.support_graphing_functions import (time_ranges, tec_detrending, slant_to_vertical_tec, naming, plot,
+from Graphing.support_graphing_functions import (time_ranges, detrend, slant_to_vertical_tec, naming, plot,
                                                  times_to_filter_df)
 
 # Set the file separator to work in both Linux and Windows.
@@ -135,10 +135,10 @@ def plot_prn(model, prn, shift=0):
             """
             
             Subsection: Other features
-            Purpose: Post-data processing, including TEC detrending, night-subtraction (normalization), TEC 
+            Purpose: Post-data processing, including detrending, night-subtraction (normalization), TEC
             slant-to-vertical conversion, and ionospheric event detection using machine learning.
             
-            CREDITS: The Butterworth filter used for TEC detrending was based on a Matlab function written by 
+            CREDITS: The Butterworth filter used for detrending was based on a Matlab function written by
             Dr. Kshitija Deshpande, Professor of Engineering Physics at Embry-Riddle Aeronautical University.
             
             """
@@ -152,10 +152,10 @@ def plot_prn(model, prn, shift=0):
             # High-rate TEC processing:
             if (model.file_type == 'RAWTEC') and (model.graph_type in model.TEC_types):
 
-                # TEC detrending (High-rate TEC data).
-                if model.TEC_detrending:
+                # Detrending (High-rate TEC data).
+                if model.detrend:
                     x_values, y_values = list(data[model.times_column_name]), list(data[model.graph_type])
-                    data[model.graph_type] = tec_detrending(x_values, y_values)
+                    data[model.graph_type] = detrend(x_values, y_values)
 
             # Low-rate TEC processing.
             if (model.file_type == 'REDTEC') and (model.graph_type in model.TEC_types):

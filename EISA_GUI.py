@@ -12,6 +12,7 @@ Author: Nicolas Gachancipa
 """
 
 # Imports
+import configparser
 import datetime
 from EISA import run_EISA
 from EISA_objects import GraphSettings, ParseSettings
@@ -38,7 +39,7 @@ def get_month_length(month):
 class EISAParameters(wx.Panel):
 
     # Initializer.
-    def __init__(self, parent, default_parameters='EISA_parameters.csv'):
+    def __init__(self, parent, default_parameters='EISA_parameters.config'):
         # Create panel & object.
         wx.Panel.__init__(self, parent, size=(0, 0))
         self.container = wx.BoxSizer(wx.VERTICAL)
@@ -46,8 +47,9 @@ class EISAParameters(wx.Panel):
 
         # Open the EISA parameters CSV file.
         self.parent = parent
-        self.parameters = default_parameters
-        self.DF = pd.read_csv(self.parameters).values
+        self.default_parameters = default_parameters
+        self.parameters = configparser.ConfigParser()
+        self.parameters.read_file(open(self.default_parameters))
 
         # Dates and times.
         today = datetime.datetime.now()
@@ -61,15 +63,16 @@ class EISAParameters(wx.Panel):
 
         # Obtain directory to data.
         text = wx.StaticText(self, label='Select the directory where the binary files are located:')
-        self.binary_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.DF[16][0], u"Select a folder",
-                                               wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
+        self.binary_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.parameters.get('DEFAULT', 'INPUT_DIR'),
+                                               u"Select a folder", wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer.Add(self.binary_dir_btn, 0, wx.ALL | wx.CENTER, 5)
 
         # Obtain path to the input CSV files.
         text = wx.StaticText(self, label='Select the directory where you want to save the output:')
-        self.output_folder_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.DF[18][0], u"Select a folder",
-                                                      wx.DefaultPosition, (550, 20), wx.DIRP_DEFAULT_STYLE)
+        self.output_folder_dir_btn = wx.DirPickerCtrl(self, wx.ID_ANY, self.parameters.get('DEFAULT', 'OUTPUT_DIR'),
+                                                      u"Select a folder", wx.DefaultPosition, (550, 20),
+                                                      wx.DIRP_DEFAULT_STYLE)
         self.sizer.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer.Add(self.output_folder_dir_btn, 0, wx.ALL | wx.CENTER, 5)
 
@@ -77,7 +80,7 @@ class EISAParameters(wx.Panel):
         self.start_today_check = wx.CheckBox(self,
                                              label="Start from today (will parse and graph data - from today on - "
                                                    "at the specified time - See note below).")
-        self.start_today_check.SetValue(False if int(self.DF[0][0]) == 0 else True)
+        self.start_today_check.SetValue(False if int(self.parameters.get('DEFAULT', 'START_TODAY')) == 0 else True)
         self.start_today_check.Bind(wx.EVT_CHECKBOX, self.set_start_today)
 
         # Start date (EISA will parse data from this date, including all subsequent dates up to the present).
@@ -98,9 +101,10 @@ class EISAParameters(wx.Panel):
         self.sizer.Add(self.start_today_check, 0, wx.ALL | wx.CENTER, 5)
 
         # Set the start date (as defined by the user in the EISA parameters file).
-        self.start_year.SetStringSelection(str(int(self.DF[2][0])))
-        self.start_month.SetStringSelection(str(int(self.DF[2][1])))
-        self.start_day.SetStringSelection(str(int(self.DF[2][2])))
+        start_year, start_month, start_day = str(self.parameters.get('DEFAULT', 'START_DATE')).split(',')
+        self.start_year.SetStringSelection(str(int(start_year)))
+        self.start_month.SetStringSelection(str(int(start_month)))
+        self.start_day.SetStringSelection(str(int(start_day)))
         if self.start_today_check.IsChecked():
             self.start_year.SetStringSelection(str(today.year))
             self.start_month.SetStringSelection(str(today.month))
@@ -111,7 +115,7 @@ class EISAParameters(wx.Panel):
 
         # Run now.
         self.run_now_check = wx.CheckBox(self, label="Run now (EISA will run at the same time every day).")
-        self.run_now_check.SetValue(False if int(self.DF[4][0]) == 0 else True)
+        self.run_now_check.SetValue(False if int(self.parameters.get('DEFAULT', 'RUN_NOW')) == 0 else True)
         self.run_now_check.Bind(wx.EVT_CHECKBOX, self.set_run_now)
 
         # Run time.
@@ -126,8 +130,9 @@ class EISAParameters(wx.Panel):
         self.sizer.Add(self.run_now_check, 0, wx.ALL | wx.CENTER, 5)
 
         # Set the start time (as defined by the user in the EISA parameters file).
-        self.run_hour.SetStringSelection(str(int(self.DF[6][0])))
-        self.run_minute.SetStringSelection(str(int(self.DF[6][1])))
+        start_hour, start_minute = self.parameters.get('DEFAULT', 'TIME').split(',')
+        self.run_hour.SetStringSelection(str(int(start_hour)))
+        self.run_minute.SetStringSelection(str(int(start_minute)))
         if self.run_now_check.IsChecked():
             self.run_hour.SetStringSelection(str(today.hour))
             self.run_minute.SetStringSelection(str(today.minute))
@@ -174,7 +179,7 @@ class EISAParameters(wx.Panel):
         # Obtain the name of the receivers.
         text = wx.StaticText(self, label='Receivers (separated by commas with no blank spaces - e.g. RX1,RX2,RX3 - '
                                          'Max: 3 receivers):')
-        default = ','.join([str(i) for i in self.DF[8] if str(i) != 'nan'])
+        default = self.parameters.get('DEFAULT', 'RECEIVERS')
         self.receivers_names_text = wx.TextCtrl(self, value=default, size=(150, 20))
         self.receivers_names_text.SetFocus()
         self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
@@ -182,14 +187,15 @@ class EISAParameters(wx.Panel):
 
         # Threshold.
         text = wx.StaticText(self, label='Select the elevation threshold:')
-        self.threshold_slider = wx.Slider(self, value=int(self.DF[10][0]), minValue=0, maxValue=90, style=wx.SL_LABELS)
+        self.threshold_slider = wx.Slider(self, value=int(self.parameters.get('DEFAULT', 'THRESHOLD')),
+                                          minValue=0, maxValue=90, style=wx.SL_LABELS)
         self.sizer_2.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.sizer_2.Add(self.threshold_slider, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
 
         # Location.
         self.hbox1 = wx.BoxSizer(wx.HORIZONTAL)
         text = wx.StaticText(self, label='Location:')
-        self.location_text = wx.TextCtrl(self, value=self.DF[12][0], size=(150, 20))
+        self.location_text = wx.TextCtrl(self, value=self.parameters.get('DEFAULT', 'LOCATION'), size=(150, 20))
         self.location_text.SetFocus()
         self.hbox1.Add(text, 0, wx.ALL | wx.CENTER, 5)
         self.hbox1.Add(self.location_text, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
@@ -207,7 +213,7 @@ class EISAParameters(wx.Panel):
         self.local_sizer.Add(self.GLONASS_check, 0, wx.ALL | wx.CENTER, 5)
         self.local_sizer.Add(self.GALILEO_check, 0, wx.ALL | wx.CENTER, 5)
         self.sizer_2.Add(self.local_sizer, 0, wx.ALL | wx.CENTER, 5)
-        default_constellations = ','.join([str(i) for i in self.DF[14] if str(i) != 'nan'])
+        default_constellations = self.parameters.get('DEFAULT', 'CONSTELLATIONS')
         if "G" in default_constellations:
             self.GPS_check.SetValue(True)
         if "R" in default_constellations:
@@ -285,29 +291,24 @@ class EISAParameters(wx.Panel):
             constellations.append('E')
         constellations = constellations + [''] * (3 - len(constellations))
 
-        # Update CSV file with selected default values.
-        parameters = np.array([['Start today (Yes: 1, No: 0):', '', ''],
-                               ['1' if self.start_today_check.IsChecked() else '0', '', ''],
-                               ['Start date (if start today = 0) - year, month, day:', '', ''],
-                               [self.start_year.GetStringSelection(), self.start_month.GetStringSelection(),
-                                self.start_day.GetStringSelection()],
-                               ['Run now (Yes: 1, No: 0):', '', ''],
-                               ['1' if self.run_now_check.IsChecked() else '0', '', ''],
-                               ['Time (if run now = 0) - hour, minute:', '', ''],
-                               [self.run_hour.GetStringSelection(), self.run_minute.GetStringSelection(), ''],
-                               ['Receiver names (1 per cell, 3 maximum):', '', ''],
-                               receivers[:3],
-                               ['Elevation threshold:', '', ''],
-                               [str(self.threshold_slider.GetValue()), '', ''],
-                               ['Location:', '', ''],
-                               [self.location_text.GetLineText(0), '', ''],
-                               ['Constellations (G, R, and/or E):', '', ''],
-                               constellations[:3],
-                               ['Path to data:', '', ''],
-                               [self.binary_dir_btn.GetPath(), '', ''],
-                               ['Output folder:', '', ''],
-                               [self.output_folder_dir_btn.GetPath(), '', '']])
-        pd.DataFrame(parameters).to_csv(self.parameters, header=False, index=False)
+        # Update CONFIG file with selected default values.
+        self.parameters.set('DEFAULT', 'START_TODAY', '1' if self.start_today_check.IsChecked() else '0')
+        self.parameters.set('DEFAULT', 'START_DATE', '{},{},{}'.format(str(self.start_year.GetStringSelection()),
+                                                                       str(self.start_month.GetStringSelection()),
+                                                                       str(self.start_day.GetStringSelection())))
+        self.parameters.set('DEFAULT', 'RUN_NOW', '1' if self.run_now_check.IsChecked() else '0')
+        self.parameters.set('DEFAULT', 'TIME', '{},{}'.format(str(self.run_hour.GetStringSelection()),
+                                                              str(self.run_minute.GetStringSelection())))
+        self.parameters.set('DEFAULT', 'RECEIVERS', ','.join(receivers))
+        self.parameters.set('DEFAULT', 'THRESHOLD', str(self.threshold_slider.GetValue()))
+        self.parameters.set('DEFAULT', 'LOCATION', self.location_text.GetLineText(0))
+        self.parameters.set('DEFAULT', 'CONSTELLATIONS', ','.join(constellations))
+        self.parameters.set('DEFAULT', 'INPUT_DIR', self.binary_dir_btn.GetPath())
+        self.parameters.set('DEFAULT', 'OUTPUT_DIR', self.output_folder_dir_btn.GetPath())
+
+        # Override old csv file.
+        with open(self.default_parameters, 'w') as config_file:
+            self.parameters.write(config_file)
 
     def save_and_run(self, _):
         self.save(None)
@@ -447,11 +448,11 @@ class Graphing(wx.Panel):
         self.sizer_2.Add(self.summary_plot_check, 0, wx.ALL | wx.CENTER, 5)
         self.summary_plot_check.Bind(wx.EVT_CHECKBOX, self.set_summary_plot)
 
-        # TEC Detrending (Only for Raw Data).
-        self.TEC_detrending_check = wx.CheckBox(self, label="TEC Detrending (Only for high-rate TEC data)")
-        self.TEC_detrending_check.SetValue(self.settings.TEC_detrending)
-        self.sizer_2.Add(self.TEC_detrending_check, 0, wx.ALL | wx.CENTER, 5)
-        self.TEC_detrending_check.Bind(wx.EVT_CHECKBOX, self.set_TEC_detrending)
+        # Detrending (Only for Raw Data).
+        self.detrend_check = wx.CheckBox(self, label="Detrending (Only for high-rate data)")
+        self.detrend_check.SetValue(self.settings.detrend)
+        self.sizer_2.Add(self.detrend_check, 0, wx.ALL | wx.CENTER, 5)
+        self.detrend_check.Bind(wx.EVT_CHECKBOX, self.set_detrend)
 
         # Night subtraction (Low-rate TEC only).
         self.night_subtraction_check = wx.CheckBox(self, label="Night Subtraction (Only for low-rate TEC data)")
@@ -701,8 +702,8 @@ class Graphing(wx.Panel):
     def set_threshold(self, _):
         self.settings.threshold = self.threshold_slider.GetValue()
 
-    def set_TEC_detrending(self, _):
-        self.settings.TEC_detrending = self.TEC_detrending_check.IsChecked()
+    def set_detrend(self, _):
+        self.settings.detrend = self.detrend_check.IsChecked()
 
     def set_night_subtraction(self, _):
         self.settings.night_subtraction = self.night_subtraction_check.IsChecked()
@@ -762,7 +763,7 @@ class Graphing(wx.Panel):
         self.settings.one_plot_per_prn = self.one_plot_per_prn_check.IsChecked()
 
     def run(self, _):
-        # Catch selection errors. Run only if all stteings have been properly selected.
+        # Catch selection errors. Run only if all settings have been properly selected.
         if len(self.settings.PRNs_to_plot) == 0:
             wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
         else:
@@ -1121,18 +1122,21 @@ class Parsing(wx.Panel):
             self.set_end_date(None)
 
     def run(self, _):
-        # Catch selection errors. Run only if all stteings have been properly selected.
+        # Catch selection errors. Run only if all settings have been properly selected.
         if len(self.settings.PRNs_to_parse) == 0:
             wx.MessageDialog(self, 'Error: Please select at least one satellite (PRN) to continue.').ShowModal()
         else:
-            # Parsing exe files are within the Parsing folder.
+            # Parsing exe files that are within the Parsing folder.
             exe_dir = self.this_file_dir + filesep + 'Parsing'
 
-            # If individual date is selected, end date and start date must be the same.
+            # Update date range if the "individual day" option is selected.
             if self.individual_check.IsChecked():
-                self.settings.end_date = [int(self.start_year.GetStringSelection()),
-                                          int(self.start_month.GetStringSelection()),
-                                          int(self.start_day.GetStringSelection())]
+                self.end_year.SetStringSelection(self.start_year.GetValue())
+                self.end_month.SetStringSelection(self.start_month.GetValue())
+                self.end_day.SetStringSelection(self.start_day.GetValue())
+                self.settings.end_date = [int(self.end_year.GetStringSelection()),
+                                          int(self.end_month.GetStringSelection()),
+                                          int(self.end_day.GetStringSelection())]
 
             # Update directories.
             self.settings.binary_dir = self.binary_dir_btn.GetPath()
@@ -1372,7 +1376,7 @@ class TopFrame(wx.Frame):
 
     # Run EISA.
     def run(self, _):
-        run_EISA(parameters='EISA_parameters.csv')
+        run_EISA(parameters='EISA_parameters.config')
 
     # Graphing.
     def graph(self, _):

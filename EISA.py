@@ -12,6 +12,7 @@ Last time updated: Spring 2020.
 """
 
 # Imports.
+import configparser
 from datetime import datetime, timedelta, date as date_type
 from distutils.dir_util import copy_tree
 from EISA_objects import GraphSettings, ParseSettings
@@ -19,7 +20,6 @@ from gnsscal import date2gpswd
 from Graphing.graphing import run_graphing
 from ML.neural_network import run_ML, NNModel
 import os
-import pandas as pd
 from Parsing.parsing import run_parsing
 from Parsing.support_parsing_functions import parse_file
 import shutil
@@ -100,7 +100,7 @@ def graph(date, receiver_name, constellations, threshold, location, output_folde
     # Other plot options.
     parameters.location = location
     parameters.summary_plot = False
-    parameters.TEC_detrending = False
+    parameters.detrending = False
     parameters.night_subtraction = False
     parameters.vertical_TEC = False
     parameters.one_plot_per_prn = True
@@ -354,7 +354,7 @@ def upload(date, receiver_name, output_folder=''):
 
 
 # ----- run_EISA function ------ #
-def run_EISA(parameters='EISA_parameters.csv'):
+def run_EISA(parameters='EISA_parameters.config'):
     # Get times.
     now = datetime.today()  # Today's date and time.
     utc_time = datetime.utcnow()  # UTC time.
@@ -373,19 +373,22 @@ def run_EISA(parameters='EISA_parameters.csv'):
                           """.format(now, utc_time)))
 
     # Open the settings file.
-    DF = pd.read_csv(parameters).values
+    config = configparser.ConfigParser()
+    config.read_file(open(parameters))
 
     # Extract inputs.
-    start_today = False if int(DF[0][0]) == 0 else True
-    start_date = [int(i) for i in DF[2][:3]]
-    run_now = False if int(DF[4][0]) == 0 else True
-    start_time = [int(i) for i in DF[6][:2]]
-    receivers = [str(i) for i in DF[8] if str(i) != 'nan']
-    threshold = int(DF[10][0])
-    location = str(DF[12][0])
-    constellations = [str(i) for i in DF[14] if str(i) != 'nan']
-    input_folder = str(DF[16][0])
-    output_folder = str(DF[18][0])
+    start_today = False if int(config.get('DEFAULT', 'START_TODAY')) == 0 else True
+    start_year, start_month, start_day = (config.get('DEFAULT', 'START_DATE')).split(',')[:3]
+    start_date = [int(start_year), int(start_month), int(start_day)]
+    run_now = False if int(config.get('DEFAULT', 'RUN_NOW')) == 0 else True
+    start_hour, start_minute = config.get('DEFAULT', 'TIME').split(',')[:2]
+    start_time = [int(start_hour), int(start_minute)]
+    receivers = [r for r in config.get('DEFAULT', 'RECEIVERS').split(',') if len(r) > 0]
+    threshold = int(config.get('DEFAULT', 'THRESHOLD'))
+    location = config.get('DEFAULT', 'LOCATION')
+    constellations = [c for c in config.get('DEFAULT', 'CONSTELLATIONS').split(',') if len(c) > 0]
+    input_folder = config.get('DEFAULT', 'INPUT_DIR')
+    output_folder = config.get('DEFAULT', 'OUTPUT_DIR')
 
     # Set the time at which the code will run (the time given by the user).
     if run_now:
@@ -436,8 +439,8 @@ def run_EISA(parameters='EISA_parameters.csv'):
             # Parse, plot, process, and upload.
             parse(date, receiver, constellations, input_folder=input_folder, output_folder=output_folder)
             graph(date, receiver, constellations, threshold, location, output_folder=output_folder)
-            ML_event_detection(date, receiver, constellations, threshold, location, input_folder=input_folder,
-                               output_folder=output_folder)
+            # ML_event_detection(date, receiver, constellations, threshold, location, input_folder=input_folder,
+            #                   output_folder=output_folder)
 
             # Only upload data of the DAB receiver (RX1).
             if receiver == 'RX1':

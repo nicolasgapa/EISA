@@ -8,3 +8,7 @@ RX1,,
 0,0,24
 Parse individual date (0) or a range of dates (1):,,
 0,,
+Path to binary files,,
+z:\SPRL\RX1,,
+Path to output CSV files,,
+z:\SPRL\EISA_OUTPUT\RX1\CSV_FILES,,
