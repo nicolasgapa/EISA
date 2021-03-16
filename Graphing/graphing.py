@@ -147,7 +147,7 @@ def plot_prn(model, prn, shift=0):
             # For low-rate scintillation data, get rid of non-sense values (e.g. values above a value of 5).
             # These values may come from errors in the receiver/computer or signal interference and are not
             # representative of S4/sigma scintillation values.
-            if (model.file_type not in ['RAWOBS', 'DETOBS']) and (model.graph_type in model.scintillation_types):
+            if (model.file_type not in ['RAWOBS', 'DETOBS']) and (model.graph_type in model.RED_scintillation_types):
                 data = data[data[model.graph_type] <= 5]
 
             # High-rate TEC processing:
@@ -159,11 +159,11 @@ def plot_prn(model, prn, shift=0):
                     data[model.graph_type] = detrend(x_values, y_values)
 
             # High-rate Scintillation processing:
-            if (model.file_type == 'RAWOBS') and (model.graph_type in model.scintillation_types):
+            if model.graph_type in model.graph_types_RAWOBS:
 
                 # ADR to phase.
                 if model.graph_type == 'ADR':
-                    data[model.graph_type] = data[model.graph_type] * 2*math.pi
+                    data[model.graph_type] = data[model.graph_type] * 2 * math.pi
 
                 # Detrending high-rate data.
                 if model.detrend:
@@ -223,6 +223,9 @@ def plot_prn(model, prn, shift=0):
                 line_width = 0.4
             else:
                 line_width = 1
+            plot_type = 'line'
+            if model.scatter is True:
+                plot_type = 'scatter'
             prn_plot = plot(x_values, y_values, prn, title, subtitle, line_width=line_width,
                             legend=model.legend, label_prns=model.label_prns,
                             graph_type=model.graph_type, title_font_size=model.title_font_size,
@@ -233,7 +236,7 @@ def plot_prn(model, prn, shift=0):
                             y_axis_start_value=model.y_axis_start_value,
                             y_axis_final_value=model.y_axis_final_value, vertical_line=model.vertical_line,
                             x_value_vertical_line=model.x_value_vertical_line,
-                            units=model.units[model.graph_type])
+                            units=model.units[model.graph_type], plot_type=plot_type)
 
             # If the summary plot option is NOT selected, save, show and clear the graph.
             if not model.summary_plot:

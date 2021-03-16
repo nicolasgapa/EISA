@@ -239,7 +239,8 @@ def slant_to_vertical_tec(y_values, elevations):
 def plot(x_values, y_values, prn, title, subtitle, line_width=1, legend=False,
          label_prns=False, graph_type='Azimuth', title_font_size=12, subtitle_font_size=12,
          set_x_axis_range=False, set_y_axis_range=False, x_axis_start_value=0, x_axis_final_value=1,
-         y_axis_start_value=0, y_axis_final_value=1, vertical_line=False, x_value_vertical_line=0, units=None):
+         y_axis_start_value=0, y_axis_final_value=1, vertical_line=False, x_value_vertical_line=0, units=None,
+         plot_type='line'):
     """
     Function used to plot, and to determine the directory where such plot will be saved.
 
@@ -251,16 +252,20 @@ def plot(x_values, y_values, prn, title, subtitle, line_width=1, legend=False,
         title (str): Plot title (to print).
         subtitle (str): Plot subtitle (to print).
         model (GraphSettings): A GraphSettings model including all the plot settings.
+        plot_type (Str): 'line' or 'scatter'
     Output:
         plt: Resulting plot.
     """
     # Plot.
     # If the user wants a legend, add the labels. Otherwise, plot without labels. For summary plots, reduce the
     # line width to 0.4.
-    if legend:
-        plt.plot(x_values, y_values, label=prn, linewidth=line_width)
+    if plot_type == 'scatter':
+        plt.scatter(x_values, y_values, s=0.05)
     else:
-        plt.plot(x_values, y_values, linewidth=line_width)
+        if legend:
+            plt.plot(x_values, y_values, label=prn, linewidth=line_width)
+        else:
+            plt.plot(x_values, y_values, linewidth=line_width)
 
     # Add the X and Y-axis labels.
     if units is None:

@@ -573,6 +573,12 @@ class Graphing(wx.Panel):
         self.sizer_2.Add(self.format_type_check, 0, wx.ALL | wx.CENTER, 5)
         self.format_type_check.Bind(wx.EVT_COMBOBOX_CLOSEUP, self.set_format_type)
 
+        # Scatter plot.
+        self.scatter_check = wx.CheckBox(self, label="Scatter")
+        self.scatter_check.SetValue(0)
+        self.sizer_2.Add(self.scatter_check, 0, wx.ALL | wx.CENTER, 5)
+        self.scatter_check.Bind(wx.EVT_CHECKBOX, self.set_scatter)
+
         # Show plots in the screen.
         self.show_plots_check = wx.CheckBox(self, label="Show plots")
         self.show_plots_check.SetValue(self.settings.show_plots)
@@ -755,6 +761,9 @@ class Graphing(wx.Panel):
 
     def set_format_type(self, _):
         self.settings.format_type = self.format_type_check.GetStringSelection()
+
+    def set_scatter(self, _):
+        self.settings.scatter = self.scatter_check.IsChecked()
 
     def set_show_plots(self, _):
         self.settings.show_plots = self.show_plots_check.IsChecked()

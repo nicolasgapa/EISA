@@ -147,7 +147,7 @@ def graph(date, receiver_name, constellations, threshold, location, output_folde
             parameters.one_plot_per_prn = False
 
             # Define the y axis range.
-            if graph_type in parameters.scintillation_types:
+            if graph_type in parameters.RED_scintillation_types:
                 parameters.set_y_axis_range = True
                 parameters.y_axis_start_value = 0
                 parameters.y_axis_end_value = 0.8
@@ -159,7 +159,8 @@ def graph(date, receiver_name, constellations, threshold, location, output_folde
 
         # Scintillation summary plots. Save them to a different folder.
         parameters.summary_plot = True
-        for graph_type in ['Elevation'] + parameters.scintillation_types:
+        for graph_type in ['Elevation'] + ["S4", "S4 Cor", "1SecSigma", "3SecSigma", "10SecSigma", "30SecSigma",
+                                           "60SecSigma"]:
 
             # Create a summary plot per constellation.
             for satellites in [GPS_satellites, GLONASS_satellites, GALILEO_satellites]:
@@ -171,7 +172,7 @@ def graph(date, receiver_name, constellations, threshold, location, output_folde
                 parameters.label_prns = True
 
                 # Define the y axis range.
-                if graph_type in parameters.scintillation_types:
+                if graph_type in parameters.RED_scintillation_types:
                     parameters.set_y_axis_range = True
                     parameters.y_axis_start_value = 0
                     parameters.y_axis_end_value = 0.8

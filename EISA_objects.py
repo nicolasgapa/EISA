@@ -78,8 +78,8 @@ class GraphSettings:
                                    "1SecSigma", "3SecSigma", "10SecSigma", "30SecSigma", "60SecSigma"]
         self.graph_types_RAWTEC = ['TEC', 'TECdot']
         self.graph_types_RAWOBS = ['ADR', 'Power']
-        self.scintillation_types = ["S4", "S4 Cor", "1SecSigma", "3SecSigma", "10SecSigma", "30SecSigma", "60SecSigma",
-                                    "ADR", "Power"]
+        self.RED_scintillation_types = ["S4", "S4 Cor", "1SecSigma", "3SecSigma", "10SecSigma", "30SecSigma",
+                                        "60SecSigma"]
         self.TEC_types = ['TEC15', 'TEC30', 'TEC45', 'TECTOW', 'TEC', 'TECdot']
         self.elevation_column_name = 'Elevation'
         self.times_column_name = 'GPS TOW'
